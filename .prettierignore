@@ -1,0 +1,3 @@
+# Markdown documents are edited as prose and stay out of formatting.
+*.md
+package-lock.json
