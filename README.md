@@ -6,6 +6,7 @@ Aplikacja mobilna dla par, która pomaga obojgu partnerom lepiej się rozumieć 
 
 - [intent.md](intent.md): intencja, czyli problem, wartość, zasady produktu i pytania otwarte.
 - [spec.md](spec.md): specyfikacja MVP, czyli wymagania, model domenowy, architektura i miary sukcesu.
+- [plan.md](plan.md): plan techniczny MVP, czyli decyzje, etapy, backlog issue dla pipeline'u i śledzenie wymagań.
 
 ## Jak powstaje kod
 
