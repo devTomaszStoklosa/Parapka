@@ -1,0 +1,31 @@
+# Stops a pipeline run when a person adds agent:stop to its issue or pull
+# request (FR-4.28). It runs outside the concurrency group of the run, so it
+# does not wait for a role job to end. Keep it enabled even when Orchestrate is
+# disabled as the global switch (FR-4.34).
+name: Stop
+
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  stop:
+    if: github.event.label.name == 'agent:stop'
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/terminate.yml@a38e96779cdecc2570610adc5356ba48cabd4f1d
+    # actions: write is used only by the cancel job, with GITHUB_TOKEN.
+    permissions:
+      actions: write
+      contents: read
+      issues: read
+      pull-requests: read
+    with:
+      pipeline-ref: a38e96779cdecc2570610adc5356ba48cabd4f1d
+      app-client-id: ${{ vars.APP_CLIENT_ID }}
+      app-id: ${{ vars.APP_ID }}
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}

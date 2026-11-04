@@ -1,0 +1,26 @@
+# Ends a pipeline run in `done` when a person merges or closes its pull
+# request (FR-4.35), outside the concurrency group of the run.
+name: Pull request closed
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-closed:
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/terminate.yml@a38e96779cdecc2570610adc5356ba48cabd4f1d
+    # actions: write is used only by the cancel job, with GITHUB_TOKEN.
+    permissions:
+      actions: write
+      contents: read
+      issues: read
+      pull-requests: read
+    with:
+      pipeline-ref: a38e96779cdecc2570610adc5356ba48cabd4f1d
+      app-client-id: ${{ vars.APP_CLIENT_ID }}
+      app-id: ${{ vars.APP_ID }}
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
