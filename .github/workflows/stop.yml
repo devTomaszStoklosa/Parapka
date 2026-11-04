@@ -16,7 +16,7 @@ permissions:
 jobs:
   stop:
     if: github.event.label.name == 'agent:stop'
-    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/terminate.yml@f9c9a603c5f22864a6d14a4593de9a220e7160be
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/terminate.yml@cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
     # actions: write is used only by the cancel job, with GITHUB_TOKEN.
     permissions:
       actions: write
@@ -24,7 +24,7 @@ jobs:
       issues: read
       pull-requests: read
     with:
-      pipeline-ref: f9c9a603c5f22864a6d14a4593de9a220e7160be
+      pipeline-ref: cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
       app-client-id: ${{ vars.APP_CLIENT_ID }}
       app-id: ${{ vars.APP_ID }}
     secrets:

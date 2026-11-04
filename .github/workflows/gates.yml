@@ -15,20 +15,20 @@ permissions:
 
 jobs:
   gates:
-    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/gates.yml@f9c9a603c5f22864a6d14a4593de9a220e7160be
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/gates.yml@cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
     permissions:
       contents: read
       security-events: write
     with:
-      pipeline-ref: f9c9a603c5f22864a6d14a4593de9a220e7160be
+      pipeline-ref: cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
 
   scope:
     if: github.event_name == 'pull_request'
-    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/scope-gate.yml@f9c9a603c5f22864a6d14a4593de9a220e7160be
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/scope-gate.yml@cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
     permissions:
       contents: read
       issues: read
       pull-requests: read
     with:
-      pipeline-ref: f9c9a603c5f22864a6d14a4593de9a220e7160be
+      pipeline-ref: cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
       app-id: ${{ vars.APP_ID }}
