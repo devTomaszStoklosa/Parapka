@@ -12,9 +12,7 @@ commands:
   test: npm test
   lint: npm run lint -- --no-warn-ignored
   format: npx prettier --write --ignore-unknown
-  # No coverage command until main has source files: the report of a tree
-  # without them has the line coverage "Unknown", which the coverage gate of
-  # the pipeline rejects. `npm run coverage` writes the report for later.
+  coverage: npm run coverage
 
 high_impact:
   # Cryptography, the relay contract, database migrations and the content
