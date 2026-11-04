@@ -106,6 +106,20 @@ describe("cycle length", () => {
     const periodStarts = starts("2026-01-01", [30, 30, 30]).reverse();
     expect(forecastCycle({ periodStarts, today: TODAY }).cycleLength).toBe(30);
   });
+
+  it("ignores a repeated period start instead of counting a 0-day cycle", () => {
+    const [a, b, c] = starts("2026-01-01", [28, 28]) as [
+      string,
+      string,
+      string,
+    ];
+    const result = forecastCycle({
+      periodStarts: [a, a, b, c],
+      today: TODAY,
+    });
+    expect(result.cycleLengthSource).toBe("config");
+    expect(result.cycleLength).toBe(28);
+  });
 });
 
 describe("forecast", () => {

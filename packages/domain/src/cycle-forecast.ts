@@ -127,7 +127,10 @@ function fromDayNumber(day: number): CalendarDate {
 export function forecastCycle(input: CycleForecastInput): CycleForecast {
   const config = resolveCycleConfig(input.config);
   const today = toDayNumber(input.today);
-  const starts = input.periodStarts.map(toDayNumber).sort((a, b) => a - b);
+  // A repeated date is one period recorded twice, not a zero-day cycle.
+  const starts = [...new Set(input.periodStarts.map(toDayNumber))].sort(
+    (a, b) => a - b,
+  );
 
   if (starts.length === 0) {
     throw new CycleDateError("at least one period start is required");
