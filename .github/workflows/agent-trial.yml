@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   trial:
-    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/agent-trial.yml@a79eb1052185ac9f96d6368f69aa5202ecb821bb
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/agent-trial.yml@59822b0fc41ba36cb7db912055a46d13787ebd5a
     permissions:
       contents: read
     with:
-      pipeline-ref: a79eb1052185ac9f96d6368f69aa5202ecb821bb
+      pipeline-ref: 59822b0fc41ba36cb7db912055a46d13787ebd5a
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
