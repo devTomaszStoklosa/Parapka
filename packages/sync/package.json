@@ -1,0 +1,7 @@
+{
+  "name": "@parapka/sync",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sync logic of Parapka in plain TypeScript, without React Native (spec 7.2).",
+  "type": "module"
+}
