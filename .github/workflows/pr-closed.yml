@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   pr-closed:
-    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/terminate.yml@cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/terminate.yml@a38e96779cdecc2570610adc5356ba48cabd4f1d
     # actions: write is used only by the cancel job, with GITHUB_TOKEN.
     permissions:
       actions: write
@@ -19,7 +19,7 @@ jobs:
       issues: read
       pull-requests: read
     with:
-      pipeline-ref: cfd3e16bcfe9166add7b9fa3b0131c1a45747d1c
+      pipeline-ref: a38e96779cdecc2570610adc5356ba48cabd4f1d
       app-client-id: ${{ vars.APP_CLIENT_ID }}
       app-id: ${{ vars.APP_ID }}
     secrets:
