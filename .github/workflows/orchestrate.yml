@@ -1,0 +1,40 @@
+# Orchestrator of the SDLC pipeline: runs triggered by the agent:ready label,
+# comments and the results of the gates. The Claude Code token exists only in
+# the `agents` environment, and only the role jobs of the reusable workflow
+# run there; it is passed by name, because an environment secret that the
+# caller does not pass is an empty string in the reusable workflow.
+name: Orchestrate
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+  issue_comment:
+    types: [created]
+  workflow_run:
+    workflows: [Gates]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Number of the issue
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  orchestrate:
+    uses: devTomaszStoklosa/sdlc-multi-agent-pipeline/.github/workflows/orchestrate.yml@f9c9a603c5f22864a6d14a4593de9a220e7160be
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    with:
+      pipeline-ref: f9c9a603c5f22864a6d14a4593de9a220e7160be
+      app-client-id: ${{ vars.APP_CLIENT_ID }}
+      app-id: ${{ vars.APP_ID }}
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
