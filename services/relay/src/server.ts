@@ -1,4 +1,5 @@
 import { buildApp } from "./app.js";
+import { purgeExpiredEnvelopes } from "./envelopes.js";
 import { SqliteStore } from "./store/sqlite-store.js";
 
 const port = Number(process.env["PORT"] ?? 3000);
@@ -6,9 +7,18 @@ const host = process.env["HOST"] ?? "0.0.0.0";
 const databasePath = process.env["RELAY_DB_PATH"] ?? "relay.db";
 
 const store = new SqliteStore(databasePath);
-const app = buildApp({ store, clock: { nowMs: () => Date.now() } });
+const clock = { nowMs: () => Date.now() };
+const app = buildApp({ store, clock });
+
+const PURGE_INTERVAL_MS = 60 * 60 * 1000;
+const purgeTimer = setInterval(() => {
+  purgeExpiredEnvelopes(store, clock).catch((error: unknown) => {
+    app.log.error(error, "purging expired envelopes failed");
+  });
+}, PURGE_INTERVAL_MS);
 
 app.addHook("onClose", () => {
+  clearInterval(purgeTimer);
   store.close();
 });
 

@@ -13,6 +13,7 @@ import type {
 
 interface Row {
   readonly seq: number;
+  readonly receivedAtMs: number;
   readonly envelope: Envelope;
 }
 
@@ -131,16 +132,20 @@ export class MemoryStore implements RelayStore {
     return Promise.resolve(this.mailboxes.delete(pairMailboxId));
   }
 
-  // The memory store does not keep the time of receipt.
   addEnvelope(
     envelope: Envelope,
+    receivedAtMs: number,
   ): Promise<{ readonly cursor: string; readonly accepted: boolean }> {
     const existing = this.envelopes.get(envelope.envelopeId);
     if (existing !== undefined) {
       return Promise.resolve({ cursor: String(existing.seq), accepted: false });
     }
     this.lastSeq += 1;
-    this.envelopes.set(envelope.envelopeId, { seq: this.lastSeq, envelope });
+    this.envelopes.set(envelope.envelopeId, {
+      seq: this.lastSeq,
+      receivedAtMs,
+      envelope,
+    });
     return Promise.resolve({ cursor: String(this.lastSeq), accepted: true });
   }
 
@@ -148,11 +153,15 @@ export class MemoryStore implements RelayStore {
     pairMailboxId: string,
     after: string | null,
     limit: number,
+    excludeSenderDeviceId?: string,
   ): Promise<readonly StoredEnvelope[]> {
     const afterSeq = after === null ? 0 : Number(after);
     const rows = [...this.envelopes.values()]
       .filter(
-        (r) => r.envelope.pairMailboxId === pairMailboxId && r.seq > afterSeq,
+        (r) =>
+          r.envelope.pairMailboxId === pairMailboxId &&
+          r.seq > afterSeq &&
+          r.envelope.senderDeviceId !== excludeSenderDeviceId,
       )
       .sort((a, b) => a.seq - b.seq)
       .slice(0, limit);
@@ -164,11 +173,26 @@ export class MemoryStore implements RelayStore {
   deleteEnvelopes(
     pairMailboxId: string,
     envelopeIds: readonly string[],
+    excludeSenderDeviceId?: string,
   ): Promise<number> {
     let deleted = 0;
     for (const id of envelopeIds) {
       const row = this.envelopes.get(id);
-      if (row?.envelope.pairMailboxId === pairMailboxId) {
+      if (
+        row?.envelope.pairMailboxId === pairMailboxId &&
+        row.envelope.senderDeviceId !== excludeSenderDeviceId
+      ) {
+        this.envelopes.delete(id);
+        deleted += 1;
+      }
+    }
+    return Promise.resolve(deleted);
+  }
+
+  deleteEnvelopesReceivedBefore(cutoffMs: number): Promise<number> {
+    let deleted = 0;
+    for (const [id, row] of this.envelopes) {
+      if (row.receivedAtMs <= cutoffMs) {
         this.envelopes.delete(id);
         deleted += 1;
       }

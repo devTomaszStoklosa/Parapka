@@ -293,12 +293,13 @@ export class SqliteStore implements RelayStore {
     pairMailboxId: string,
     after: string | null,
     limit: number,
+    excludeSenderDeviceId?: string,
   ): Promise<readonly StoredEnvelope[]> {
+    const sql = `SELECT seq, body FROM envelopes WHERE pair_mailbox_id = ? AND seq > ? AND json_extract(body, '$.senderDeviceId') IS NOT ? ORDER BY seq LIMIT ?`;
+    const args = [pairMailboxId, Number(after ?? 0)];
     const rows = this.db
-      .prepare(
-        "SELECT seq, body FROM envelopes WHERE pair_mailbox_id = ? AND seq > ? ORDER BY seq LIMIT ?",
-      )
-      .all(pairMailboxId, after === null ? 0 : Number(after), limit);
+      .prepare(sql)
+      .all(...args, excludeSenderDeviceId ?? null, limit);
     return Promise.resolve(
       rows.map((row) => ({
         cursor: String(row["seq"]),
@@ -310,15 +311,18 @@ export class SqliteStore implements RelayStore {
   deleteEnvelopes(
     pairMailboxId: string,
     envelopeIds: readonly string[],
+    excludeSenderDeviceId?: string,
   ): Promise<number> {
+    const sql = `DELETE FROM envelopes WHERE envelope_id = ? AND pair_mailbox_id = ? AND json_extract(body, '$.senderDeviceId') IS NOT ?`;
+    const args = [pairMailboxId, excludeSenderDeviceId ?? null] as const;
     let deleted = 0;
-    for (const id of envelopeIds) {
-      deleted += this.changed(
-        "DELETE FROM envelopes WHERE envelope_id = ? AND pair_mailbox_id = ?",
-        id,
-        pairMailboxId,
-      );
-    }
+    for (const id of envelopeIds) deleted += this.changed(sql, id, ...args);
     return Promise.resolve(deleted);
+  }
+
+  deleteEnvelopesReceivedBefore(cutoffMs: number): Promise<number> {
+    return Promise.resolve(
+      this.changed("DELETE FROM envelopes WHERE received_at_ms <= ?", cutoffMs),
+    );
   }
 }
