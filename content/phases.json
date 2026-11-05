@@ -1,0 +1,14 @@
+{
+  "contentVersion": 1,
+  "entries": [
+    {
+      "phase": "menstruation",
+      "text": {
+        "feminine": "Możesz mieć mniej energii. Daj sobie więcej spokoju i odpoczynku.",
+        "masculine": "Możesz mieć mniej energii. Daj sobie więcej spokoju i odpoczynku.",
+        "neutral": "Może być mniej energii. Warto zostawić więcej spokoju i odpoczynku."
+      },
+      "review": "unreviewed"
+    }
+  ]
+}

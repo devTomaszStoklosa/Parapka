@@ -1,0 +1,11 @@
+{
+  "contentVersion": 1,
+  "entries": [
+    {
+      "id": "low-energy-relief",
+      "when": { "energyMax": 2 },
+      "categories": ["relief", "space"],
+      "priority": 10
+    }
+  ]
+}
