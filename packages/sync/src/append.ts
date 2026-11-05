@@ -31,7 +31,11 @@ function compareEntries<T extends { readonly hlc: Hlc }>(a: T, b: T): number {
   const byHlc = compareHlc(a.hlc, b.hlc);
   if (byHlc !== 0) return byHlc;
   const rest = (entry: T): string =>
-    JSON.stringify(Object.entries(entry).filter(([key]) => key !== "hlc").sort());
+    JSON.stringify(
+      Object.entries(entry)
+        .filter(([key]) => key !== "hlc")
+        .sort(),
+    );
   const left = rest(a);
   const right = rest(b);
   if (left === right) return 0;
@@ -59,7 +63,9 @@ function collapse<T extends { readonly hlc: Hlc }>(
 }
 
 function sortedValues<T>(map: Map<string, T>): T[] {
-  return [...map.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, v]) => v);
+  return [...map.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([, v]) => v);
 }
 
 /** One completion per occurrence: the one with the smallest HLC (FR-CHR-03). */
@@ -85,7 +91,8 @@ export function currentCarriers(
 ): Map<string, string> {
   const visible: CarrierChange[] = [];
   for (const entry of entries) {
-    if (asOfMs === undefined || entry.hlc.physical <= asOfMs) visible.push(entry);
+    if (asOfMs === undefined || entry.hlc.physical <= asOfMs)
+      visible.push(entry);
   }
   const latest = collapse(visible, (e) => e.itemId, "max");
   return new Map([...latest].map(([itemId, e]) => [itemId, e.carrierId]));

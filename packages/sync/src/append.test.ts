@@ -15,11 +15,18 @@ const h = (physical: number, counter = 0, device = "a") =>
 function permutations<T>(items: T[]): T[][] {
   if (items.length <= 1) return [items];
   return items.flatMap((item, i) =>
-    permutations([...items.slice(0, i), ...items.slice(i + 1)]).map((p) => [item, ...p]),
+    permutations([...items.slice(0, i), ...items.slice(i + 1)]).map((p) => [
+      item,
+      ...p,
+    ]),
   );
 }
 
-const completion = (by: string, hlc: ReturnType<typeof h>, date = "2026-11-05"): ChoreCompletion => ({
+const completion = (
+  by: string,
+  hlc: ReturnType<typeof h>,
+  date = "2026-11-05",
+): ChoreCompletion => ({
   choreId: "c1",
   occurrenceDate: date,
   completedBy: by,
@@ -43,8 +50,16 @@ describe("mergeCompletions (criterion 1)", () => {
 });
 
 describe("currentCarriers (criteria 2 and 3)", () => {
-  const initial: CarrierChange = { itemId: "i1", carrierId: "A", hlc: h(100, 0, "a") };
-  const takeover: CarrierChange = { itemId: "i1", carrierId: "B", hlc: h(200, 0, "b") };
+  const initial: CarrierChange = {
+    itemId: "i1",
+    carrierId: "A",
+    hlc: h(100, 0, "a"),
+  };
+  const takeover: CarrierChange = {
+    itemId: "i1",
+    carrierId: "B",
+    hlc: h(200, 0, "b"),
+  };
 
   it("takes the carrier of the greatest HLC", () => {
     expect(currentCarriers([takeover, initial]).get("i1")).toBe("B");
@@ -58,7 +73,11 @@ describe("currentCarriers (criteria 2 and 3)", () => {
   });
 
   it("changes the result for the past week once a delayed entry arrives, on both phones", () => {
-    const delayed: CarrierChange = { itemId: "i1", carrierId: "B", hlc: h(120, 0, "b") };
+    const delayed: CarrierChange = {
+      itemId: "i1",
+      carrierId: "B",
+      hlc: h(120, 0, "b"),
+    };
     const before = currentCarriers([initial], 150).get("i1");
     const phone1 = currentCarriers([initial, delayed], 150).get("i1");
     const phone2 = currentCarriers([delayed, initial], 150).get("i1");
@@ -69,7 +88,10 @@ describe("currentCarriers (criteria 2 and 3)", () => {
 });
 
 describe("currentHandoverRequests (criterion 4)", () => {
-  const entry = (status: HandoverRequest["status"], physical: number): HandoverRequest => ({
+  const entry = (
+    status: HandoverRequest["status"],
+    physical: number,
+  ): HandoverRequest => ({
     requestId: "r1",
     itemId: "i1",
     status,
@@ -77,9 +99,18 @@ describe("currentHandoverRequests (criterion 4)", () => {
   });
 
   it("takes the latest status by HLC", () => {
-    const entries = [entry("pending", 1), entry("accepted", 2), entry("declined", 3)];
+    const entries = [
+      entry("pending", 1),
+      entry("accepted", 2),
+      entry("declined", 3),
+    ];
     expect(currentHandoverRequests(entries).get("r1")?.status).toBe("declined");
-    expect(currentHandoverRequests([entries[1] as HandoverRequest, entries[0] as HandoverRequest]).get("r1")?.status).toBe("accepted");
+    expect(
+      currentHandoverRequests([
+        entries[1] as HandoverRequest,
+        entries[0] as HandoverRequest,
+      ]).get("r1")?.status,
+    ).toBe("accepted");
   });
 });
 
