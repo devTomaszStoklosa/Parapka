@@ -61,7 +61,11 @@ export function estimateCyclePhase(input: CyclePhaseInput): CyclePhaseEstimate {
   const { cycleLength } = forecast;
   const offset = (date - last) % cycleLength;
   const inCurrentCycle = date - last < cycleLength;
-  const recorded = new Set((input.periodDays ?? []).map(toDayNumber));
+  const recorded = new Set(
+    (input.periodDays ?? [])
+      .map(toDayNumber)
+      .filter((day) => day >= last && day < last + cycleLength),
+  );
   const isPeriod =
     inCurrentCycle && recorded.size > 0
       ? recorded.has(date)

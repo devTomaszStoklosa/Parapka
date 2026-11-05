@@ -91,6 +91,22 @@ describe("28-day cycle", () => {
     expect(phase(3)).toBe("follicular");
   });
 
+  it("ignores recorded days of earlier cycles", () => {
+    const last = history[history.length - 1] as string;
+    const previous = history[history.length - 2] as string;
+    const periodDays = [0, 1, 2].map((d) => addDays(previous, d));
+    const phase = (d: number) =>
+      estimateCyclePhase({
+        date: addDays(last, d),
+        periodStarts: history,
+        today: TODAY,
+        periodDays,
+      }).phase;
+    expect(phase(0)).toBe("menstruation");
+    expect(phase(4)).toBe("menstruation");
+    expect(phase(5)).toBe("follicular");
+  });
+
   it("projects dates after the forecast next start", () => {
     const last = history[history.length - 1] as string;
     const phase = estimateCyclePhase({
@@ -134,9 +150,57 @@ describe("35-day cycle", () => {
     expect(result.isIrregular).toBe(false);
     expect(result.confidence).toBe("normal");
   });
+
+  it("uses recorded period days instead of the forecast length", () => {
+    const last = history[history.length - 1] as string;
+    const periodDays = [0, 1, 2, 3, 4, 5, 6].map((d) => addDays(last, d));
+    const phase = (d: number) =>
+      estimateCyclePhase({
+        date: addDays(last, d),
+        periodStarts: history,
+        today: TODAY,
+        periodDays,
+      }).phase;
+    expect(phase(6)).toBe("menstruation");
+    expect(phase(7)).toBe("follicular");
+  });
 });
 
 describe("irregular cycle", () => {
+  const irregular = starts("2026-01-01", [21, 40, 22, 41]);
+  const last = irregular[irregular.length - 1] as string;
+
+  it("splits the forecast cycle into the five phases", () => {
+    const list = phases(irregular, 31);
+    expect(runs(list)).toEqual([
+      ["menstruation", 5],
+      ["follicular", 10],
+      ["periovulatory", 5],
+      ["luteal", 6],
+      ["premenstrual", 5],
+    ]);
+  });
+
+  it("uses recorded period days instead of the forecast length", () => {
+    const periodDays = [0, 1].map((d) => addDays(last, d));
+    const phase = (d: number) =>
+      estimateCyclePhase({
+        date: addDays(last, d),
+        periodStarts: irregular,
+        today: TODAY,
+        periodDays,
+      }).phase;
+    expect(phase(1)).toBe("menstruation");
+    expect(phase(2)).toBe("follicular");
+  });
+
+  it("has normal confidence with 4 full cycles", () => {
+    expect(
+      estimateCyclePhase({ date: last, periodStarts: irregular, today: TODAY })
+        .confidence,
+    ).toBe("normal");
+  });
+
   it("flags a deviation above 7 days", () => {
     const result = estimateCyclePhase({
       date: "2026-06-01",
