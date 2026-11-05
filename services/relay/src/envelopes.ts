@@ -24,6 +24,17 @@ const BODY_LIMIT_BYTES = 2 * MAX_ENVELOPE_BYTES;
 type Limiter = ReturnType<typeof createRateLimiter>;
 type PairRequest = FastifyRequest<{ Params: { id: string } }>;
 
+/** How long a closed mailbox waits for the partner to fetch its envelopes. */
+export const CLOSING_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Deletes the mailboxes closed 30 days ago or earlier with their envelopes. */
+export function purgeClosedMailboxes(
+  store: RelayStore,
+  clock: Clock,
+): Promise<number> {
+  return store.deleteClosedMailboxesBefore(clock.nowMs() - CLOSING_TTL_MS);
+}
+
 /** Deletes the envelopes received 30 days ago or earlier (spec 7.4). */
 export function purgeExpiredEnvelopes(
   store: RelayStore,
@@ -63,6 +74,34 @@ async function requireMember(
   return undefined;
 }
 
+/** Deletes a closed mailbox that holds no more envelopes. */
+async function dropIfDrained(store: RelayStore, id: string): Promise<void> {
+  const mailbox = await store.getMailbox(id);
+  if (mailbox?.closedAtMs === undefined) return;
+  if ((await store.listEnvelopes(id, null, 1)).length === 0) {
+    await store.deleteMailbox(id);
+  }
+}
+
+function closePair(app: FastifyInstance, limiter: Limiter): void {
+  app.delete<{ Params: { id: string } }>(
+    "/v1/pairs/:id",
+    {
+      preHandler: [
+        authenticate,
+        limiter,
+        (request, reply) => requireMember(app, request, reply),
+      ],
+    },
+    async (request, reply) => {
+      const { store, clock } = app.relay;
+      await store.closeMailbox(request.params.id, clock.nowMs());
+      await dropIfDrained(store, request.params.id);
+      return reply.code(204).send();
+    },
+  );
+}
+
 function sendEnvelope(app: FastifyInstance, limiter: Limiter): void {
   app.post<{ Params: { id: string } }>(
     "/v1/pairs/:id/envelopes",
@@ -76,6 +115,10 @@ function sendEnvelope(app: FastifyInstance, limiter: Limiter): void {
     },
     async (request, reply) => {
       const { store, clock } = app.relay;
+      const mailbox = await store.getMailbox(request.params.id);
+      if (mailbox?.closedAtMs !== undefined) {
+        return reply.code(410).send({ error: "mailbox closed" });
+      }
       const raw = field(request.body, "envelope");
       if (jsonBytes(raw) > MAX_ENVELOPE_BYTES) {
         return reply.code(413).send({ error: "envelope too large" });
@@ -152,6 +195,7 @@ function acknowledge(app: FastifyInstance, limiter: Limiter): void {
         ids as string[],
         request.deviceId as string,
       );
+      await dropIfDrained(app.relay.store, request.params.id);
       return reply.code(200).send({ deleted } satisfies AckResponse);
     },
   );
@@ -167,4 +211,5 @@ export function registerEnvelopeRoutes(app: FastifyInstance): void {
   sendEnvelope(app, limiter);
   fetchEnvelopes(app, limiter);
   acknowledge(app, limiter);
+  closePair(app, limiter);
 }

@@ -1,6 +1,14 @@
-import { DatabaseSync, type SQLOutputValue } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
 import type { Envelope } from "@parapka/protocol";
 import { migrate } from "./migrate.js";
+import {
+  text,
+  toChallenge,
+  toDevice,
+  toInvitation,
+  toMailbox,
+  type Row,
+} from "./sqlite-rows.js";
 import type {
   AcceptResult,
   ChallengeRecord,
@@ -12,65 +20,6 @@ import type {
   StoredDevice,
   StoredEnvelope,
 } from "./store.js";
-
-type Row = Record<string, SQLOutputValue>;
-
-function text(row: Row, column: string): string {
-  return String(row[column]);
-}
-
-function num(row: Row, column: string): number {
-  return Number(row[column]);
-}
-
-function toDevice(row: Row): StoredDevice {
-  const platform = row["push_platform"];
-  const token = row["push_token"];
-  return {
-    deviceId: text(row, "device_id"),
-    signingPublicKey: text(row, "signing_public_key"),
-    createdAtMs: num(row, "created_at_ms"),
-    push:
-      platform === null || token === null
-        ? null
-        : {
-            platform: text(row, "push_platform") as PushToken["platform"],
-            token: text(row, "push_token"),
-          },
-  };
-}
-
-function toChallenge(row: Row): ChallengeRecord {
-  return {
-    challengeId: text(row, "challenge_id"),
-    deviceId: text(row, "device_id"),
-    nonce: text(row, "nonce"),
-    expiresAtMs: num(row, "expires_at_ms"),
-  };
-}
-
-function toInvitation(row: Row): InvitationRecord {
-  return {
-    invitationId: text(row, "invitation_id"),
-    deviceId: text(row, "device_id"),
-    expiresAtMs: num(row, "expires_at_ms"),
-    acceptedByDeviceId:
-      row["accepted_by_device_id"] === null
-        ? null
-        : text(row, "accepted_by_device_id"),
-    encryptedKeysB:
-      row["encrypted_keys_b"] === null ? null : text(row, "encrypted_keys_b"),
-  };
-}
-
-function toMailbox(row: Row): MailboxRecord {
-  return {
-    pairMailboxId: text(row, "pair_mailbox_id"),
-    deviceIdA: text(row, "device_id_a"),
-    deviceIdB: text(row, "device_id_b"),
-    createdAtMs: num(row, "created_at_ms"),
-  };
-}
 
 /** Store on `node:sqlite`; the schema comes from the numbered migrations. */
 export class SqliteStore implements RelayStore {
@@ -120,6 +69,12 @@ export class SqliteStore implements RelayStore {
   }
 
   deleteDevice(deviceId: string): Promise<boolean> {
+    this.changed("DELETE FROM challenges WHERE device_id = ?", deviceId);
+    this.changed("DELETE FROM invitations WHERE device_id = ?", deviceId);
+    this.changed(
+      "DELETE FROM envelopes WHERE json_extract(body, '$.senderDeviceId') = ?",
+      deviceId,
+    );
     const n = this.changed("DELETE FROM devices WHERE device_id = ?", deviceId);
     return Promise.resolve(n > 0);
   }
@@ -230,11 +185,12 @@ export class SqliteStore implements RelayStore {
 
   putMailbox(mailbox: MailboxRecord): Promise<void> {
     this.changed(
-      "INSERT OR REPLACE INTO mailboxes (pair_mailbox_id, device_id_a, device_id_b, created_at_ms) VALUES (?, ?, ?, ?)",
+      "INSERT OR REPLACE INTO mailboxes (pair_mailbox_id, device_id_a, device_id_b, created_at_ms, closed_at_ms) VALUES (?, ?, ?, ?, ?)",
       mailbox.pairMailboxId,
       mailbox.deviceIdA,
       mailbox.deviceIdB,
       mailbox.createdAtMs,
+      mailbox.closedAtMs ?? null,
     );
     return Promise.resolve();
   }
@@ -266,6 +222,26 @@ export class SqliteStore implements RelayStore {
       pairMailboxId,
     );
     return Promise.resolve(n > 0);
+  }
+
+  closeMailbox(pairMailboxId: string, closedAtMs: number): Promise<boolean> {
+    const n = this.changed(
+      "UPDATE mailboxes SET closed_at_ms = COALESCE(closed_at_ms, ?) WHERE pair_mailbox_id = ?",
+      closedAtMs,
+      pairMailboxId,
+    );
+    return Promise.resolve(n > 0);
+  }
+
+  deleteClosedMailboxesBefore(cutoffMs: number): Promise<number> {
+    const due = "SELECT pair_mailbox_id FROM mailboxes WHERE closed_at_ms <= ?";
+    this.changed(
+      `DELETE FROM envelopes WHERE pair_mailbox_id IN (${due})`,
+      cutoffMs,
+    );
+    return Promise.resolve(
+      this.changed("DELETE FROM mailboxes WHERE closed_at_ms <= ?", cutoffMs),
+    );
   }
 
   addEnvelope(

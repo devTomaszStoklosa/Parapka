@@ -1,5 +1,5 @@
 import { buildApp } from "./app.js";
-import { purgeExpiredEnvelopes } from "./envelopes.js";
+import { purgeClosedMailboxes, purgeExpiredEnvelopes } from "./envelopes.js";
 import { SqliteStore } from "./store/sqlite-store.js";
 
 const port = Number(process.env["PORT"] ?? 3000);
@@ -14,6 +14,9 @@ const PURGE_INTERVAL_MS = 60 * 60 * 1000;
 const purgeTimer = setInterval(() => {
   purgeExpiredEnvelopes(store, clock).catch((error: unknown) => {
     app.log.error(error, "purging expired envelopes failed");
+  });
+  purgeClosedMailboxes(store, clock).catch((error: unknown) => {
+    app.log.error(error, "purging closed mailboxes failed");
   });
 }, PURGE_INTERVAL_MS);
 

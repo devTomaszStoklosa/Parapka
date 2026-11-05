@@ -43,6 +43,15 @@ export class MemoryStore implements RelayStore {
   }
 
   deleteDevice(deviceId: string): Promise<boolean> {
+    for (const [id, c] of this.challenges) {
+      if (c.deviceId === deviceId) this.challenges.delete(id);
+    }
+    for (const [id, i] of this.invitations) {
+      if (i.deviceId === deviceId) this.invitations.delete(id);
+    }
+    for (const [id, row] of this.envelopes) {
+      if (row.envelope.senderDeviceId === deviceId) this.envelopes.delete(id);
+    }
     return Promise.resolve(this.devices.delete(deviceId));
   }
 
@@ -130,6 +139,27 @@ export class MemoryStore implements RelayStore {
       }
     }
     return Promise.resolve(this.mailboxes.delete(pairMailboxId));
+  }
+
+  closeMailbox(pairMailboxId: string, closedAtMs: number): Promise<boolean> {
+    const mailbox = this.mailboxes.get(pairMailboxId);
+    if (mailbox === undefined) return Promise.resolve(false);
+    this.mailboxes.set(pairMailboxId, {
+      ...mailbox,
+      closedAtMs: mailbox.closedAtMs ?? closedAtMs,
+    });
+    return Promise.resolve(true);
+  }
+
+  async deleteClosedMailboxesBefore(cutoffMs: number): Promise<number> {
+    let deleted = 0;
+    for (const [id, mailbox] of [...this.mailboxes]) {
+      if (mailbox.closedAtMs !== undefined && mailbox.closedAtMs <= cutoffMs) {
+        await this.deleteMailbox(id);
+        deleted += 1;
+      }
+    }
+    return deleted;
   }
 
   addEnvelope(

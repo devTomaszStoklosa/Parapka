@@ -243,6 +243,65 @@ function acceptTests(store: GetStore): void {
   });
 }
 
+function closingTests(store: GetStore): void {
+  it("closes a mailbox once and keeps the first closing time", async () => {
+    expect(await store().closeMailbox("mb1", 5)).toBe(false);
+    await store().putMailbox(MAILBOX);
+    expect(await store().closeMailbox("mb1", 5)).toBe(true);
+    expect(await store().closeMailbox("mb1", 8)).toBe(true);
+    expect(await store().getMailbox("mb1")).toEqual({
+      ...MAILBOX,
+      closedAtMs: 5,
+    });
+  });
+
+  it("deletes closed mailboxes closed at or before the cutoff", async () => {
+    await store().putMailbox(MAILBOX);
+    await store().putMailbox({ ...MAILBOX, pairMailboxId: "mb2" });
+    await store().putMailbox({ ...MAILBOX, pairMailboxId: "mb3" });
+    await store().addEnvelope(envelope("e1"), 1);
+    await store().addEnvelope(envelope("e2", "mb2"), 1);
+    await store().closeMailbox("mb1", 10);
+    await store().closeMailbox("mb2", 11);
+    expect(await store().deleteClosedMailboxesBefore(10)).toBe(1);
+    expect(await store().getMailbox("mb1")).toBeNull();
+    expect(await store().listEnvelopes("mb1", null, 10)).toEqual([]);
+    expect(await store().getMailbox("mb2")).not.toBeNull();
+    expect(await store().getMailbox("mb3")).not.toBeNull();
+    expect(ids(await store().listEnvelopes("mb2", null, 10))).toEqual(["e2"]);
+  });
+}
+
+function deviceCascadeTests(store: GetStore): void {
+  it("deletes the challenges, invitations and envelopes of a device", async () => {
+    await store().putDevice({
+      deviceId: "dev1",
+      signingPublicKey: "k",
+      createdAtMs: 1,
+    });
+    await store().putChallenge({
+      challengeId: "c1",
+      deviceId: "dev1",
+      nonce: "n",
+      expiresAtMs: 9,
+    });
+    await store().putChallenge({
+      challengeId: "c2",
+      deviceId: "other",
+      nonce: "n",
+      expiresAtMs: 9,
+    });
+    await store().putInvitation({ ...INVITATION, deviceId: "dev1" });
+    await store().addEnvelope(envelope("e1"), 1);
+    await store().addEnvelope({ ...envelope("e2"), senderDeviceId: "x" }, 1);
+    expect(await store().deleteDevice("dev1")).toBe(true);
+    expect(await store().takeChallenge("c1")).toBeNull();
+    expect(await store().takeChallenge("c2")).not.toBeNull();
+    expect(await store().getInvitation("i1")).toBeNull();
+    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual(["e2"]);
+  });
+}
+
 /** One set of tests that every `RelayStore` implementation must pass. */
 export function runStoreContract(name: string, create: GetStore): void {
   describe(`store contract: ${name}`, () => {
@@ -259,5 +318,7 @@ export function runStoreContract(name: string, create: GetStore): void {
     newerVersionTests(store);
     mailboxTests(store);
     acceptTests(store);
+    closingTests(store);
+    deviceCascadeTests(store);
   });
 }
