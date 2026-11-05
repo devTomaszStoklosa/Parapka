@@ -35,6 +35,7 @@ describe("sqlite migrations", () => {
     expect(db.prepare("SELECT version FROM schema_migrations").all()).toEqual([
       { version: 1 },
       { version: 2 },
+      { version: 3 },
     ]);
   });
 
@@ -96,6 +97,7 @@ describe("sqlite migrations", () => {
       "version",
       "accepted_by_device_id",
       "encrypted_keys_b",
+      "closed_at_ms",
     ]);
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")

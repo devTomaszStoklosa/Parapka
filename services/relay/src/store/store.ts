@@ -41,6 +41,8 @@ export interface MailboxRecord {
   readonly deviceIdA: string;
   readonly deviceIdB: string;
   readonly createdAtMs: number;
+  /** When the mailbox was closed; absent while it is open. */
+  readonly closedAtMs?: number;
 }
 
 export interface StoredEnvelope {
@@ -58,7 +60,10 @@ export interface RelayStore {
   getDevice(deviceId: string): Promise<StoredDevice | null>;
   /** Returns false when the device does not exist. */
   setPushToken(deviceId: string, push: PushToken): Promise<boolean>;
-  /** Returns false when the device does not exist. */
+  /**
+   * Deletes the device with its push token, challenges, invitations and the
+   * envelopes it sent. Returns false when the device does not exist.
+   */
   deleteDevice(deviceId: string): Promise<boolean>;
 
   putChallenge(challenge: ChallengeRecord): Promise<void>;
@@ -90,6 +95,14 @@ export interface RelayStore {
   findMailboxByDevice(deviceId: string): Promise<MailboxRecord | null>;
   /** Deletes the mailbox with its envelopes. */
   deleteMailbox(pairMailboxId: string): Promise<boolean>;
+
+  /**
+   * Marks the mailbox as closed at `closedAtMs`; an earlier closing time is
+   * kept. Returns false when the mailbox does not exist.
+   */
+  closeMailbox(pairMailboxId: string, closedAtMs: number): Promise<boolean>;
+  /** Deletes the mailboxes closed at or before `cutoffMs` with their envelopes. */
+  deleteClosedMailboxesBefore(cutoffMs: number): Promise<number>;
 
   /** Stores the envelope; `accepted` is false when its id is already there. */
   addEnvelope(

@@ -93,9 +93,27 @@ function setPushToken(app: FastifyInstance): void {
   );
 }
 
-/** Registers the device, challenge and push-token routes. */
+function removeDevice(app: FastifyInstance): void {
+  app.delete<{ Params: { id: string } }>(
+    "/v1/devices/:id",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      if (request.deviceId !== request.params.id) {
+        return reply.code(403).send({ error: "forbidden" });
+      }
+      const { store } = app.relay;
+      const mailbox = await store.findMailboxByDevice(request.params.id);
+      if (mailbox !== null) await store.deleteMailbox(mailbox.pairMailboxId);
+      await store.deleteDevice(request.params.id);
+      return reply.code(204).send();
+    },
+  );
+}
+
+/** Registers the device, challenge, push-token and removal routes. */
 export function registerDeviceRoutes(app: FastifyInstance): void {
   registerDevice(app);
   issueChallenge(app);
   setPushToken(app);
+  removeDevice(app);
 }
