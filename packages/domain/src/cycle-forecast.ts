@@ -98,7 +98,7 @@ export function resolveCycleConfig(
   };
 }
 
-function toDayNumber(date: CalendarDate): number {
+export function toDayNumber(date: CalendarDate): number {
   const match = DATE_PATTERN.exec(date);
   if (!match) {
     throw new CycleDateError(`invalid date "${date}", expected YYYY-MM-DD`);
@@ -120,8 +120,30 @@ function toDayNumber(date: CalendarDate): number {
   return ms / MS_PER_DAY;
 }
 
-function fromDayNumber(day: number): CalendarDate {
+export function fromDayNumber(day: number): CalendarDate {
   return new Date(day * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
+export interface CycleLengthStats {
+  fromHistory: boolean;
+  mean: number;
+  /** Population standard deviation of the cycle lengths; 0 without enough history. */
+  deviation: number;
+}
+
+/** Statistics of the last cycles; `starts` are sorted, unique day numbers. */
+export function cycleLengthStats(starts: readonly number[]): CycleLengthStats {
+  const cycles = starts
+    .slice(1)
+    .map((start, i) => start - (starts[i] as number));
+  const used = cycles.slice(-MAX_CYCLES_USED);
+  if (used.length < MIN_CYCLES_FOR_HISTORY) {
+    return { fromHistory: false, mean: 0, deviation: 0 };
+  }
+  const mean = used.reduce((sum, n) => sum + n, 0) / used.length;
+  const variance =
+    used.reduce((sum, n) => sum + (n - mean) ** 2, 0) / used.length;
+  return { fromHistory: true, mean, deviation: Math.sqrt(variance) };
 }
 
 export function forecastCycle(input: CycleForecastInput): CycleForecast {
@@ -140,21 +162,10 @@ export function forecastCycle(input: CycleForecastInput): CycleForecast {
     throw new CycleDateError("period start is later than today");
   }
 
-  const cycles = starts
-    .slice(1)
-    .map((start, i) => start - (starts[i] as number));
-  const used = cycles.slice(-MAX_CYCLES_USED);
-  const fromHistory = used.length >= MIN_CYCLES_FOR_HISTORY;
-
-  let cycleLength = config.cycleLength;
-  let deviation = 0;
-  if (fromHistory) {
-    const mean = used.reduce((sum, n) => sum + n, 0) / used.length;
-    const variance =
-      used.reduce((sum, n) => sum + (n - mean) ** 2, 0) / used.length;
-    cycleLength = Math.round(mean);
-    deviation = Math.sqrt(variance);
-  }
+  const stats = cycleLengthStats(starts);
+  const fromHistory = stats.fromHistory;
+  const cycleLength = fromHistory ? Math.round(stats.mean) : config.cycleLength;
+  const deviation = stats.deviation;
   const margin = Math.max(MIN_MARGIN_DAYS, Math.round(deviation));
   const next = last + cycleLength;
 
