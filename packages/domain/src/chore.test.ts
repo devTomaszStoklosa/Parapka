@@ -5,6 +5,7 @@ import {
   validateChoreTitle,
   type Chore,
   type ChoreRule,
+  type IsoWeekday,
 } from "./chore.js";
 
 const make = (rule: ChoreRule): Chore => ({ id: "c1", title: "Chore", rule });
@@ -144,8 +145,8 @@ describe("validation", () => {
     const bad: ChoreRule[] = [
       { kind: "everyNDays", interval: 0, startDate: "2025-01-01" },
       { kind: "weekdays", weekdays: [] },
-      { kind: "weekdays", weekdays: [0] },
-      { kind: "weekdays", weekdays: [1, 8] },
+      { kind: "weekdays", weekdays: [0 as IsoWeekday] },
+      { kind: "weekdays", weekdays: [1, 8 as IsoWeekday] },
       { kind: "monthly", dayOfMonth: 32 },
     ];
     for (const rule of bad) {
