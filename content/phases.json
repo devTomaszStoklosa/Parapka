@@ -1,5 +1,5 @@
 {
-  "contentVersion": 1,
+  "contentVersion": 2,
   "entries": [
     {
       "phase": "menstruation",
@@ -7,6 +7,42 @@
         "feminine": "Możesz mieć mniej energii. Daj sobie więcej spokoju i odpoczynku.",
         "masculine": "Możesz mieć mniej energii. Daj sobie więcej spokoju i odpoczynku.",
         "neutral": "Może być mniej energii. Warto zostawić więcej spokoju i odpoczynku."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "phase": "follicular",
+      "text": {
+        "feminine": "Możesz czuć stopniowy przypływ energii. Bywa, że łatwiej wtedy o chęć do działania.",
+        "masculine": "Możesz czuć stopniowy przypływ energii. Bywa, że łatwiej wtedy o chęć do działania.",
+        "neutral": "Może pojawiać się stopniowy przypływ energii. Bywa, że łatwiej o chęć do działania."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "phase": "periovulatory",
+      "text": {
+        "feminine": "Możesz czuć się bardziej otwarcie i towarzysko. Bywa, że rozmowy są łatwiejsze.",
+        "masculine": "Możesz czuć się bardziej otwarcie i towarzysko. Bywa, że rozmowy są łatwiejsze.",
+        "neutral": "Może być więcej otwartości i ochoty na towarzystwo. Bywa, że rozmowy są łatwiejsze."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "phase": "luteal",
+      "text": {
+        "feminine": "Możesz potrzebować więcej spokoju i rytmu dnia. Bywa, że energia zaczyna powoli opadać.",
+        "masculine": "Możesz potrzebować więcej spokoju i rytmu dnia. Bywa, że energia zaczyna powoli opadać.",
+        "neutral": "Może być potrzebny większy spokój i rytm dnia. Bywa, że energia zaczyna powoli opadać."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "phase": "premenstrual",
+      "text": {
+        "feminine": "Możesz być bardziej wrażliwa i szybciej się męczyć. Pomóc może cierpliwość i mniej obowiązków.",
+        "masculine": "Możesz być bardziej wrażliwy i szybciej się męczyć. Pomóc może cierpliwość i mniej obowiązków.",
+        "neutral": "Może pojawić się większa wrażliwość i szybsze zmęczenie. Pomóc może cierpliwość i mniej obowiązków."
       },
       "review": "unreviewed"
     }

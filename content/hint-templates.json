@@ -1,5 +1,5 @@
 {
-  "contentVersion": 1,
+  "contentVersion": 2,
   "entries": [
     {
       "id": "relief-dinner",
@@ -8,6 +8,796 @@
         "feminine": "Przejmij dziś kolację, niech ona odpocznie.",
         "masculine": "Przejmij dziś kolację, niech on odpocznie.",
         "neutral": "Przejmij dziś kolację, niech ta osoba odpocznie."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-dishes",
+      "category": "relief",
+      "text": {
+        "feminine": "Pozmywaj dziś naczynia, zanim ona o nich pomyśli.",
+        "masculine": "Pozmywaj dziś naczynia, zanim on o nich pomyśli.",
+        "neutral": "Pozmywaj dziś naczynia, zanim ta osoba o nich pomyśli."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-shopping",
+      "category": "relief",
+      "text": {
+        "feminine": "Zrób dziś zakupy i nie pytaj, co kupić. Zerknij na listę.",
+        "masculine": "Zrób dziś zakupy i nie pytaj, co kupić. Zerknij na listę.",
+        "neutral": "Zrób dziś zakupy i nie pytaj, co kupić. Zerknij na listę."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-laundry",
+      "category": "relief",
+      "text": {
+        "feminine": "Wstaw pranie i rozwieś je, zanim ona zapyta.",
+        "masculine": "Wstaw pranie i rozwieś je, zanim on zapyta.",
+        "neutral": "Wstaw pranie i rozwieś je, zanim ta osoba zapyta."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-tidy",
+      "category": "relief",
+      "text": {
+        "feminine": "Ogarnij dziś mieszkanie, żeby ona nie musiała się nim zajmować.",
+        "masculine": "Ogarnij dziś mieszkanie, żeby on nie musiał się nim zajmować.",
+        "neutral": "Ogarnij dziś mieszkanie, żeby ta osoba nie musiała się nim zajmować."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-breakfast",
+      "category": "relief",
+      "text": {
+        "feminine": "Zrób jutro śniadanie i podaj je jej bez pośpiechu.",
+        "masculine": "Zrób jutro śniadanie i podaj je mu bez pośpiechu.",
+        "neutral": "Zrób jutro śniadanie i podaj je tej osobie bez pośpiechu."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-errand",
+      "category": "relief",
+      "text": {
+        "feminine": "Załatw dziś sprawę, która od dawna czeka na nią.",
+        "masculine": "Załatw dziś sprawę, która od dawna czeka na niego.",
+        "neutral": "Załatw dziś sprawę, która od dawna czeka na tę osobę."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-tea",
+      "category": "relief",
+      "text": {
+        "feminine": "Zrób jej ciepłą herbatę i postaw ją w zasięgu ręki.",
+        "masculine": "Zrób mu ciepłą herbatę i postaw ją w zasięgu ręki.",
+        "neutral": "Zrób tej osobie ciepłą herbatę i postaw ją w zasięgu ręki."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-trash",
+      "category": "relief",
+      "text": {
+        "feminine": "Wynieś śmieci i zrób obchód po domu, zanim ona zacznie.",
+        "masculine": "Wynieś śmieci i zrób obchód po domu, zanim on zacznie.",
+        "neutral": "Wynieś śmieci i zrób obchód po domu, zanim ta osoba zacznie."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-bedding",
+      "category": "relief",
+      "text": {
+        "feminine": "Zmień dziś pościel na świeżą, zanim ona o tym pomyśli.",
+        "masculine": "Zmień dziś pościel na świeżą, zanim on o tym pomyśli.",
+        "neutral": "Zmień dziś pościel na świeżą, zanim ta osoba o tym pomyśli."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-lunch",
+      "category": "relief",
+      "text": {
+        "feminine": "Przygotuj jej lunch na jutro i zapakuj go do pudełka.",
+        "masculine": "Przygotuj mu lunch na jutro i zapakuj go do pudełka.",
+        "neutral": "Przygotuj tej osobie lunch na jutro i zapakuj go do pudełka."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-pickup",
+      "category": "relief",
+      "text": {
+        "feminine": "Zaproponuj, że odbierzesz dziś to, co ona miała odebrać.",
+        "masculine": "Zaproponuj, że odbierzesz dziś to, co on miał odebrać.",
+        "neutral": "Zaproponuj, że odbierzesz dziś to, co ta osoba miała odebrać."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-bath",
+      "category": "relief",
+      "text": {
+        "feminine": "Przygotuj jej wieczorem kąpiel i dopilnuj, żeby nikt nie przeszkadzał.",
+        "masculine": "Przygotuj mu wieczorem kąpiel i dopilnuj, żeby nikt nie przeszkadzał.",
+        "neutral": "Przygotuj tej osobie wieczorem kąpiel i dopilnuj, żeby nikt nie przeszkadzał."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-pets",
+      "category": "relief",
+      "text": {
+        "feminine": "Zajmij się dziś zwierzakami albo roślinami, bez przypominania.",
+        "masculine": "Zajmij się dziś zwierzakami albo roślinami, bez przypominania.",
+        "neutral": "Zajmij się dziś zwierzakami albo roślinami, bez przypominania."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-cook",
+      "category": "relief",
+      "text": {
+        "feminine": "Ugotuj dziś coś prostego, co ona lubi.",
+        "masculine": "Ugotuj dziś coś prostego, co on lubi.",
+        "neutral": "Ugotuj dziś coś prostego, co ta osoba lubi."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "relief-decision",
+      "category": "relief",
+      "text": {
+        "feminine": "Przejmij dziś jedną decyzję, którą zwykle podejmuje ona.",
+        "masculine": "Przejmij dziś jedną decyzję, którą zwykle podejmuje on.",
+        "neutral": "Przejmij dziś jedną decyzję, którą zwykle podejmuje ta osoba."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-hug",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Przytul ją na dłużej, bez żadnego powodu.",
+        "masculine": "Przytul go na dłużej, bez żadnego powodu.",
+        "neutral": "Przytul tę osobę na dłużej, bez żadnego powodu."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-hand",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Złap ją dziś za rękę podczas spaceru.",
+        "masculine": "Złap go dziś za rękę podczas spaceru.",
+        "neutral": "Złap tę osobę dziś za rękę podczas spaceru."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-forehead",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Pocałuj ją w czoło, kiedy będziesz wychodzić.",
+        "masculine": "Pocałuj go w czoło, kiedy będziesz wychodzić.",
+        "neutral": "Pocałuj tę osobę w czoło, kiedy będziesz wychodzić."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-good-morning",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Zacznij dzień od ciepłego „dzień dobry” i uśmiechu.",
+        "masculine": "Zacznij dzień od ciepłego „dzień dobry” i uśmiechu.",
+        "neutral": "Zacznij dzień od ciepłego „dzień dobry” i uśmiechu."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-blanket",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Okryj ją kocem, kiedy usiądzie na kanapie.",
+        "masculine": "Okryj go kocem, kiedy usiądzie na kanapie.",
+        "neutral": "Okryj tę osobę kocem, kiedy usiądzie na kanapie."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-massage",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Zaproponuj jej krótki masaż dłoni lub karku.",
+        "masculine": "Zaproponuj mu krótki masaż dłoni lub karku.",
+        "neutral": "Zaproponuj tej osobie krótki masaż dłoni lub karku."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-note",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Zostaw jej karteczkę z jednym ciepłym zdaniem.",
+        "masculine": "Zostaw mu karteczkę z jednym ciepłym zdaniem.",
+        "neutral": "Zostaw tej osobie karteczkę z jednym ciepłym zdaniem."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-sit-close",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Usiądź dziś obok niej, a nie naprzeciwko.",
+        "masculine": "Usiądź dziś obok niego, a nie naprzeciwko.",
+        "neutral": "Usiądź dziś obok tej osoby, a nie naprzeciwko."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-gentle-words",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Powiedz dziś miękko, że dobrze, że ona jest obok.",
+        "masculine": "Powiedz dziś miękko, że dobrze, że on jest obok.",
+        "neutral": "Powiedz dziś miękko, że dobrze, że ta osoba jest obok."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-cuddle",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Zaproponuj wspólny wieczór pod kocem, bez telefonów.",
+        "masculine": "Zaproponuj wspólny wieczór pod kocem, bez telefonów.",
+        "neutral": "Zaproponuj wspólny wieczór pod kocem, bez telefonów."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-hair",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Pogłaskaj ją po włosach, gdy będzie odpoczywać.",
+        "masculine": "Pogłaskaj go po włosach, gdy będzie odpoczywać.",
+        "neutral": "Pogłaskaj tę osobę po włosach, gdy będzie odpoczywać."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-message",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Wyślij jej w ciągu dnia czułe zdanie, bez prośby o odpowiedź.",
+        "masculine": "Wyślij mu w ciągu dnia czułe zdanie, bez prośby o odpowiedź.",
+        "neutral": "Wyślij tej osobie w ciągu dnia czułe zdanie, bez prośby o odpowiedź."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-goodnight",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Przytul ją na dobranoc i życz spokojnej nocy.",
+        "masculine": "Przytul go na dobranoc i życz spokojnej nocy.",
+        "neutral": "Przytul tę osobę na dobranoc i życz spokojnej nocy."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-slow",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Zwolnij dziś przy niej, nic nie musisz załatwiać.",
+        "masculine": "Zwolnij dziś przy nim, nic nie musisz załatwiać.",
+        "neutral": "Zwolnij dziś przy tej osobie, nic nie musisz załatwiać."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-look",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Spójrz na nią uważnie i uśmiechnij się, kiedy wejdzie.",
+        "masculine": "Spójrz na niego uważnie i uśmiechnij się, kiedy wejdzie.",
+        "neutral": "Spójrz na tę osobę uważnie i uśmiechnij się, kiedy wejdzie."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "tenderness-dance",
+      "category": "tenderness",
+      "text": {
+        "feminine": "Włącz ulubioną piosenkę jej i potańczcie chwilę w kuchni.",
+        "masculine": "Włącz ulubioną piosenkę jego i potańczcie chwilę w kuchni.",
+        "neutral": "Włącz ulubioną piosenkę tej osoby i potańczcie chwilę w kuchni."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-ask",
+      "category": "attention",
+      "text": {
+        "feminine": "Zapytaj ją dziś, jak naprawdę się czuje, i wysłuchaj do końca.",
+        "masculine": "Zapytaj go dziś, jak naprawdę się czuje, i wysłuchaj do końca.",
+        "neutral": "Zapytaj tę osobę dziś, jak naprawdę się czuje, i wysłuchaj do końca."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-listen",
+      "category": "attention",
+      "text": {
+        "feminine": "Odłóż telefon na czas rozmowy i skup się tylko na niej.",
+        "masculine": "Odłóż telefon na czas rozmowy i skup się tylko na nim.",
+        "neutral": "Odłóż telefon na czas rozmowy i skup się tylko na tej osobie."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-remember",
+      "category": "attention",
+      "text": {
+        "feminine": "Zapamiętaj to, co ona dziś powie, i wróć do tego jutro.",
+        "masculine": "Zapamiętaj to, co on dziś powie, i wróć do tego jutro.",
+        "neutral": "Zapamiętaj to, co ta osoba dziś powie, i wróć do tego jutro."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-check-in",
+      "category": "attention",
+      "text": {
+        "feminine": "Wyślij w południe krótkie pytanie, czy ona czegoś potrzebuje.",
+        "masculine": "Wyślij w południe krótkie pytanie, czy on czegoś potrzebuje.",
+        "neutral": "Wyślij w południe krótkie pytanie, czy ta osoba czegoś potrzebuje."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-notice",
+      "category": "attention",
+      "text": {
+        "feminine": "Zauważ na głos jedną rzecz, którą ona dziś zrobiła.",
+        "masculine": "Zauważ na głos jedną rzecz, którą on dziś zrobił.",
+        "neutral": "Zauważ na głos jedną rzecz, którą ta osoba dziś zrobiła."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-favorite",
+      "category": "attention",
+      "text": {
+        "feminine": "Kup drobiazg, o którym ona ostatnio wspominała.",
+        "masculine": "Kup drobiazg, o którym on ostatnio wspominał.",
+        "neutral": "Kup drobiazg, o którym ta osoba ostatnio wspominała."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-eye-contact",
+      "category": "attention",
+      "text": {
+        "feminine": "Porozmawiaj z nią twarzą w twarz, bez ekranów.",
+        "masculine": "Porozmawiaj z nim twarzą w twarz, bez ekranów.",
+        "neutral": "Porozmawiaj z tą osobą twarzą w twarz, bez ekranów."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-evening-talk",
+      "category": "attention",
+      "text": {
+        "feminine": "Zaplanuj spokojną rozmowę wieczorem i zapytaj o minione dni.",
+        "masculine": "Zaplanuj spokojną rozmowę wieczorem i zapytaj o minione dni.",
+        "neutral": "Zaplanuj spokojną rozmowę wieczorem i zapytaj o minione dni."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-follow-up",
+      "category": "attention",
+      "text": {
+        "feminine": "Dopytaj o sprawę, o której ona wspominała w zeszłym tygodniu.",
+        "masculine": "Dopytaj o sprawę, o której on wspominał w zeszłym tygodniu.",
+        "neutral": "Dopytaj o sprawę, o której ta osoba wspominała w zeszłym tygodniu."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-tone",
+      "category": "attention",
+      "text": {
+        "feminine": "Mów dziś wolniej i spokojniej niż zwykle.",
+        "masculine": "Mów dziś wolniej i spokojniej niż zwykle.",
+        "neutral": "Mów dziś wolniej i spokojniej niż zwykle."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-no-fix",
+      "category": "attention",
+      "text": {
+        "feminine": "Gdy ona coś opowiada, nie naprawiaj. Zapytaj, czego potrzebuje.",
+        "masculine": "Gdy on coś opowiada, nie naprawiaj. Zapytaj, czego potrzebuje.",
+        "neutral": "Gdy ta osoba coś opowiada, nie naprawiaj. Zapytaj, czego potrzebuje."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-details",
+      "category": "attention",
+      "text": {
+        "feminine": "Zapytaj o szczegóły dnia jej i naprawdę ich posłuchaj.",
+        "masculine": "Zapytaj o szczegóły dnia jego i naprawdę ich posłuchaj.",
+        "neutral": "Zapytaj o szczegóły dnia tej osoby i naprawdę ich posłuchaj."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-plan-ask",
+      "category": "attention",
+      "text": {
+        "feminine": "Zapytaj ją, na co ma dziś ochotę, i zrób to.",
+        "masculine": "Zapytaj go, na co ma dziś ochotę, i zrób to.",
+        "neutral": "Zapytaj tę osobę, na co ma dziś ochotę, i zrób to."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-week",
+      "category": "attention",
+      "text": {
+        "feminine": "Powiedz, że chcesz usłyszeć, jak mija jej ten tydzień.",
+        "masculine": "Powiedz, że chcesz usłyszeć, jak mija mu ten tydzień.",
+        "neutral": "Powiedz, że chcesz usłyszeć, jak mija tej osobie ten tydzień."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-nearby",
+      "category": "attention",
+      "text": {
+        "feminine": "Bądź dziś w pobliżu i zapytaj, czy możesz coś zrobić.",
+        "masculine": "Bądź dziś w pobliżu i zapytaj, czy możesz coś zrobić.",
+        "neutral": "Bądź dziś w pobliżu i zapytaj, czy możesz coś zrobić."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "attention-call",
+      "category": "attention",
+      "text": {
+        "feminine": "Zadzwoń w przerwie i zapytaj, jak ona się czuje.",
+        "masculine": "Zadzwoń w przerwie i zapytaj, jak on się czuje.",
+        "neutral": "Zadzwoń w przerwie i zapytaj, jak ta osoba się czuje."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-quiet-evening",
+      "category": "space",
+      "text": {
+        "feminine": "Zaplanuj dziś cichy wieczór i nie licz na rozmowę.",
+        "masculine": "Zaplanuj dziś cichy wieczór i nie licz na rozmowę.",
+        "neutral": "Zaplanuj dziś cichy wieczór i nie licz na rozmowę."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-alone-time",
+      "category": "space",
+      "text": {
+        "feminine": "Daj jej godzinę dla siebie i zajmij się czymś w innym pokoju.",
+        "masculine": "Daj mu godzinę dla siebie i zajmij się czymś w innym pokoju.",
+        "neutral": "Daj tej osobie godzinę dla siebie i zajmij się czymś w innym pokoju."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-no-questions",
+      "category": "space",
+      "text": {
+        "feminine": "Nie dopytuj dziś o nastrój. Wystarczy, że będziesz blisko.",
+        "masculine": "Nie dopytuj dziś o nastrój. Wystarczy, że będziesz blisko.",
+        "neutral": "Nie dopytuj dziś o nastrój. Wystarczy, że będziesz blisko."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-cancel",
+      "category": "space",
+      "text": {
+        "feminine": "Odwołaj dziś zbędne wizyty, niech dom będzie spokojny.",
+        "masculine": "Odwołaj dziś zbędne wizyty, niech dom będzie spokojny.",
+        "neutral": "Odwołaj dziś zbędne wizyty, niech dom będzie spokojny."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-bathroom",
+      "category": "space",
+      "text": {
+        "feminine": "Zadbaj o to, żeby nikt nie przeszkadzał jej w łazience.",
+        "masculine": "Zadbaj o to, żeby nikt nie przeszkadzał mu w łazience.",
+        "neutral": "Zadbaj o to, żeby nikt nie przeszkadzał tej osobie w łazience."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-household",
+      "category": "space",
+      "text": {
+        "feminine": "Zajmij się dziś domownikami, a jej zostaw chwilę ciszy.",
+        "masculine": "Zajmij się dziś domownikami, a jemu zostaw chwilę ciszy.",
+        "neutral": "Zajmij się dziś domownikami, a tej osobie zostaw chwilę ciszy."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-silence",
+      "category": "space",
+      "text": {
+        "feminine": "Przyciszaj dziś telewizor i rozmowy, jeśli ona tego potrzebuje.",
+        "masculine": "Przyciszaj dziś telewizor i rozmowy, jeśli on tego potrzebuje.",
+        "neutral": "Przyciszaj dziś telewizor i rozmowy, jeśli ta osoba tego potrzebuje."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-walk-alone",
+      "category": "space",
+      "text": {
+        "feminine": "Zaproponuj, że ona może wyjść sama na spacer, a ty zostaniesz.",
+        "masculine": "Zaproponuj, że on może wyjść sam na spacer, a ty zostaniesz.",
+        "neutral": "Zaproponuj, że ta osoba może wyjść sama na spacer, a ty zostaniesz."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-no-plans",
+      "category": "space",
+      "text": {
+        "feminine": "Nie planuj dziś niczego na ostatnią chwilę.",
+        "masculine": "Nie planuj dziś niczego na ostatnią chwilę.",
+        "neutral": "Nie planuj dziś niczego na ostatnią chwilę."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-book",
+      "category": "space",
+      "text": {
+        "feminine": "Przynieś jej książkę lub ulubiony film i nie przeszkadzaj.",
+        "masculine": "Przynieś mu książkę lub ulubiony film i nie przeszkadzaj.",
+        "neutral": "Przynieś tej osobie książkę lub ulubiony film i nie przeszkadzaj."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-own-pace",
+      "category": "space",
+      "text": {
+        "feminine": "Pozwól jej dziś robić wszystko we własnym tempie.",
+        "masculine": "Pozwól mu dziś robić wszystko we własnym tempie.",
+        "neutral": "Pozwól tej osobie dziś robić wszystko we własnym tempie."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-messages",
+      "category": "space",
+      "text": {
+        "feminine": "Napisz krótko, że jesteś, i nie oczekuj szybkiej odpowiedzi.",
+        "masculine": "Napisz krótko, że jesteś, i nie oczekuj szybkiej odpowiedzi.",
+        "neutral": "Napisz krótko, że jesteś, i nie oczekuj szybkiej odpowiedzi."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-corner",
+      "category": "space",
+      "text": {
+        "feminine": "Przygotuj jej spokojny kąt z kocem i lampką.",
+        "masculine": "Przygotuj mu spokojny kąt z kocem i lampką.",
+        "neutral": "Przygotuj tej osobie spokojny kąt z kocem i lampką."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-decline",
+      "category": "space",
+      "text": {
+        "feminine": "Przyjmij spokojnie, jeśli ona dziś odmówi wspólnych planów.",
+        "masculine": "Przyjmij spokojnie, jeśli on dziś odmówi wspólnych planów.",
+        "neutral": "Przyjmij spokojnie, jeśli ta osoba dziś odmówi wspólnych planów."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-music",
+      "category": "space",
+      "text": {
+        "feminine": "Zapytaj, czy ona chce ciszę, czy muzykę, i dostosuj się.",
+        "masculine": "Zapytaj, czy on chce ciszę, czy muzykę, i dostosuj się.",
+        "neutral": "Zapytaj, czy ta osoba chce ciszę, czy muzykę, i dostosuj się."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "space-timing",
+      "category": "space",
+      "text": {
+        "feminine": "Odłóż trudne tematy na inny dzień.",
+        "masculine": "Odłóż trudne tematy na inny dzień.",
+        "neutral": "Odłóż trudne tematy na inny dzień."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-thanks",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Podziękuj jej dziś za jedną konkretną rzecz, którą ona zrobiła.",
+        "masculine": "Podziękuj mu dziś za jedną konkretną rzecz, którą on zrobił.",
+        "neutral": "Podziękuj tej osobie dziś za jedną konkretną rzecz, którą ta osoba zrobiła."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-compliment",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Powiedz jej szczerze, co w niej dziś doceniasz.",
+        "masculine": "Powiedz mu szczerze, co w nim dziś doceniasz.",
+        "neutral": "Powiedz tej osobie szczerze, co w tej osobie dziś doceniasz."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-letter",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Napisz kilka zdań o tym, co cenisz w niej, i zostaw je na stole.",
+        "masculine": "Napisz kilka zdań o tym, co cenisz w nim, i zostaw je na stole.",
+        "neutral": "Napisz kilka zdań o tym, co cenisz w tej osobie, i zostaw je na stole."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-flowers",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Przynieś jej kwiaty albo gałązkę z drogi do domu.",
+        "masculine": "Przynieś mu kwiaty albo gałązkę z drogi do domu.",
+        "neutral": "Przynieś tej osobie kwiaty albo gałązkę z drogi do domu."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-proud",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Powiedz na głos, co w niej dziś szczególnie cenisz.",
+        "masculine": "Powiedz na głos, co w nim dziś szczególnie cenisz.",
+        "neutral": "Powiedz na głos, co w tej osobie dziś szczególnie cenisz."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-memory",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Wspomnij miłą chwilę, którą spędziliście razem.",
+        "masculine": "Wspomnij miłą chwilę, którą spędziliście razem.",
+        "neutral": "Wspomnij miłą chwilę, którą spędziliście razem."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-strength",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Powiedz jej, że doceniasz, jak ona sobie radzi.",
+        "masculine": "Powiedz mu, że doceniasz, jak on sobie radzi.",
+        "neutral": "Powiedz tej osobie, że doceniasz, jak ta osoba sobie radzi."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-treat",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Kup ulubione ciasto jej i podaj je z uśmiechem.",
+        "masculine": "Kup ulubione ciasto jego i podaj je z uśmiechem.",
+        "neutral": "Kup ulubione ciasto tej osoby i podaj je z uśmiechem."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-short-thanks",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Wyślij jej w ciągu dnia krótkie „dziękuję, że jesteś”.",
+        "masculine": "Wyślij mu w ciągu dnia krótkie „dziękuję, że jesteś”.",
+        "neutral": "Wyślij tej osobie w ciągu dnia krótkie „dziękuję, że jesteś”."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-effort",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Zauważ wysiłek jej w czymś, co zwykle umyka uwadze.",
+        "masculine": "Zauważ wysiłek jego w czymś, co zwykle umyka uwadze.",
+        "neutral": "Zauważ wysiłek tej osoby w czymś, co zwykle umyka uwadze."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-talks",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Powiedz, że cenisz sobie rozmowy z nią.",
+        "masculine": "Powiedz, że cenisz sobie rozmowy z nim.",
+        "neutral": "Powiedz, że cenisz sobie rozmowy z tą osobą."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-small-gift",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Wręcz jej drobny upominek bez okazji.",
+        "masculine": "Wręcz mu drobny upominek bez okazji.",
+        "neutral": "Wręcz tej osobie drobny upominek bez okazji."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-photo",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Wyślij jej zdjęcie z miłego dla was obojga dnia.",
+        "masculine": "Wyślij mu zdjęcie z miłego dla was obojga dnia.",
+        "neutral": "Wyślij tej osobie zdjęcie z miłego dla was obojga dnia."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-laugh",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Przypomnij jej coś, co was kiedyś rozśmieszyło.",
+        "masculine": "Przypomnij mu coś, co was kiedyś rozśmieszyło.",
+        "neutral": "Przypomnij tej osobie coś, co was kiedyś rozśmieszyło."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-toast",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Wznieś dziś wieczorem toast za wasz wspólny tydzień.",
+        "masculine": "Wznieś dziś wieczorem toast za wasz wspólny tydzień.",
+        "neutral": "Wznieś dziś wieczorem toast za wasz wspólny tydzień."
+      },
+      "review": "unreviewed"
+    },
+    {
+      "id": "appreciation-list",
+      "category": "appreciation",
+      "text": {
+        "feminine": "Wypisz trzy rzeczy, które lubisz u niej, i przeczytaj je jej.",
+        "masculine": "Wypisz trzy rzeczy, które lubisz u niego, i przeczytaj je mu.",
+        "neutral": "Wypisz trzy rzeczy, które lubisz u tej osoby, i przeczytaj je tej osobie."
       },
       "review": "unreviewed"
     }

@@ -1,11 +1,89 @@
 {
-  "contentVersion": 1,
+  "contentVersion": 2,
   "entries": [
     {
       "id": "low-energy-relief",
       "when": { "energyMax": 2 },
       "categories": ["relief", "space"],
       "priority": 10
+    },
+    {
+      "id": "entry-low-energy",
+      "when": { "source": "entry", "energyMax": 2 },
+      "categories": ["relief", "space"],
+      "priority": 20
+    },
+    {
+      "id": "entry-low-mood",
+      "when": { "source": "entry", "moodMax": 2 },
+      "categories": ["tenderness", "attention"],
+      "priority": 20
+    },
+    {
+      "id": "entry-low-both",
+      "when": { "source": "entry", "energyMax": 2, "moodMax": 2 },
+      "categories": ["relief", "tenderness", "space"],
+      "priority": 30
+    },
+    {
+      "id": "entry-high-energy",
+      "when": { "source": "entry", "energyMin": 4 },
+      "categories": ["appreciation", "attention"],
+      "priority": 15
+    },
+    {
+      "id": "checkin-low-energy",
+      "when": { "source": "checkin", "energyMax": 2 },
+      "categories": ["relief", "space"],
+      "priority": 20
+    },
+    {
+      "id": "checkin-low-mood",
+      "when": { "source": "checkin", "moodMax": 2 },
+      "categories": ["tenderness", "attention"],
+      "priority": 20
+    },
+    {
+      "id": "checkin-low-both",
+      "when": { "source": "checkin", "energyMax": 2, "moodMax": 2 },
+      "categories": ["relief", "tenderness", "space"],
+      "priority": 30
+    },
+    {
+      "id": "checkin-high-energy",
+      "when": { "source": "checkin", "energyMin": 4 },
+      "categories": ["appreciation", "attention"],
+      "priority": 15
+    },
+    {
+      "id": "phase-menstruation",
+      "when": { "phase": "menstruation" },
+      "categories": ["relief", "tenderness", "space"],
+      "priority": 5
+    },
+    {
+      "id": "phase-follicular",
+      "when": { "phase": "follicular" },
+      "categories": ["appreciation", "attention"],
+      "priority": 5
+    },
+    {
+      "id": "phase-periovulatory",
+      "when": { "phase": "periovulatory" },
+      "categories": ["attention", "appreciation", "tenderness"],
+      "priority": 5
+    },
+    {
+      "id": "phase-luteal",
+      "when": { "phase": "luteal" },
+      "categories": ["space", "relief"],
+      "priority": 5
+    },
+    {
+      "id": "phase-premenstrual",
+      "when": { "phase": "premenstrual" },
+      "categories": ["relief", "tenderness", "space"],
+      "priority": 5
     }
   ]
 }
