@@ -49,4 +49,31 @@ describe("request log", () => {
       expect(log).not.toContain(secret);
     }
   });
+
+  it("holds no body fragment when the JSON is invalid", async () => {
+    const lines: string[] = [];
+    const stream = new Writable({
+      write(chunk: Buffer, _encoding, done) {
+        lines.push(chunk.toString("utf8"));
+        done();
+      },
+    });
+    const app = buildApp({
+      store: new MemoryStore(),
+      clock: { nowMs: () => 0 },
+      logger: loggerOptions(stream),
+    });
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/pairs/p1/envelopes",
+      headers: { "content-type": "application/json" },
+      payload: '{"envelope":{"ciphertext":"CIPHERTEXT-VALUE","nonce":',
+    });
+    await app.close();
+
+    expect(response.statusCode).toBe(400);
+    const log = lines.join("");
+    expect(log).not.toContain("CIPHERTEXT-VALUE");
+    expect(log).not.toContain("ciphertext");
+  });
 });
