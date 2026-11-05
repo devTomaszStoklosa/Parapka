@@ -140,7 +140,36 @@ function envelopeTests(store: GetStore): void {
     expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual(["e2"]);
     expect(await store().listEnvelopes("other", null, 10)).toHaveLength(1);
   });
+}
 
+function senderAndExpiryTests(store: GetStore): void {
+  it("skips envelopes of one sender before the limit applies", async () => {
+    const from = (id: string, sender: string): Envelope => ({
+      ...envelope(id),
+      senderDeviceId: sender,
+    });
+    await store().addEnvelope(from("e1", "a"), 1);
+    await store().addEnvelope(from("e2", "a"), 2);
+    await store().addEnvelope(from("e3", "b"), 3);
+    expect(ids(await store().listEnvelopes("mb1", null, 1, "a"))).toEqual([
+      "e3",
+    ]);
+    expect(await store().deleteEnvelopes("mb1", ["e1", "e3"], "a")).toBe(1);
+    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual([
+      "e1",
+      "e2",
+    ]);
+  });
+
+  it("deletes envelopes received at or before a time", async () => {
+    await store().addEnvelope(envelope("e1"), 10);
+    await store().addEnvelope(envelope("e2"), 11);
+    expect(await store().deleteEnvelopesReceivedBefore(10)).toBe(1);
+    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual(["e2"]);
+  });
+}
+
+function newerVersionTests(store: GetStore): void {
   it("keeps fields of a newer protocol version", async () => {
     const newer = { ...envelope("e1"), extra: "kept" } as Envelope;
     await store().addEnvelope(newer, 1);
@@ -226,6 +255,8 @@ export function runStoreContract(name: string, create: GetStore): void {
     deviceTests(store);
     shortLivedTests(store);
     envelopeTests(store);
+    senderAndExpiryTests(store);
+    newerVersionTests(store);
     mailboxTests(store);
     acceptTests(store);
   });

@@ -23,20 +23,21 @@ function num(row: Row, column: string): number {
   return Number(row[column]);
 }
 
+function optText(row: Row, column: string): string | null {
+  return row[column] === null ? null : text(row, column);
+}
+
 function toDevice(row: Row): StoredDevice {
-  const platform = row["push_platform"];
-  const token = row["push_token"];
+  const platform = optText(row, "push_platform");
+  const token = optText(row, "push_token");
   return {
     deviceId: text(row, "device_id"),
     signingPublicKey: text(row, "signing_public_key"),
     createdAtMs: num(row, "created_at_ms"),
     push:
-      platform === null || token === null
+      token === null
         ? null
-        : {
-            platform: text(row, "push_platform") as PushToken["platform"],
-            token: text(row, "push_token"),
-          },
+        : { platform: platform as PushToken["platform"], token },
   };
 }
 
@@ -54,12 +55,8 @@ function toInvitation(row: Row): InvitationRecord {
     invitationId: text(row, "invitation_id"),
     deviceId: text(row, "device_id"),
     expiresAtMs: num(row, "expires_at_ms"),
-    acceptedByDeviceId:
-      row["accepted_by_device_id"] === null
-        ? null
-        : text(row, "accepted_by_device_id"),
-    encryptedKeysB:
-      row["encrypted_keys_b"] === null ? null : text(row, "encrypted_keys_b"),
+    acceptedByDeviceId: optText(row, "accepted_by_device_id"),
+    encryptedKeysB: optText(row, "encrypted_keys_b"),
   };
 }
 
@@ -293,12 +290,18 @@ export class SqliteStore implements RelayStore {
     pairMailboxId: string,
     after: string | null,
     limit: number,
+    excludeSenderDeviceId?: string,
   ): Promise<readonly StoredEnvelope[]> {
     const rows = this.db
       .prepare(
-        "SELECT seq, body FROM envelopes WHERE pair_mailbox_id = ? AND seq > ? ORDER BY seq LIMIT ?",
+        `SELECT seq, body FROM envelopes WHERE pair_mailbox_id = ? AND seq > ? AND json_extract(body, '$.senderDeviceId') IS NOT ? ORDER BY seq LIMIT ?`,
       )
-      .all(pairMailboxId, after === null ? 0 : Number(after), limit);
+      .all(
+        pairMailboxId,
+        Number(after ?? 0),
+        excludeSenderDeviceId ?? null,
+        limit,
+      );
     return Promise.resolve(
       rows.map((row) => ({
         cursor: String(row["seq"]),
@@ -310,15 +313,19 @@ export class SqliteStore implements RelayStore {
   deleteEnvelopes(
     pairMailboxId: string,
     envelopeIds: readonly string[],
+    excludeSenderDeviceId?: string,
   ): Promise<number> {
-    let deleted = 0;
-    for (const id of envelopeIds) {
-      deleted += this.changed(
-        "DELETE FROM envelopes WHERE envelope_id = ? AND pair_mailbox_id = ?",
-        id,
-        pairMailboxId,
-      );
-    }
-    return Promise.resolve(deleted);
+    const sql = `DELETE FROM envelopes WHERE envelope_id = ? AND pair_mailbox_id = ? AND json_extract(body, '$.senderDeviceId') IS NOT ?`;
+    const sender = excludeSenderDeviceId ?? null;
+    const counts = envelopeIds.map((id) =>
+      this.changed(sql, id, pairMailboxId, sender),
+    );
+    return Promise.resolve(counts.reduce((a, b) => a + b, 0));
+  }
+
+  deleteEnvelopesReceivedBefore(cutoffMs: number): Promise<number> {
+    return Promise.resolve(
+      this.changed("DELETE FROM envelopes WHERE received_at_ms <= ?", cutoffMs),
+    );
   }
 }

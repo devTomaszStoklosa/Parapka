@@ -96,15 +96,25 @@ export interface RelayStore {
     envelope: Envelope,
     receivedAtMs: number,
   ): Promise<{ readonly cursor: string; readonly accepted: boolean }>;
-  /** Envelopes of the mailbox after the cursor, at most `limit`. */
+  /**
+   * Envelopes of the mailbox after the cursor, at most `limit`; those sent by
+   * `excludeSenderDeviceId` are skipped before the limit applies.
+   */
   listEnvelopes(
     pairMailboxId: string,
     after: string | null,
     limit: number,
+    excludeSenderDeviceId?: string,
   ): Promise<readonly StoredEnvelope[]>;
-  /** Deletes the envelopes of the mailbox; returns how many were deleted. */
+  /**
+   * Deletes the envelopes of the mailbox, except those sent by
+   * `excludeSenderDeviceId`; returns how many were deleted.
+   */
   deleteEnvelopes(
     pairMailboxId: string,
     envelopeIds: readonly string[],
+    excludeSenderDeviceId?: string,
   ): Promise<number>;
+  /** Deletes the envelopes received at or before `cutoffMs`; returns how many. */
+  deleteEnvelopesReceivedBefore(cutoffMs: number): Promise<number>;
 }
