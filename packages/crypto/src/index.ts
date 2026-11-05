@@ -27,3 +27,13 @@ export {
   envelopeAdditionalData,
 } from "./envelope.js";
 export type { EncryptedEnvelope, EnvelopeFields } from "./envelope.js";
+export {
+  checkinAdditionalData,
+  sealCheckin,
+  unsealCheckin,
+} from "./checkin-seal.js";
+export type {
+  CheckinSealFields,
+  SealResult,
+  SealedCheckin,
+} from "./checkin-seal.js";

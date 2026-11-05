@@ -18,7 +18,7 @@ export interface EncryptedEnvelope {
 }
 
 /** UTF-8 bytes of a text; the runtime types here have no `TextEncoder`. */
-function utf8(text: string): number[] {
+export function utf8(text: string): number[] {
   const bytes: number[] = [];
   for (const char of text) {
     const code = char.codePointAt(0) ?? 0;
