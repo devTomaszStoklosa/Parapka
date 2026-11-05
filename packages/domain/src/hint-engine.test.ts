@@ -311,7 +311,8 @@ describe("rule conditions", () => {
   const count = (when: Record<string, unknown>): number => {
     const rule = { id: "r", when, categories: ["space"], priority: 1 };
     const entries = [{ date: TODAY, energy: 4, mood: 2 }];
-    return generateHints(input({ rules: [rule as EngineRule], entries })).length;
+    return generateHints(input({ rules: [rule as EngineRule], entries }))
+      .length;
   };
 
   it("matches energyMin and moodMax and rejects the rest", () => {
