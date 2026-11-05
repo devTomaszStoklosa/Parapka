@@ -2,6 +2,7 @@ import { DatabaseSync, type SQLOutputValue } from "node:sqlite";
 import type { Envelope } from "@parapka/protocol";
 import { migrate } from "./migrate.js";
 import type {
+  AcceptResult,
   ChallengeRecord,
   DeviceRecord,
   InvitationRecord,
@@ -53,6 +54,12 @@ function toInvitation(row: Row): InvitationRecord {
     invitationId: text(row, "invitation_id"),
     deviceId: text(row, "device_id"),
     expiresAtMs: num(row, "expires_at_ms"),
+    acceptedByDeviceId:
+      row["accepted_by_device_id"] === null
+        ? null
+        : text(row, "accepted_by_device_id"),
+    encryptedKeysB:
+      row["encrypted_keys_b"] === null ? null : text(row, "encrypted_keys_b"),
   };
 }
 
@@ -83,7 +90,7 @@ export class SqliteStore implements RelayStore {
     return this.db.prepare(sql).get(...params) ?? null;
   }
 
-  private changed(sql: string, ...params: (string | number)[]): number {
+  private changed(sql: string, ...params: (string | number | null)[]): number {
     return Number(this.db.prepare(sql).run(...params).changes);
   }
 
@@ -139,10 +146,12 @@ export class SqliteStore implements RelayStore {
 
   putInvitation(invitation: InvitationRecord): Promise<void> {
     this.changed(
-      "INSERT OR REPLACE INTO invitations (invitation_id, device_id, expires_at_ms) VALUES (?, ?, ?)",
+      "INSERT OR REPLACE INTO invitations (invitation_id, device_id, expires_at_ms, accepted_by_device_id, encrypted_keys_b) VALUES (?, ?, ?, ?, ?)",
       invitation.invitationId,
       invitation.deviceId,
       invitation.expiresAtMs,
+      invitation.acceptedByDeviceId,
+      invitation.encryptedKeysB,
     );
     return Promise.resolve();
   }
@@ -161,6 +170,56 @@ export class SqliteStore implements RelayStore {
       invitationId,
     );
     return Promise.resolve(n > 0);
+  }
+
+  acceptInvitation(
+    invitationId: string,
+    deviceId: string,
+    encryptedKeysB: string,
+    mailbox: MailboxRecord,
+  ): Promise<AcceptResult> {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const open = this.one(
+        "SELECT 1 AS ok FROM invitations WHERE invitation_id = ? AND accepted_by_device_id IS NULL",
+        invitationId,
+      );
+      if (open === null) {
+        this.db.exec("ROLLBACK");
+        return Promise.resolve("used");
+      }
+      const paired = this.one(
+        "SELECT 1 AS ok FROM mailboxes WHERE device_id_a IN (?, ?) OR device_id_b IN (?, ?)",
+        mailbox.deviceIdA,
+        mailbox.deviceIdB,
+        mailbox.deviceIdA,
+        mailbox.deviceIdB,
+      );
+      if (paired !== null) {
+        this.db.exec("ROLLBACK");
+        return Promise.resolve("paired");
+      }
+      const n = this.changed(
+        "UPDATE invitations SET accepted_by_device_id = ?, encrypted_keys_b = ? WHERE invitation_id = ? AND accepted_by_device_id IS NULL",
+        deviceId,
+        encryptedKeysB,
+        invitationId,
+      );
+      if (n > 0) {
+        this.changed(
+          "INSERT INTO mailboxes (pair_mailbox_id, device_id_a, device_id_b, created_at_ms) VALUES (?, ?, ?, ?)",
+          mailbox.pairMailboxId,
+          mailbox.deviceIdA,
+          mailbox.deviceIdB,
+          mailbox.createdAtMs,
+        );
+      }
+      this.db.exec("COMMIT");
+      return Promise.resolve(n > 0 ? "accepted" : "used");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   purgeExpired(nowMs: number): Promise<void> {
@@ -184,6 +243,15 @@ export class SqliteStore implements RelayStore {
     const row = this.one(
       "SELECT * FROM mailboxes WHERE pair_mailbox_id = ?",
       pairMailboxId,
+    );
+    return Promise.resolve(row === null ? null : toMailbox(row));
+  }
+
+  findMailboxByDevice(deviceId: string): Promise<MailboxRecord | null> {
+    const row = this.one(
+      "SELECT * FROM mailboxes WHERE device_id_a = ? OR device_id_b = ? LIMIT 1",
+      deviceId,
+      deviceId,
     );
     return Promise.resolve(row === null ? null : toMailbox(row));
   }

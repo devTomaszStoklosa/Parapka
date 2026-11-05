@@ -34,6 +34,7 @@ describe("sqlite migrations", () => {
     expect(dump(db)).toEqual(before);
     expect(db.prepare("SELECT version FROM schema_migrations").all()).toEqual([
       { version: 1 },
+      { version: 2 },
     ]);
   });
 
@@ -93,6 +94,8 @@ describe("sqlite migrations", () => {
       "body",
       "received_at_ms",
       "version",
+      "accepted_by_device_id",
+      "encrypted_keys_b",
     ]);
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
@@ -106,5 +109,30 @@ describe("sqlite migrations", () => {
         .map((row) => String(row["name"])),
     );
     expect(columns.filter((column) => !allowed.has(column))).toEqual([]);
+  });
+});
+
+describe("sqlite acceptInvitation", () => {
+  it("rolls back the acceptance when the mailbox cannot be created", async () => {
+    const store = new SqliteStore(":memory:");
+    opened.push(store);
+    const mailbox = {
+      pairMailboxId: "mb1",
+      deviceIdA: "a",
+      deviceIdB: "b",
+      createdAtMs: 3,
+    };
+    await store.putMailbox({ ...mailbox, deviceIdA: "x", deviceIdB: "y" });
+    await store.putInvitation({
+      invitationId: "i1",
+      deviceId: "a",
+      expiresAtMs: 9,
+      acceptedByDeviceId: null,
+      encryptedKeysB: null,
+    });
+    expect(() => store.acceptInvitation("i1", "b", "KEYS", mailbox)).toThrow(
+      /UNIQUE/,
+    );
+    expect((await store.getInvitation("i1"))?.acceptedByDeviceId).toBeNull();
   });
 });

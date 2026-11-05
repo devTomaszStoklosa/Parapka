@@ -32,11 +32,18 @@ export interface CreateInvitationResponse {
 
 /** POST /v1/invitations/{id}/accept */
 export interface AcceptInvitationRequest {
-  readonly deviceId: string;
+  /** Keys of device B sealed for device A; the relay does not read them. */
+  readonly encryptedKeys: string;
 }
 export interface AcceptInvitationResponse {
   readonly pairId: string;
   readonly pairMailboxId: string;
+}
+
+/** GET /v1/invitations/{id}/keys: no request body. */
+export interface FetchInvitationKeysResponse {
+  readonly encryptedKeys: string;
+  readonly acceptedByDeviceId: string;
 }
 
 /** POST /v1/pairs/{id}/envelopes */
