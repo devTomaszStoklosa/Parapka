@@ -207,6 +207,16 @@ describe("POST /v1/invitations/{id}/accept", () => {
   });
 });
 
+describe("accept race", () => {
+  it("answers 410 when the store reports the invitation as taken", async () => {
+    const a = await register();
+    const b = await register();
+    const id = await invite(a);
+    store.acceptInvitation = () => Promise.resolve(false);
+    expect((await accept(b, id)).statusCode).toBe(410);
+  });
+});
+
 describe("GET /v1/invitations/{id}/keys", () => {
   it("returns the ciphertext to the creator only", async () => {
     const a = await register();

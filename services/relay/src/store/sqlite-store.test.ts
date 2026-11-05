@@ -111,3 +111,28 @@ describe("sqlite migrations", () => {
     expect(columns.filter((column) => !allowed.has(column))).toEqual([]);
   });
 });
+
+describe("sqlite acceptInvitation", () => {
+  it("rolls back the acceptance when the mailbox cannot be created", async () => {
+    const store = new SqliteStore(":memory:");
+    opened.push(store);
+    const mailbox = {
+      pairMailboxId: "mb1",
+      deviceIdA: "a",
+      deviceIdB: "b",
+      createdAtMs: 3,
+    };
+    await store.putMailbox(mailbox);
+    await store.putInvitation({
+      invitationId: "i1",
+      deviceId: "a",
+      expiresAtMs: 9,
+      acceptedByDeviceId: null,
+      encryptedKeysB: null,
+    });
+    expect(() => store.acceptInvitation("i1", "b", "KEYS", mailbox)).toThrow(
+      /UNIQUE/,
+    );
+    expect((await store.getInvitation("i1"))?.acceptedByDeviceId).toBeNull();
+  });
+});
