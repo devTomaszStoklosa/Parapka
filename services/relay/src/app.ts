@@ -3,6 +3,8 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { registerEnvelopeRoutes } from "./envelopes.js";
 import { registerDeviceRoutes } from "./devices.js";
 import { registerInvitationRoutes } from "./invitations.js";
+import { registerNotifyRoutes } from "./notify.js";
+import type { PushSender } from "./push.js";
 import type { RelayStore } from "./store/store.js";
 
 export interface AppDependencies {
@@ -10,6 +12,8 @@ export interface AppDependencies {
   readonly clock: Clock;
   /** Requests a device may send per minute; defaults to 120. */
   readonly requestsPerWindow?: number;
+  /** Sends pushes without content; without it the relay sends none. */
+  readonly pushSender?: PushSender;
 }
 
 /** Builds the relay application; it does not listen on a port. */
@@ -39,6 +43,7 @@ export function buildApp(deps: AppDependencies): FastifyInstance {
   app.get("/health", () => ({ status: "ok" }));
   registerDeviceRoutes(app);
   registerInvitationRoutes(app);
+  registerNotifyRoutes(app);
   registerEnvelopeRoutes(app);
   return app;
 }

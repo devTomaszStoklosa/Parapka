@@ -56,7 +56,7 @@ function jsonBytes(value: unknown): number {
 }
 
 /** Sends 403 unless the authenticated device belongs to the mailbox. */
-async function requireMember(
+export async function requireMember(
   app: FastifyInstance,
   request: PairRequest,
   reply: FastifyReply,
@@ -137,6 +137,12 @@ function sendEnvelope(app: FastifyInstance, limiter: Limiter): void {
         return reply.code(400).send({ error: "pairMailboxId mismatch" });
       }
       const { accepted } = await store.addEnvelope(envelope, clock.nowMs());
+      if (accepted) {
+        await app.notifier.notifyPartner(
+          request.params.id,
+          envelope.senderDeviceId,
+        );
+      }
       return reply.code(accepted ? 201 : 200).send({
         envelopeId: envelope.envelopeId,
         accepted,
