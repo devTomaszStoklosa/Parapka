@@ -1,7 +1,4 @@
-export interface Clock {
-  /** Current time in milliseconds since the Unix epoch. */
-  nowMs(): number;
-}
+import type { Clock } from "./clock.js";
 
 export interface RandomSource {
   /** Returns `length` random bytes. */

@@ -1,6 +1,6 @@
+import type { Clock } from "@parapka/domain";
 import { describe, expect, it } from "vitest";
 import {
-  type Clock,
   type Hlc,
   HybridLogicalClock,
   MAX_COUNTER,
@@ -13,7 +13,7 @@ import {
 
 class FakeClock implements Clock {
   constructor(private readonly readings: number[]) {}
-  now(): number {
+  nowMs(): number {
     const next =
       this.readings.length > 1 ? this.readings.shift() : this.readings[0];
     if (next === undefined) throw new Error("no reading");
