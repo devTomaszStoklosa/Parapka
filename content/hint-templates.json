@@ -1,0 +1,15 @@
+{
+  "contentVersion": 1,
+  "entries": [
+    {
+      "id": "relief-dinner",
+      "category": "relief",
+      "text": {
+        "feminine": "Przejmij dziś kolację, niech ona odpocznie.",
+        "masculine": "Przejmij dziś kolację, niech on odpocznie.",
+        "neutral": "Przejmij dziś kolację, niech ta osoba odpocznie."
+      },
+      "review": "unreviewed"
+    }
+  ]
+}
