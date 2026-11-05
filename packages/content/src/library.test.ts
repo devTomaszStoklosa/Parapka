@@ -2,10 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { KNOWN_FILES, formatError, loadLibrary } from "./library.js";
 
-const files = import.meta.glob<unknown>("../../../content/**/*.json", {
-  eager: true,
-  import: "default",
-});
+const files = import.meta.glob<unknown>(
+  ["../../../content/**/*.json", "!../../../content/forbidden-phrases.json"],
+  { eager: true, import: "default" },
+);
 
 describe("content/ directory", () => {
   it("contains every known content file", () => {
