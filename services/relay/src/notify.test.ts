@@ -199,6 +199,15 @@ describe("push without content", () => {
     expect(pushes.sent).toHaveLength(1);
   });
 
+  it("still stores the envelope when the push fails", async () => {
+    const p = await pair();
+    await store.setPushToken(p.b.deviceId, { platform: "fcm", token: "T" });
+    pushes.send = () => Promise.reject(new Error("push down"));
+    await sendFrom(p.a, p.mailbox);
+    const listed = await call(p.b, "GET", `/v1/pairs/${p.mailbox}/envelopes`);
+    expect(listed.statusCode).toBe(200);
+  });
+
   it("pushes after the partner disconnects", async () => {
     const p = await pair();
     await store.setPushToken(p.b.deviceId, { platform: "apns", token: "T" });
