@@ -106,8 +106,11 @@ function acceptInvitation(app: FastifyInstance): void {
           createdAtMs: clock.nowMs(),
         },
       );
-      if (!accepted) {
+      if (accepted === "used") {
         return reply.code(410).send({ error: "invitation is used or expired" });
+      }
+      if (accepted === "paired") {
+        return reply.code(409).send({ error: "device is already paired" });
       }
       // The relay keeps no separate pair record: the pair is its mailbox.
       return reply.code(200).send({

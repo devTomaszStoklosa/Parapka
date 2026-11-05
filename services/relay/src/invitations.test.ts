@@ -212,8 +212,16 @@ describe("accept race", () => {
     const a = await register();
     const b = await register();
     const id = await invite(a);
-    store.acceptInvitation = () => Promise.resolve(false);
+    store.acceptInvitation = () => Promise.resolve("used");
     expect((await accept(b, id)).statusCode).toBe(410);
+  });
+
+  it("answers 409 when the store reports a device as paired", async () => {
+    const a = await register();
+    const b = await register();
+    const id = await invite(a);
+    store.acceptInvitation = () => Promise.resolve("paired");
+    expect((await accept(b, id)).statusCode).toBe(409);
   });
 });
 

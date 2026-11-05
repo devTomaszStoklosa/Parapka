@@ -2,6 +2,7 @@ import { DatabaseSync, type SQLOutputValue } from "node:sqlite";
 import type { Envelope } from "@parapka/protocol";
 import { migrate } from "./migrate.js";
 import type {
+  AcceptResult,
   ChallengeRecord,
   DeviceRecord,
   InvitationRecord,
@@ -176,9 +177,28 @@ export class SqliteStore implements RelayStore {
     deviceId: string,
     encryptedKeysB: string,
     mailbox: MailboxRecord,
-  ): Promise<boolean> {
-    this.db.exec("BEGIN");
+  ): Promise<AcceptResult> {
+    this.db.exec("BEGIN IMMEDIATE");
     try {
+      const open = this.one(
+        "SELECT 1 AS ok FROM invitations WHERE invitation_id = ? AND accepted_by_device_id IS NULL",
+        invitationId,
+      );
+      if (open === null) {
+        this.db.exec("ROLLBACK");
+        return Promise.resolve("used");
+      }
+      const paired = this.one(
+        "SELECT 1 AS ok FROM mailboxes WHERE device_id_a IN (?, ?) OR device_id_b IN (?, ?)",
+        mailbox.deviceIdA,
+        mailbox.deviceIdB,
+        mailbox.deviceIdA,
+        mailbox.deviceIdB,
+      );
+      if (paired !== null) {
+        this.db.exec("ROLLBACK");
+        return Promise.resolve("paired");
+      }
       const n = this.changed(
         "UPDATE invitations SET accepted_by_device_id = ?, encrypted_keys_b = ? WHERE invitation_id = ? AND accepted_by_device_id IS NULL",
         deviceId,
@@ -195,7 +215,7 @@ export class SqliteStore implements RelayStore {
         );
       }
       this.db.exec("COMMIT");
-      return Promise.resolve(n > 0);
+      return Promise.resolve(n > 0 ? "accepted" : "used");
     } catch (error) {
       this.db.exec("ROLLBACK");
       throw error;

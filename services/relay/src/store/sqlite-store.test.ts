@@ -122,7 +122,7 @@ describe("sqlite acceptInvitation", () => {
       deviceIdB: "b",
       createdAtMs: 3,
     };
-    await store.putMailbox(mailbox);
+    await store.putMailbox({ ...mailbox, deviceIdA: "x", deviceIdB: "y" });
     await store.putInvitation({
       invitationId: "i1",
       deviceId: "a",

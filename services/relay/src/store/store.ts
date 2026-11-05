@@ -50,6 +50,9 @@ export interface StoredEnvelope {
 }
 
 /** Storage of the relay, replaceable behind this interface. */
+/** The outcome of `RelayStore.acceptInvitation`. */
+export type AcceptResult = "accepted" | "used" | "paired";
+
 export interface RelayStore {
   putDevice(device: DeviceRecord): Promise<void>;
   getDevice(deviceId: string): Promise<StoredDevice | null>;
@@ -67,15 +70,16 @@ export interface RelayStore {
   deleteInvitation(invitationId: string): Promise<boolean>;
   /**
    * Marks the invitation as accepted by `deviceId`, stores the ciphertext and
-   * creates the mailbox, all or nothing. Returns false, changing nothing, when
-   * the invitation does not exist or was already accepted.
+   * creates the mailbox, all or nothing. Changes nothing and returns "used"
+   * when the invitation does not exist or was already accepted, or "paired"
+   * when either device already has a mailbox.
    */
   acceptInvitation(
     invitationId: string,
     deviceId: string,
     encryptedKeysB: string,
     mailbox: MailboxRecord,
-  ): Promise<boolean>;
+  ): Promise<AcceptResult>;
 
   /** Deletes challenges and invitations that expired at or before `nowMs`. */
   purgeExpired(nowMs: number): Promise<void>;

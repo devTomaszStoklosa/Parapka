@@ -1,5 +1,6 @@
 import type { Envelope } from "@parapka/protocol";
 import type {
+  AcceptResult,
   ChallengeRecord,
   DeviceRecord,
   InvitationRecord,
@@ -73,18 +74,24 @@ export class MemoryStore implements RelayStore {
     deviceId: string,
     encryptedKeysB: string,
     mailbox: MailboxRecord,
-  ): Promise<boolean> {
+  ): Promise<AcceptResult> {
     const invitation = this.invitations.get(invitationId);
     if (invitation === undefined || invitation.acceptedByDeviceId !== null) {
-      return Promise.resolve(false);
+      return Promise.resolve("used");
     }
+    const paired = [...this.mailboxes.values()].some(
+      (m) =>
+        [m.deviceIdA, m.deviceIdB].includes(mailbox.deviceIdA) ||
+        [m.deviceIdA, m.deviceIdB].includes(mailbox.deviceIdB),
+    );
+    if (paired) return Promise.resolve("paired");
     this.invitations.set(invitationId, {
       ...invitation,
       acceptedByDeviceId: deviceId,
       encryptedKeysB,
     });
     this.mailboxes.set(mailbox.pairMailboxId, mailbox);
-    return Promise.resolve(true);
+    return Promise.resolve("accepted");
   }
 
   purgeExpired(nowMs: number): Promise<void> {

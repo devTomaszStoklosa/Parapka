@@ -163,10 +163,21 @@ function mailboxTests(store: GetStore): void {
     expect(await store().findMailboxByDevice("c")).toBeNull();
   });
 
+  it("deletes a mailbox with its envelopes", async () => {
+    await store().putMailbox(MAILBOX);
+    await store().addEnvelope(envelope("e1"), 1);
+    expect(await store().deleteMailbox("mb1")).toBe(true);
+    expect(await store().getMailbox("mb1")).toBeNull();
+    expect(await store().listEnvelopes("mb1", null, 10)).toEqual([]);
+    expect(await store().deleteMailbox("mb1")).toBe(false);
+  });
+}
+
+function acceptTests(store: GetStore): void {
   it("accepts an invitation once and creates the mailbox", async () => {
     await store().putInvitation(INVITATION);
     expect(await store().acceptInvitation("i1", "b", "KEYS", MAILBOX)).toBe(
-      true,
+      "accepted",
     );
     expect(await store().getInvitation("i1")).toEqual({
       ...INVITATION,
@@ -177,7 +188,7 @@ function mailboxTests(store: GetStore): void {
 
     const second = { ...MAILBOX, pairMailboxId: "mb2", deviceIdB: "c" };
     expect(await store().acceptInvitation("i1", "c", "OTHER", second)).toBe(
-      false,
+      "used",
     );
     expect((await store().getInvitation("i1"))?.acceptedByDeviceId).toBe("b");
     expect(await store().getMailbox("mb2")).toBeNull();
@@ -185,18 +196,21 @@ function mailboxTests(store: GetStore): void {
 
   it("does not accept an unknown invitation", async () => {
     expect(await store().acceptInvitation("zz", "b", "KEYS", MAILBOX)).toBe(
-      false,
+      "used",
     );
     expect(await store().getMailbox("mb1")).toBeNull();
   });
 
-  it("deletes a mailbox with its envelopes", async () => {
-    await store().putMailbox(MAILBOX);
-    await store().addEnvelope(envelope("e1"), 1);
-    expect(await store().deleteMailbox("mb1")).toBe(true);
-    expect(await store().getMailbox("mb1")).toBeNull();
-    expect(await store().listEnvelopes("mb1", null, 10)).toEqual([]);
-    expect(await store().deleteMailbox("mb1")).toBe(false);
+  it("does not accept for a device that is already paired", async () => {
+    await store().putInvitation(INVITATION);
+    await store().putInvitation({ ...INVITATION, invitationId: "i2" });
+    await store().acceptInvitation("i1", "b", "KEYS", MAILBOX);
+    const second = { ...MAILBOX, pairMailboxId: "mb2", deviceIdB: "c" };
+    expect(await store().acceptInvitation("i2", "c", "OTHER", second)).toBe(
+      "paired",
+    );
+    expect((await store().getInvitation("i2"))?.acceptedByDeviceId).toBeNull();
+    expect(await store().getMailbox("mb2")).toBeNull();
   });
 }
 
@@ -213,5 +227,6 @@ export function runStoreContract(name: string, create: GetStore): void {
     shortLivedTests(store);
     envelopeTests(store);
     mailboxTests(store);
+    acceptTests(store);
   });
 }
