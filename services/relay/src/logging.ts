@@ -20,7 +20,10 @@ export function loggerOptions(
       logMethod(args, method) {
         const [first] = args;
         if (typeof first === "object" && first !== null && "err" in first) {
-          method.apply(this, [first, "request error"] as unknown as typeof args);
+          method.apply(this, [
+            first,
+            "request error",
+          ] as unknown as typeof args);
           return;
         }
         method.apply(this, args);
