@@ -1,3 +1,4 @@
+export * from "./checkin.js";
 export * from "./chore-responsibility.js";
 export * from "./chore.js";
 export * from "./clock.js";
