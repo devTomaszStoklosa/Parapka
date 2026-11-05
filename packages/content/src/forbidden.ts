@@ -54,17 +54,26 @@ export function parseForbiddenLists(data: unknown): ForbiddenLists {
 const escapeRegExp = (text: string): string =>
   text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** One word of a phrase: stems separated by "|" are alternatives. */
+const wordPattern = (word: string): RegExp =>
+  new RegExp(
+    `(?<!\\p{L})(?:${word.toLowerCase().split("|").map(escapeRegExp).join("|")})`,
+    "u",
+  );
+
 /**
- * Finds the stems of `stems` that start a word in `text`, ignoring case.
- * Matching the stem only at the start of a word catches inflections
- * ("okres", "okresie") but not accidental hits inside other words.
+ * Finds the entries of `stems` that match `text`, ignoring case. Every
+ * space-separated word of an entry is a stem that must start a word in the
+ * text, in any order, so inflections ("okresie", "dniach płodnych", "płodne
+ * dni") are caught but accidental hits inside other words are not.
  */
 export function findPhrases(text: string, stems: readonly string[]): string[] {
   const lower = text.toLowerCase();
   return stems.filter((stem) =>
-    new RegExp(`(?<!\\p{L})${escapeRegExp(stem.toLowerCase())}`, "u").test(
-      lower,
-    ),
+    stem
+      .split(/\s+/)
+      .filter((word) => word !== "")
+      .every((word) => wordPattern(word).test(lower)),
   );
 }
 

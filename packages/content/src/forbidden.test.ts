@@ -60,6 +60,20 @@ describe("findPhrases", () => {
   it("matches multi-word stems", () => {
     expect(findPhrases("Dni płodne", ["dni płodn"])).toEqual(["dni płodn"]);
   });
+
+  it("matches inflected and reordered multi-word stems", () => {
+    const phrase = ["płodn dn|dzie"];
+    for (const text of ["dniach płodnych", "płodne dni", "w płodnym dniu"])
+      expect(findPhrases(text, phrase)).toEqual(phrase);
+    expect(findPhrases("bezpiecznym dniu", ["bezpieczn dn|dzie"])).toEqual([
+      "bezpieczn dn|dzie",
+    ]);
+  });
+
+  it("requires every word of a multi-word stem", () => {
+    expect(findPhrases("płodne rośliny", ["płodn dn|dzie"])).toEqual([]);
+    expect(findPhrases("dni wolne", ["płodn dn|dzie"])).toEqual([]);
+  });
 });
 
 describe("removeAllowedMessages", () => {
