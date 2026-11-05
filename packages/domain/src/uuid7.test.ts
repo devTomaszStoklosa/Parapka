@@ -110,6 +110,51 @@ describe("monotonicity", () => {
   });
 });
 
+describe("clock validation", () => {
+  const MAX = 2 ** 48 - 1;
+
+  it.each([Number.NaN, Infinity, -Infinity, -1, -0.5, MAX + 1, 2 ** 48])(
+    "throws RangeError for clock reading %s",
+    (bad) => {
+      const { clock } = fakeClock(bad);
+      const next = createUuid7Generator({ clock, random: fixedRandom(1) });
+      expect(() => next()).toThrow(RangeError);
+    },
+  );
+
+  it("leaves the state unchanged after a bad reading", () => {
+    const run = (withError: boolean) => {
+      const { clock, state } = fakeClock(5000);
+      const next = createUuid7Generator({ clock, random: sequenceRandom() });
+      const ids = [next()];
+      if (withError) {
+        state.now = Number.NaN;
+        expect(() => next()).toThrow(RangeError);
+        state.now = 4000;
+      } else {
+        state.now = 4000;
+      }
+      ids.push(next(), next());
+      return ids;
+    };
+    expect(run(true)).toEqual(run(false));
+  });
+
+  it("accepts the maximum 48-bit timestamp", () => {
+    const { clock } = fakeClock(MAX);
+    const id = createUuid7Generator({ clock, random: fixedRandom(1) })();
+    expect(id.replace(/-/g, "").slice(0, 12)).toBe("ffffffffffff");
+    expect(isUuid7(id)).toBe(true);
+  });
+
+  it("throws RangeError instead of overflowing 48 bits at the maximum timestamp", () => {
+    const { clock } = fakeClock(MAX);
+    const next = createUuid7Generator({ clock, random: fixedRandom(0xff) });
+    next();
+    expect(() => next()).toThrow(RangeError);
+  });
+});
+
 describe("isUuid7", () => {
   const valid = "018f3b8e-5c3a-7b2d-8e4f-0123456789ab";
 

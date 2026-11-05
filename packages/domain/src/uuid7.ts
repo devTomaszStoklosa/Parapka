@@ -16,6 +16,7 @@ const RANDOM_B_BITS = 62n;
 const RANDOM_B_MASK = (1n << RANDOM_B_BITS) - 1n;
 const VARIANT = 0b10n;
 const VERSION = 7n;
+const MAX_TIMESTAMP = 2 ** 48 - 1;
 
 const UUID7_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -59,15 +60,27 @@ export function createUuid7Generator({
 
   return () => {
     const now = Math.floor(clock.nowMs());
-    if (now > lastTimestamp) {
-      lastTimestamp = now;
-      lastRandom = freshRandom(random);
-    } else if (lastRandom === RANDOM_MASK) {
-      lastTimestamp += 1;
-      lastRandom = freshRandom(random);
-    } else {
-      lastRandom += 1n;
+    if (!Number.isFinite(now) || now < 0 || now > MAX_TIMESTAMP) {
+      throw new RangeError(
+        `Clock reading must be a finite number of milliseconds between 0 and ${String(MAX_TIMESTAMP)}, got ${String(now)}`,
+      );
     }
-    return format(lastTimestamp, lastRandom);
+    let timestamp = lastTimestamp;
+    let randomPart: bigint;
+    if (now > lastTimestamp) {
+      timestamp = now;
+      randomPart = freshRandom(random);
+    } else if (lastRandom === RANDOM_MASK) {
+      if (lastTimestamp >= MAX_TIMESTAMP) {
+        throw new RangeError("UUIDv7 timestamp exceeds 48 bits");
+      }
+      timestamp = lastTimestamp + 1;
+      randomPart = freshRandom(random);
+    } else {
+      randomPart = lastRandom + 1n;
+    }
+    lastTimestamp = timestamp;
+    lastRandom = randomPart;
+    return format(timestamp, randomPart);
   };
 }
