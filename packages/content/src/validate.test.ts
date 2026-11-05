@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadLibrary } from "./library.js";
+import { formatError, loadLibrary } from "./library.js";
 import {
   validateEngineRuleFile,
   validateHintTemplateFile,
@@ -116,6 +116,82 @@ describe("rejections", () => {
       validateEngineRuleFile("r.json", file([{}, { id: "x" }])),
     );
     expect(errors.length).toBeGreaterThan(4);
+  });
+});
+
+describe("structural rejections", () => {
+  const msgs = (r: Parameters<typeof errorsOf>[0]) =>
+    errorsOf(r).map((e) => e.message);
+
+  it("rejects a missing or malformed entries list", () => {
+    expect(msgs(validatePhaseFile("p.json", { contentVersion: 1 }))).toEqual([
+      'missing field "entries"',
+    ]);
+    expect(
+      msgs(validatePhaseFile("p.json", { contentVersion: 1, entries: {} })),
+    ).toEqual(['"entries" must be an array']);
+  });
+
+  it("rejects a non-object entry and a non-integer version", () => {
+    const result = validatePhaseFile(
+      "p.json",
+      file([5], { contentVersion: 1.5 }),
+    );
+    expect(msgs(result)).toEqual([
+      '"contentVersion" must be a positive integer',
+      "entry must be an object",
+    ]);
+  });
+
+  it("rejects malformed text", () => {
+    const noText: Record<string, unknown> = { ...phase };
+    delete noText["text"];
+    expect(msgs(validatePhaseFile("p.json", file([noText])))).toEqual([
+      'missing field "text"',
+    ]);
+    expect(
+      msgs(validatePhaseFile("p.json", file([{ ...phase, text: "x" }]))),
+    ).toEqual(['field "text" must be an object']);
+    const empty = { ...phase, text: { ...text, neutral: " " } };
+    expect(msgs(validatePhaseFile("p.json", file([empty])))[0]).toContain(
+      "non-empty string",
+    );
+  });
+
+  it("rejects a malformed id", () => {
+    const bad = { ...template, id: 3 };
+    expect(msgs(validateHintTemplateFile("h.json", file([bad])))).toEqual([
+      'field "id" must be a non-empty string',
+    ]);
+  });
+
+  it("rejects malformed rule fields", () => {
+    const base: Record<string, unknown> = { ...rule };
+    const without = (key: string) =>
+      Object.fromEntries(Object.entries(base).filter(([k]) => k !== key));
+    const run = (entry: unknown) =>
+      msgs(validateEngineRuleFile("r.json", file([entry])));
+    expect(run(without("when"))).toEqual(['missing field "when"']);
+    expect(run({ ...base, when: [] })).toEqual([
+      'field "when" must be an object',
+    ]);
+    expect(run(without("categories"))).toEqual(['missing field "categories"']);
+    expect(run({ ...base, categories: [] })).toEqual([
+      'field "categories" must be a non-empty array',
+    ]);
+    expect(run(without("priority"))).toEqual(['missing field "priority"']);
+    expect(run({ ...base, priority: "high" })).toEqual([
+      'field "priority" must be a number',
+    ]);
+  });
+
+  it("formats errors with file and entry", () => {
+    expect(
+      formatError({ file: "f.json", entry: "entries[0]", message: "m" }),
+    ).toBe("f.json: entries[0]: m");
+    expect(formatError({ file: "f.json", entry: "", message: "m" })).toBe(
+      "f.json: m",
+    );
   });
 });
 
