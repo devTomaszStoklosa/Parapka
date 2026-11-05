@@ -23,21 +23,20 @@ function num(row: Row, column: string): number {
   return Number(row[column]);
 }
 
-function optText(row: Row, column: string): string | null {
-  return row[column] === null ? null : text(row, column);
-}
-
 function toDevice(row: Row): StoredDevice {
-  const platform = optText(row, "push_platform");
-  const token = optText(row, "push_token");
+  const platform = row["push_platform"];
+  const token = row["push_token"];
   return {
     deviceId: text(row, "device_id"),
     signingPublicKey: text(row, "signing_public_key"),
     createdAtMs: num(row, "created_at_ms"),
     push:
-      token === null
+      platform === null || token === null
         ? null
-        : { platform: platform as PushToken["platform"], token },
+        : {
+            platform: text(row, "push_platform") as PushToken["platform"],
+            token: text(row, "push_token"),
+          },
   };
 }
 
@@ -55,8 +54,12 @@ function toInvitation(row: Row): InvitationRecord {
     invitationId: text(row, "invitation_id"),
     deviceId: text(row, "device_id"),
     expiresAtMs: num(row, "expires_at_ms"),
-    acceptedByDeviceId: optText(row, "accepted_by_device_id"),
-    encryptedKeysB: optText(row, "encrypted_keys_b"),
+    acceptedByDeviceId:
+      row["accepted_by_device_id"] === null
+        ? null
+        : text(row, "accepted_by_device_id"),
+    encryptedKeysB:
+      row["encrypted_keys_b"] === null ? null : text(row, "encrypted_keys_b"),
   };
 }
 
