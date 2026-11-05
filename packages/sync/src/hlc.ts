@@ -1,7 +1,4 @@
-/** Source of physical time in milliseconds, injected into the clock (spec 7.2). */
-export interface Clock {
-  now(): number;
-}
+import type { Clock } from "@parapka/domain";
 
 /** Hybrid Logical Clock timestamp (spec 7.5). */
 export interface Hlc {
@@ -101,7 +98,7 @@ export class HybridLogicalClock {
   }
 
   private advance(remote: Hlc | null): Hlc {
-    const wall = this.clock.now();
+    const wall = this.clock.nowMs();
     assertPhysical(wall);
     const last = this.last;
     const physical = Math.max(wall, last?.physical ?? 0, remote?.physical ?? 0);
