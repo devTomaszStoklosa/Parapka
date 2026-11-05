@@ -30,6 +30,10 @@ export interface InvitationRecord {
   readonly invitationId: string;
   readonly deviceId: string;
   readonly expiresAtMs: number;
+  /** Device B that accepted the invitation; null while it is unused. */
+  readonly acceptedByDeviceId: string | null;
+  /** Opaque ciphertext of the keys of B; the relay does not read it. */
+  readonly encryptedKeysB: string | null;
 }
 
 export interface MailboxRecord {
@@ -61,12 +65,25 @@ export interface RelayStore {
   putInvitation(invitation: InvitationRecord): Promise<void>;
   getInvitation(invitationId: string): Promise<InvitationRecord | null>;
   deleteInvitation(invitationId: string): Promise<boolean>;
+  /**
+   * Marks the invitation as accepted by `deviceId`, stores the ciphertext and
+   * creates the mailbox, all or nothing. Returns false, changing nothing, when
+   * the invitation does not exist or was already accepted.
+   */
+  acceptInvitation(
+    invitationId: string,
+    deviceId: string,
+    encryptedKeysB: string,
+    mailbox: MailboxRecord,
+  ): Promise<boolean>;
 
   /** Deletes challenges and invitations that expired at or before `nowMs`. */
   purgeExpired(nowMs: number): Promise<void>;
 
   putMailbox(mailbox: MailboxRecord): Promise<void>;
   getMailbox(pairMailboxId: string): Promise<MailboxRecord | null>;
+  /** The mailbox in which the device is A or B. */
+  findMailboxByDevice(deviceId: string): Promise<MailboxRecord | null>;
   /** Deletes the mailbox with its envelopes. */
   deleteMailbox(pairMailboxId: string): Promise<boolean>;
 

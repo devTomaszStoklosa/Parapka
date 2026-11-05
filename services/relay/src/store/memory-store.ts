@@ -68,6 +68,25 @@ export class MemoryStore implements RelayStore {
     return Promise.resolve(this.invitations.delete(invitationId));
   }
 
+  acceptInvitation(
+    invitationId: string,
+    deviceId: string,
+    encryptedKeysB: string,
+    mailbox: MailboxRecord,
+  ): Promise<boolean> {
+    const invitation = this.invitations.get(invitationId);
+    if (invitation === undefined || invitation.acceptedByDeviceId !== null) {
+      return Promise.resolve(false);
+    }
+    this.invitations.set(invitationId, {
+      ...invitation,
+      acceptedByDeviceId: deviceId,
+      encryptedKeysB,
+    });
+    this.mailboxes.set(mailbox.pairMailboxId, mailbox);
+    return Promise.resolve(true);
+  }
+
   purgeExpired(nowMs: number): Promise<void> {
     for (const [id, c] of this.challenges) {
       if (c.expiresAtMs <= nowMs) this.challenges.delete(id);
@@ -85,6 +104,15 @@ export class MemoryStore implements RelayStore {
 
   getMailbox(pairMailboxId: string): Promise<MailboxRecord | null> {
     return Promise.resolve(this.mailboxes.get(pairMailboxId) ?? null);
+  }
+
+  findMailboxByDevice(deviceId: string): Promise<MailboxRecord | null> {
+    for (const mailbox of this.mailboxes.values()) {
+      if (mailbox.deviceIdA === deviceId || mailbox.deviceIdB === deviceId) {
+        return Promise.resolve(mailbox);
+      }
+    }
+    return Promise.resolve(null);
   }
 
   deleteMailbox(pairMailboxId: string): Promise<boolean> {

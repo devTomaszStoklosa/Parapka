@@ -22,6 +22,14 @@ const MAILBOX = {
   createdAtMs: 3,
 };
 
+const INVITATION = {
+  invitationId: "i1",
+  deviceId: "a",
+  expiresAtMs: 9,
+  acceptedByDeviceId: null,
+  encryptedKeysB: null,
+};
+
 function ids(list: readonly { envelope: Envelope }[]): string[] {
   return list.map((e) => e.envelope.envelopeId);
 }
@@ -64,7 +72,7 @@ function shortLivedTests(store: GetStore): void {
   });
 
   it("stores and deletes invitations", async () => {
-    const invitation = { invitationId: "i1", deviceId: "d1", expiresAtMs: 9 };
+    const invitation = { ...INVITATION, invitationId: "i1", deviceId: "d1" };
     await store().putInvitation(invitation);
     expect(await store().getInvitation("i1")).toEqual(invitation);
     expect(await store().deleteInvitation("i1")).toBe(true);
@@ -85,6 +93,7 @@ function shortLivedTests(store: GetStore): void {
       expiresAtMs: 11,
     });
     await store().putInvitation({
+      ...INVITATION,
       invitationId: "old",
       deviceId: "d",
       expiresAtMs: 10,
@@ -145,6 +154,40 @@ function mailboxTests(store: GetStore): void {
     await store().putMailbox(MAILBOX);
     expect(await store().getMailbox("mb1")).toEqual(MAILBOX);
     expect(await store().getMailbox("mb2")).toBeNull();
+  });
+
+  it("finds the mailbox of either device", async () => {
+    await store().putMailbox(MAILBOX);
+    expect(await store().findMailboxByDevice("a")).toEqual(MAILBOX);
+    expect(await store().findMailboxByDevice("b")).toEqual(MAILBOX);
+    expect(await store().findMailboxByDevice("c")).toBeNull();
+  });
+
+  it("accepts an invitation once and creates the mailbox", async () => {
+    await store().putInvitation(INVITATION);
+    expect(await store().acceptInvitation("i1", "b", "KEYS", MAILBOX)).toBe(
+      true,
+    );
+    expect(await store().getInvitation("i1")).toEqual({
+      ...INVITATION,
+      acceptedByDeviceId: "b",
+      encryptedKeysB: "KEYS",
+    });
+    expect(await store().getMailbox("mb1")).toEqual(MAILBOX);
+
+    const second = { ...MAILBOX, pairMailboxId: "mb2", deviceIdB: "c" };
+    expect(await store().acceptInvitation("i1", "c", "OTHER", second)).toBe(
+      false,
+    );
+    expect((await store().getInvitation("i1"))?.acceptedByDeviceId).toBe("b");
+    expect(await store().getMailbox("mb2")).toBeNull();
+  });
+
+  it("does not accept an unknown invitation", async () => {
+    expect(await store().acceptInvitation("zz", "b", "KEYS", MAILBOX)).toBe(
+      false,
+    );
+    expect(await store().getMailbox("mb1")).toBeNull();
   });
 
   it("deletes a mailbox with its envelopes", async () => {

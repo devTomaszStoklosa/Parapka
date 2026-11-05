@@ -1,6 +1,7 @@
 import type { Clock } from "@parapka/domain";
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerDeviceRoutes } from "./devices.js";
+import { registerInvitationRoutes } from "./invitations.js";
 import type { RelayStore } from "./store/store.js";
 
 export interface AppDependencies {
@@ -34,6 +35,7 @@ export function buildApp(deps: AppDependencies): FastifyInstance {
   );
   app.get("/health", () => ({ status: "ok" }));
   registerDeviceRoutes(app);
+  registerInvitationRoutes(app);
   return app;
 }
 
