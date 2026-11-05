@@ -112,6 +112,25 @@ describe("sealCheckin", () => {
   });
 });
 
+describe("sealCheckin test vector", () => {
+  it("matches the stored test vector", () => {
+    const fixedKey = Uint8Array.from({ length: 32 }, (_, i) => i);
+    const fixedNonce = Uint8Array.from({ length: 24 }, (_, i) => 0xa0 + i);
+    const outputs = [fixedKey, fixedNonce];
+    const fixed: Sodium = {
+      ...sodium,
+      randomBytes: () => outputs.shift() ?? new Uint8Array(),
+    };
+    const { key, sealed } = sealCheckin(fixed, FIELDS, PLAINTEXT);
+    expect(hex(key)).toBe(hex(fixedKey));
+    expect(hex(sealed.nonce)).toBe(hex(fixedNonce));
+    expect(hex(sealed.ciphertext)).toBe(
+      "28952a7cd92ed3c9131cdc94636605aa47d0f2793c6e8710d945",
+    );
+    expect(unsealCheckin(sodium, key, FIELDS, sealed)).toEqual(PLAINTEXT);
+  });
+});
+
 describe("checkinAdditionalData", () => {
   it("encodes the version and length-prefixed ids", () => {
     expect(hex(checkinAdditionalData(FIELDS))).toBe(
