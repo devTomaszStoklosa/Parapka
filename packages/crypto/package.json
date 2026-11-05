@@ -1,0 +1,10 @@
+{
+  "name": "@parapka/crypto",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Crypto layer of Parapka over the Sodium interface (spec 7.2).",
+  "type": "module",
+  "devDependencies": {
+    "libsodium-wrappers-sumo": "0.8.4"
+  }
+}
