@@ -27,8 +27,10 @@ function assertCounter(counter: number): void {
 }
 
 function assertDeviceId(deviceId: string): void {
-  if (deviceId === "") {
-    throw new TypeError("HLC deviceId must not be empty");
+  if (!/^[A-Za-z0-9_-]+$/.test(deviceId)) {
+    throw new TypeError(
+      "HLC deviceId must be non-empty and contain only [A-Za-z0-9_-]",
+    );
   }
 }
 
@@ -44,7 +46,7 @@ export function createHlc(
   return { physical, counter, deviceId };
 }
 
-/** Total order: physical time, then counter, then deviceId (UTF-16 code units). */
+/** Total order: physical time, then counter, then deviceId (ASCII only, so UTF-16 and UTF-8 byte order agree). */
 export function compareHlc(a: Hlc, b: Hlc): -1 | 0 | 1 {
   if (a.physical !== b.physical) return a.physical < b.physical ? -1 : 1;
   if (a.counter !== b.counter) return a.counter < b.counter ? -1 : 1;

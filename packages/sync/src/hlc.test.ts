@@ -199,6 +199,24 @@ describe("errors", () => {
     );
   });
 
+  it.each(["😀", "ą", "a b", "a.b"])(
+    "rejects the deviceId %j outside [A-Za-z0-9_-]",
+    (id) => {
+      expect(() => createHlc(1, 0, id)).toThrow(TypeError);
+      expect(() => new HybridLogicalClock(new FakeClock([1]), id)).toThrow(
+        TypeError,
+      );
+      expect(() => parseHlc(`000000000000001-00000-${id}`)).toThrow(TypeError);
+    },
+  );
+
+  it("accepts a UUID and other deviceIds from [A-Za-z0-9_-]", () => {
+    for (const id of ["123e4567-e89b-12d3-a456-426614174000", "a_B-9"]) {
+      expect(createHlc(1, 0, id).deviceId).toBe(id);
+      expect(parseHlc(formatHlc(createHlc(1, 0, id))).deviceId).toBe(id);
+    }
+  });
+
   it("rejects fields out of range", () => {
     expect(() => createHlc(-1, 0, "a")).toThrow(RangeError);
     expect(() => createHlc(1.5, 0, "a")).toThrow(RangeError);
