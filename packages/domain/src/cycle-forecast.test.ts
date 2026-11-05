@@ -195,19 +195,32 @@ describe("estimate marker and result shape", () => {
     ]);
   });
 
-  it('keeps low confidence for "I don\'t know" even with a history', () => {
+  it('gives normal confidence for "I don\'t know" with 3 full cycles', () => {
     const result = forecastCycle({
       periodStarts: starts("2026-01-01", [30, 30, 30]),
       today: TODAY,
       config: { unknown: true },
     });
-    expect(result.confidence).toBe("low");
-    const few = forecastCycle({
+    expect(result).toMatchObject({
+      cycleLength: 30,
+      cycleLengthSource: "history",
+      confidence: "normal",
+    });
+  });
+
+  it('keeps low confidence for "I don\'t know" with fewer than 3 cycles', () => {
+    const one = forecastCycle({
       periodStarts: ["2026-01-01"],
       today: TODAY,
       config: { unknown: true },
     });
-    expect(few).toMatchObject({ cycleLength: 28, confidence: "low" });
+    expect(one).toMatchObject({ cycleLength: 28, confidence: "low" });
+    const two = forecastCycle({
+      periodStarts: starts("2026-01-01", [30, 30]),
+      today: TODAY,
+      config: { unknown: true },
+    });
+    expect(two).toMatchObject({ cycleLength: 28, confidence: "low" });
   });
 });
 

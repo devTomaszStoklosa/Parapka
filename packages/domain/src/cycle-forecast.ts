@@ -164,7 +164,7 @@ export function forecastCycle(input: CycleForecastInput): CycleForecast {
     rangeEnd: fromDayNumber(next + margin),
     cycleLength,
     cycleLengthSource: fromHistory ? "history" : "config",
-    confidence: fromHistory ? config.confidence : "low",
+    confidence: fromHistory ? "normal" : "low",
     isEstimate: true,
   };
 }
