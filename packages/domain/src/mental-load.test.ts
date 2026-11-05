@@ -30,6 +30,24 @@ describe("createMentalLoadItem", () => {
       createMentalLoadItem({ category: "home", carrier: "me", weight: 4 }),
     ).toThrow(ChoreValidationError);
   });
+
+  it("rejects an invalid category", () => {
+    expect(() =>
+      createMentalLoadItem({
+        category: "pets" as MentalLoadItem["category"],
+        carrier: "me",
+      }),
+    ).toThrow(ChoreValidationError);
+  });
+
+  it("rejects an invalid carrier", () => {
+    expect(() =>
+      createMentalLoadItem({
+        category: "home",
+        carrier: "nobody" as MentalLoadItem["carrier"],
+      }),
+    ).toThrow(ChoreValidationError);
+  });
 });
 
 describe("mentalLoadSplit", () => {
