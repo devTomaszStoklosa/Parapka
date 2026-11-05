@@ -3,5 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Envelope, content and relay API schemas shared by the app and the relay (spec 7.4).",
-  "type": "module"
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
 }

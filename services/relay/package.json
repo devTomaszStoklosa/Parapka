@@ -1,0 +1,15 @@
+{
+  "name": "@parapka/relay",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Relay of Parapka: HTTP service with the envelope and mailbox store (spec 7.1).",
+  "type": "module",
+  "dependencies": {
+    "@parapka/domain": "*",
+    "@parapka/protocol": "*",
+    "fastify": "5.12.8"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5"
+  }
+}

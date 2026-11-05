@@ -1,0 +1,89 @@
+import type { Envelope } from "@parapka/protocol";
+
+// Records hold identifiers, keys and tokens only: no names, e-mails or phone
+// numbers (NFR-PRV-03).
+
+export interface DeviceRecord {
+  readonly deviceId: string;
+  /** Ed25519 public key, base64. */
+  readonly signingPublicKey: string;
+  readonly createdAtMs: number;
+}
+
+export interface PushToken {
+  readonly platform: "apns" | "fcm";
+  readonly token: string;
+}
+
+export interface StoredDevice extends DeviceRecord {
+  readonly push: PushToken | null;
+}
+
+export interface ChallengeRecord {
+  readonly challengeId: string;
+  readonly deviceId: string;
+  readonly nonce: string;
+  readonly expiresAtMs: number;
+}
+
+export interface InvitationRecord {
+  readonly invitationId: string;
+  readonly deviceId: string;
+  readonly expiresAtMs: number;
+}
+
+export interface MailboxRecord {
+  readonly pairMailboxId: string;
+  readonly deviceIdA: string;
+  readonly deviceIdB: string;
+  readonly createdAtMs: number;
+}
+
+export interface StoredEnvelope {
+  /** Increasing decimal string; envelopes are listed in cursor order. */
+  readonly cursor: string;
+  readonly envelope: Envelope;
+}
+
+/** Storage of the relay, replaceable behind this interface. */
+export interface RelayStore {
+  putDevice(device: DeviceRecord): Promise<void>;
+  getDevice(deviceId: string): Promise<StoredDevice | null>;
+  /** Returns false when the device does not exist. */
+  setPushToken(deviceId: string, push: PushToken): Promise<boolean>;
+  /** Returns false when the device does not exist. */
+  deleteDevice(deviceId: string): Promise<boolean>;
+
+  putChallenge(challenge: ChallengeRecord): Promise<void>;
+  /** Returns the challenge and deletes it, so it can be used once. */
+  takeChallenge(challengeId: string): Promise<ChallengeRecord | null>;
+
+  putInvitation(invitation: InvitationRecord): Promise<void>;
+  getInvitation(invitationId: string): Promise<InvitationRecord | null>;
+  deleteInvitation(invitationId: string): Promise<boolean>;
+
+  /** Deletes challenges and invitations that expired at or before `nowMs`. */
+  purgeExpired(nowMs: number): Promise<void>;
+
+  putMailbox(mailbox: MailboxRecord): Promise<void>;
+  getMailbox(pairMailboxId: string): Promise<MailboxRecord | null>;
+  /** Deletes the mailbox with its envelopes. */
+  deleteMailbox(pairMailboxId: string): Promise<boolean>;
+
+  /** Stores the envelope; `accepted` is false when its id is already there. */
+  addEnvelope(
+    envelope: Envelope,
+    receivedAtMs: number,
+  ): Promise<{ readonly cursor: string; readonly accepted: boolean }>;
+  /** Envelopes of the mailbox after the cursor, at most `limit`. */
+  listEnvelopes(
+    pairMailboxId: string,
+    after: string | null,
+    limit: number,
+  ): Promise<readonly StoredEnvelope[]>;
+  /** Deletes the envelopes of the mailbox; returns how many were deleted. */
+  deleteEnvelopes(
+    pairMailboxId: string,
+    envelopeIds: readonly string[],
+  ): Promise<number>;
+}
