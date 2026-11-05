@@ -11,3 +11,11 @@ export type {
   DevicePublicKeysText,
 } from "./device-keys.js";
 export { computeSafetyCode } from "./safety-code.js";
+export {
+  decodeInvitation,
+  decryptAcceptorKeys,
+  encodeInvitation,
+  encryptAcceptorKeys,
+  generateInvitationSecret,
+} from "./invitation.js";
+export type { EncryptedAcceptorKeys, InvitationPayload } from "./invitation.js";
