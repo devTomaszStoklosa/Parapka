@@ -62,9 +62,28 @@ export function entityValues(
   if (!isAlive(state)) return null;
   const values: Record<string, unknown> = {};
   for (const [name, field] of Object.entries(state.fields)) {
-    values[name] = field.value;
+    setOwn(values, name, field.value);
   }
   return values;
+}
+
+function setOwn<T>(target: Record<string, T>, name: string, value: T): void {
+  // Plain assignment of "__proto__" would replace the prototype, not add a field.
+  Object.defineProperty(target, name, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
+function getOwn<T>(
+  source: Readonly<Record<string, T>>,
+  name: string,
+): T | undefined {
+  return Object.prototype.hasOwnProperty.call(source, name)
+    ? source[name]
+    : undefined;
 }
 
 function maxHlc(current: string | null, incoming: string): string {
@@ -101,7 +120,7 @@ export function applyChange(state: EntityState, change: Change): EntityState {
     case "upsert": {
       const fields: Record<string, FieldValue> = { ...state.fields };
       for (const [name, incoming] of Object.entries(change.fields)) {
-        fields[name] = pickField(fields[name], incoming);
+        setOwn(fields, name, pickField(getOwn(fields, name), incoming));
       }
       return { ...state, fields };
     }

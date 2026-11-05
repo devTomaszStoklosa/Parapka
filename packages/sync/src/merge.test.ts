@@ -152,4 +152,32 @@ describe("unknown fields", () => {
       futureField: { nested: [1, 2] },
     });
   });
+
+  it("keeps fields named like Object.prototype members", () => {
+    const first: Record<string, [unknown, string]> = {};
+    first["constructor"] = ["c", h(1, 0, "a")];
+    const second: Record<string, [unknown, string]> = {};
+    second["constructor"] = ["d", h(2, 0, "b")];
+    second["toString"] = [1, h(1, 0, "a")];
+    const state = fold([
+      upsert(first),
+      upsert(second),
+      {
+        entity: "Chore",
+        id: "c1",
+        op: "upsert",
+        fields: JSON.parse(
+          '{"__proto__":{"value":"p","hlc":"' + h(1, 0, "a") + '"}}',
+        ) as Record<string, { value: unknown; hlc: string }>,
+      },
+    ]);
+    const values = entityValues(state) as Record<string, unknown>;
+    expect(Object.getOwnPropertyDescriptor(values, "constructor")?.value).toBe(
+      "d",
+    );
+    expect(Object.getOwnPropertyDescriptor(values, "toString")?.value).toBe(1);
+    expect(Object.getOwnPropertyDescriptor(values, "__proto__")?.value).toBe(
+      "p",
+    );
+  });
 });
