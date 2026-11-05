@@ -44,7 +44,7 @@ export function base64urlDecode(text: string): Uint8Array {
       out.push(((v1 & 15) << 4) | (v2 >> 2));
     }
     if (v3 !== undefined) {
-      out.push(((v2 as number) & 3) << 6 | v3);
+      out.push((((v2 as number) & 3) << 6) | v3);
     }
   }
   if (base64urlEncode(Uint8Array.from(out)) !== text) {

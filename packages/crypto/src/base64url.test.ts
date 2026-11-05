@@ -16,7 +16,10 @@ describe("base64url", () => {
 
   it("round-trips all lengths", () => {
     for (let n = 0; n < 40; n++) {
-      const bytes = Uint8Array.from({ length: n }, (_, i) => (i * 37 + 250) % 256);
+      const bytes = Uint8Array.from(
+        { length: n },
+        (_, i) => (i * 37 + 250) % 256,
+      );
       expect(base64urlDecode(base64urlEncode(bytes))).toEqual(bytes);
     }
   });

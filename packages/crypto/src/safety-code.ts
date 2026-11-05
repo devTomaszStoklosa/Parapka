@@ -23,11 +23,11 @@ function keySet(keys: DevicePublicKeys): Uint8Array {
 }
 
 function compare(a: Uint8Array, b: Uint8Array): number {
-  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+  for (let i = 0; i < a.length; i++) {
     const diff = (a[i] as number) - (b[i] as number);
     if (diff !== 0) return diff;
   }
-  return a.length - b.length;
+  return 0;
 }
 
 /**
