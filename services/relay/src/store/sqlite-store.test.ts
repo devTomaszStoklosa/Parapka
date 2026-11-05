@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -52,6 +52,22 @@ describe("sqlite migrations", () => {
       opened.push(second);
       return expect(second.getDevice("d")).resolves.not.toBeNull();
     } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rolls back a failing migration and leaves it unapplied", () => {
+    const dir = mkdtempSync(join(tmpdir(), "relay-migrations-"));
+    const db = new DatabaseSync(":memory:");
+    try {
+      writeFileSync(join(dir, "0001_bad.sql"), "CREATE TABLE broken (");
+      expect(() => {
+        migrate(db, dir);
+      }).toThrow();
+      const rows = db.prepare("SELECT version FROM schema_migrations").all();
+      expect(rows).toEqual([]);
+    } finally {
+      db.close();
       rmSync(dir, { recursive: true, force: true });
     }
   });
