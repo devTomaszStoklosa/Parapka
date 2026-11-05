@@ -65,8 +65,8 @@
       "id": "relief-errand",
       "category": "relief",
       "text": {
-        "feminine": "Załatw dziś sprawę, która od dawna czeka na ją.",
-        "masculine": "Załatw dziś sprawę, która od dawna czeka na go.",
+        "feminine": "Załatw dziś sprawę, która od dawna czeka na nią.",
+        "masculine": "Załatw dziś sprawę, która od dawna czeka na niego.",
         "neutral": "Załatw dziś sprawę, która od dawna czeka na tę osobę."
       },
       "review": "unreviewed"
@@ -235,8 +235,8 @@
       "id": "tenderness-sit-close",
       "category": "tenderness",
       "text": {
-        "feminine": "Usiądź dziś obok jej, a nie naprzeciwko.",
-        "masculine": "Usiądź dziś obok jego, a nie naprzeciwko.",
+        "feminine": "Usiądź dziś obok niej, a nie naprzeciwko.",
+        "masculine": "Usiądź dziś obok niego, a nie naprzeciwko.",
         "neutral": "Usiądź dziś obok tej osoby, a nie naprzeciwko."
       },
       "review": "unreviewed"
@@ -295,8 +295,8 @@
       "id": "tenderness-slow",
       "category": "tenderness",
       "text": {
-        "feminine": "Zwolnij dziś przy jej, nic nie musisz załatwiać.",
-        "masculine": "Zwolnij dziś przy mu, nic nie musisz załatwiać.",
+        "feminine": "Zwolnij dziś przy niej, nic nie musisz załatwiać.",
+        "masculine": "Zwolnij dziś przy nim, nic nie musisz załatwiać.",
         "neutral": "Zwolnij dziś przy tej osobie, nic nie musisz załatwiać."
       },
       "review": "unreviewed"
@@ -305,8 +305,8 @@
       "id": "tenderness-look",
       "category": "tenderness",
       "text": {
-        "feminine": "Spójrz na ją uważnie i uśmiechnij się, kiedy wejdzie.",
-        "masculine": "Spójrz na go uważnie i uśmiechnij się, kiedy wejdzie.",
+        "feminine": "Spójrz na nią uważnie i uśmiechnij się, kiedy wejdzie.",
+        "masculine": "Spójrz na niego uważnie i uśmiechnij się, kiedy wejdzie.",
         "neutral": "Spójrz na tę osobę uważnie i uśmiechnij się, kiedy wejdzie."
       },
       "review": "unreviewed"
@@ -335,8 +335,8 @@
       "id": "attention-listen",
       "category": "attention",
       "text": {
-        "feminine": "Odłóż telefon na czas rozmowy i skup się tylko na jej.",
-        "masculine": "Odłóż telefon na czas rozmowy i skup się tylko na mu.",
+        "feminine": "Odłóż telefon na czas rozmowy i skup się tylko na niej.",
+        "masculine": "Odłóż telefon na czas rozmowy i skup się tylko na nim.",
         "neutral": "Odłóż telefon na czas rozmowy i skup się tylko na tej osobie."
       },
       "review": "unreviewed"
@@ -385,9 +385,9 @@
       "id": "attention-eye-contact",
       "category": "attention",
       "text": {
-        "feminine": "Porozmawiaj z jej twarzą w twarz, bez ekranów.",
-        "masculine": "Porozmawiaj z mu twarzą w twarz, bez ekranów.",
-        "neutral": "Porozmawiaj z tej osobie twarzą w twarz, bez ekranów."
+        "feminine": "Porozmawiaj z nią twarzą w twarz, bez ekranów.",
+        "masculine": "Porozmawiaj z nim twarzą w twarz, bez ekranów.",
+        "neutral": "Porozmawiaj z tą osobą twarzą w twarz, bez ekranów."
       },
       "review": "unreviewed"
     },
@@ -666,8 +666,8 @@
       "category": "appreciation",
       "text": {
         "feminine": "Napisz kilka zdań o tym, co cenisz w niej, i zostaw je na stole.",
-        "masculine": "Napisz kilka zdań o tym, co cenisz w niego, i zostaw je na stole.",
-        "neutral": "Napisz kilka zdań o tym, co cenisz w tej osoby, i zostaw je na stole."
+        "masculine": "Napisz kilka zdań o tym, co cenisz w nim, i zostaw je na stole.",
+        "neutral": "Napisz kilka zdań o tym, co cenisz w tej osobie, i zostaw je na stole."
       },
       "review": "unreviewed"
     },
@@ -686,8 +686,8 @@
       "category": "appreciation",
       "text": {
         "feminine": "Powiedz na głos, co w niej dziś szczególnie cenisz.",
-        "masculine": "Powiedz na głos, co w niego dziś szczególnie cenisz.",
-        "neutral": "Powiedz na głos, co w tej osoby dziś szczególnie cenisz."
+        "masculine": "Powiedz na głos, co w nim dziś szczególnie cenisz.",
+        "neutral": "Powiedz na głos, co w tej osobie dziś szczególnie cenisz."
       },
       "review": "unreviewed"
     },
@@ -745,9 +745,9 @@
       "id": "appreciation-talks",
       "category": "appreciation",
       "text": {
-        "feminine": "Powiedz, że cenisz sobie rozmowy z niej.",
-        "masculine": "Powiedz, że cenisz sobie rozmowy z niego.",
-        "neutral": "Powiedz, że cenisz sobie rozmowy z tej osoby."
+        "feminine": "Powiedz, że cenisz sobie rozmowy z nią.",
+        "masculine": "Powiedz, że cenisz sobie rozmowy z nim.",
+        "neutral": "Powiedz, że cenisz sobie rozmowy z tą osobą."
       },
       "review": "unreviewed"
     },
@@ -795,8 +795,8 @@
       "id": "appreciation-list",
       "category": "appreciation",
       "text": {
-        "feminine": "Wypisz trzy rzeczy, które lubisz u jej, i przeczytaj je jej.",
-        "masculine": "Wypisz trzy rzeczy, które lubisz u jego, i przeczytaj je mu.",
+        "feminine": "Wypisz trzy rzeczy, które lubisz u niej, i przeczytaj je jej.",
+        "masculine": "Wypisz trzy rzeczy, które lubisz u niego, i przeczytaj je mu.",
         "neutral": "Wypisz trzy rzeczy, które lubisz u tej osoby, i przeczytaj je tej osobie."
       },
       "review": "unreviewed"
