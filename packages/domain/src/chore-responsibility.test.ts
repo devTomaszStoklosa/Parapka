@@ -59,6 +59,29 @@ describe("alternating", () => {
   });
 });
 
+describe("assignment validation", () => {
+  it("rejects an unknown person", () => {
+    const person = {
+      kind: "person",
+      person: "nobody",
+    } as unknown as Assignment;
+    expect(() => responsibleFor(daily, person, "2025-01-30")).toThrow(
+      ChoreValidationError,
+    );
+  });
+
+  it("rejects an unknown first person of an alternating assignment", () => {
+    const bad = {
+      kind: "alternating",
+      firstPerson: "nobody",
+      startDate: "2025-01-30",
+    } as unknown as Assignment;
+    expect(() => responsibleFor(daily, bad, "2025-01-30")).toThrow(
+      ChoreValidationError,
+    );
+  });
+});
+
 describe("reminder recipients", () => {
   const date = "2025-01-31";
   it("goes to the responsible person only", () => {
