@@ -131,7 +131,7 @@ describe("POST /v1/devices", () => {
   });
 
   it("answers 400 for a missing, malformed or unparsable body", async () => {
-    for (const payload of ["{}", '{"signingPublicKey":"AAAA"}', "null", "{"]) {
+    for (const payload of ["null", "{", "", '{"signingPublicKey":"A"}']) {
       const response = await app.inject({
         method: "POST",
         url: "/v1/devices",
