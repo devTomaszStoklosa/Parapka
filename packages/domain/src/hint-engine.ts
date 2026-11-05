@@ -90,7 +90,7 @@ function isDataRule(rule: EngineRule): boolean {
 }
 
 function byPriority(a: EngineRule, b: EngineRule): number {
-  return b.priority - a.priority || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  return b.priority - a.priority || a.id.localeCompare(b.id);
 }
 
 function inRange(
@@ -244,7 +244,7 @@ function pickHint(
     for (const category of shuffled(rule.categories, random)) {
       const candidates = input.templates
         .filter((t) => t.category === category && !blocked.has(t.id))
-        .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+        .sort((a, b) => a.id.localeCompare(b.id));
       if (candidates.length === 0) continue;
       const template = candidates[
         Math.floor(random() * candidates.length)

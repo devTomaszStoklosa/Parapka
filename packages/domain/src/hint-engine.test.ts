@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CyclePhase, CyclePhaseEstimate } from "./cycle-phase";
 import {
   type EngineRule,
+  type GeneratedHint,
   type HintCategory,
   type HintDay,
   type HintEngineInput,
@@ -121,25 +122,19 @@ describe("input (criterion 1)", () => {
     });
   });
 
-  it("ignores entries older than 3 days", () => {
+  it("ignores entries older than 3 days and a check-in of an earlier week", () => {
+    const answers = { mood: 3, energy: 1, closeness: 3 } as const;
     const result = generateHints(
-      input({ entries: [{ date: "2027-03-07", energy: 1 }] }),
+      input({
+        entries: [{ date: "2027-03-07", energy: 1 }],
+        checkin: { date: "2027-03-01", answers },
+      }),
     );
     expect(result[0]?.category).toMatch(/appreciation|attention/);
   });
 
-  it("ignores a check-in from an earlier week", () => {
-    const answers = { mood: 3, energy: 1, closeness: 3 } as const;
-    const [hint] = generateHints(
-      input({ checkin: { date: "2027-03-01", answers } }),
-    );
-    expect(hint?.category).toMatch(/appreciation|attention/);
-  });
-
   it("ignores hints older than 14 days", () => {
-    const only = templates
-      .filter((t) => t.category === "appreciation")
-      .slice(0, 1);
+    const only = templates.filter((t) => t.id === "appreciation-1");
     const old = generateHints(
       input({
         templates: only,
@@ -176,15 +171,19 @@ describe("order of rules (criterion 2)", () => {
   });
 });
 
+function expectLow(result: GeneratedHint[]): void {
+  expect(result).toHaveLength(3);
+  for (const hint of result) {
+    expect(["relief", "space"]).toContain(hint.category);
+  }
+}
+
 describe("low energy (criterion 3)", () => {
   it("FR-CYC-08: follicular phase and entry energy 1", () => {
     const result = generateHints(
       input({ entries: [{ date: TODAY, energy: 1 }] }),
     );
-    expect(result).toHaveLength(3);
-    for (const hint of result) {
-      expect(["relief", "space"]).toContain(hint.category);
-    }
+    expectLow(result);
   });
 
   it("FR-CHK-08: check-in energy 1 on the following days", () => {
@@ -197,15 +196,12 @@ describe("low energy (criterion 3)", () => {
         },
       }),
     );
-    expect(result).toHaveLength(3);
-    for (const hint of result) {
-      expect(["relief", "space"]).toContain(hint.category);
-    }
+    expectLow(result);
   });
 });
 
 describe("one hint per day (criterion 4)", () => {
-  it("returns at most 3 hints with unique dates", () => {
+  it("returns at most 3 deterministic hints with unique dates", () => {
     const many = [...DATES, "2027-03-14", "2027-03-15"].map((date) => ({
       date,
       estimate: estimate("luteal"),
@@ -213,10 +209,7 @@ describe("one hint per day (criterion 4)", () => {
     const result = generateHints(input({ days: many }));
     expect(result).toHaveLength(3);
     expect(new Set(result.map((h) => h.date)).size).toBe(3);
-  });
-
-  it("is deterministic", () => {
-    expect(generateHints(input())).toEqual(generateHints(input()));
+    expect(generateHints(input({ days: many }))).toEqual(result);
   });
 
   it("does not repeat a template within 7 days", () => {
@@ -283,13 +276,16 @@ describe("categories per phase (criterion 6)", () => {
 });
 
 describe("uncertain forecast (criterion 7)", () => {
+  const lowDays = (phase: CyclePhase): HintDay[] =>
+    DATES.map((date) => ({
+      date,
+      estimate: estimate(phase, { confidence: "low", isIrregular: true }),
+    }));
+
   it.each(PHASES)("applies phase rules for %s at low confidence", (phase) => {
     const result = generateHints(
       input({
-        days: DATES.map((date) => ({
-          date,
-          estimate: estimate(phase, { confidence: "low", isIrregular: true }),
-        })),
+        days: lowDays(phase),
       }),
     );
     expect(result).toHaveLength(3);
@@ -301,18 +297,27 @@ describe("uncertain forecast (criterion 7)", () => {
   it("still lets an entry win over the phase rule", () => {
     const result = generateHints(
       input({
-        days: DATES.map((date) => ({
-          date,
-          estimate: estimate("follicular", {
-            confidence: "low",
-            isIrregular: true,
-          }),
-        })),
+        days: lowDays("follicular"),
         entries: [{ date: TODAY, energy: 1 }],
       }),
     );
     for (const hint of result) {
       expect(["relief", "space"]).toContain(hint.category);
     }
+  });
+});
+
+describe("rule conditions", () => {
+  const count = (when: Record<string, unknown>): number => {
+    const rule = { id: "r", when, categories: ["space"], priority: 1 };
+    const entries = [{ date: TODAY, energy: 4, mood: 2 }];
+    return generateHints(input({ rules: [rule as EngineRule], entries })).length;
+  };
+
+  it("matches energyMin and moodMax and rejects the rest", () => {
+    expect(count({ energyMin: 4, moodMax: 2 })).toBe(3);
+    expect(count({ energyMin: 5 })).toBe(0);
+    expect(count({ moodMax: "2" })).toBe(0);
+    expect(count({ phase: "follicular", x: 1 })).toBe(0);
   });
 });
