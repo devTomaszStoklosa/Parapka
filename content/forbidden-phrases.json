@@ -1,0 +1,22 @@
+{
+  "medical": [
+    "płodn dn|dzie",
+    "bezpieczn dn|dzie",
+    "antykoncep",
+    "diagnoz",
+    "leczeni",
+    "terapi"
+  ],
+  "revealing": [
+    "okres",
+    "miesiączk",
+    "menstruac",
+    "faz",
+    "owulac",
+    "pms",
+    "hormon",
+    "cykl"
+  ],
+  "sexual": ["seks", "sex", "erotyc", "intymn", "zbliżeni", "stosun", "łóżk"],
+  "allowedMessages": ["to nie jest metoda antykoncepcji ani narzędzie medyczne"]
+}
