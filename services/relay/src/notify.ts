@@ -22,7 +22,9 @@ async function pushTo(app: FastifyInstance, partnerId: string): Promise<void> {
     await pushSender.send(push, SYNC_MARKER);
   } catch (error) {
     // A failed push must not fail the request that stored the envelope.
-    app.log.warn({ err: error }, "push failed");
+    // Only the message: the error object may carry the push token.
+    const reason = error instanceof Error ? error.message : "unknown error";
+    app.log.warn({ reason }, "push failed");
   }
 }
 

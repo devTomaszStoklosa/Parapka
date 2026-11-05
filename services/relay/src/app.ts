@@ -1,5 +1,8 @@
 import type { Clock } from "@parapka/domain";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, {
+  type FastifyInstance,
+  type FastifyServerOptions,
+} from "fastify";
 import { registerEnvelopeRoutes } from "./envelopes.js";
 import { registerDeviceRoutes } from "./devices.js";
 import { registerInvitationRoutes } from "./invitations.js";
@@ -14,11 +17,13 @@ export interface AppDependencies {
   readonly requestsPerWindow?: number;
   /** Sends pushes without content; without it the relay sends none. */
   readonly pushSender?: PushSender;
+  /** Fastify logger options (see logging.ts); without it nothing is logged. */
+  readonly logger?: FastifyServerOptions["logger"];
 }
 
 /** Builds the relay application; it does not listen on a port. */
 export function buildApp(deps: AppDependencies): FastifyInstance {
-  const app = Fastify();
+  const app = Fastify({ logger: deps.logger ?? false });
   // The domain endpoints, added later, read the store and the clock from here.
   app.decorate("relay", deps);
   app.decorateRequest("rawBody", null);
