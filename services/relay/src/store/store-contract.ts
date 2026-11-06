@@ -51,7 +51,12 @@ function deviceTests(store: GetStore): void {
       signingPublicKey: "KEY",
       createdAtMs: 5,
     });
-    expect((await store().getDevice("d1"))?.push).toBeNull();
+    expect(await store().getDevice("d1")).toEqual({
+      deviceId: "d1",
+      signingPublicKey: "KEY",
+      createdAtMs: 5,
+      push: null,
+    });
     const push = { platform: "fcm", token: "tok" } as const;
     expect(await store().setPushToken("d1", push)).toBe(true);
     expect((await store().getDevice("d1"))?.push).toEqual(push);
