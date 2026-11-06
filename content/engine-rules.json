@@ -1,5 +1,5 @@
 {
-  "contentVersion": 2,
+  "contentVersion": 3,
   "entries": [
     {
       "id": "low-energy-relief",
@@ -64,25 +64,25 @@
     {
       "id": "phase-follicular",
       "when": { "phase": "follicular" },
-      "categories": ["appreciation", "attention"],
+      "categories": ["appreciation", "attention", "relief"],
       "priority": 5
     },
     {
       "id": "phase-periovulatory",
       "when": { "phase": "periovulatory" },
-      "categories": ["attention", "appreciation", "tenderness"],
+      "categories": ["attention", "appreciation", "tenderness", "space"],
       "priority": 5
     },
     {
       "id": "phase-luteal",
       "when": { "phase": "luteal" },
-      "categories": ["space", "relief"],
+      "categories": ["space", "relief", "appreciation"],
       "priority": 5
     },
     {
       "id": "phase-premenstrual",
       "when": { "phase": "premenstrual" },
-      "categories": ["relief", "tenderness", "space"],
+      "categories": ["relief", "tenderness", "attention"],
       "priority": 5
     }
   ]
