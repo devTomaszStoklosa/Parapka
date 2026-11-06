@@ -83,6 +83,37 @@ function validateSchedule(schedule: CheckinSchedule): void {
   }
 }
 
+function daysInMonth(year: number, month: number): number {
+  if (month === 2) {
+    const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    return leap ? 29 : 28;
+  }
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+}
+
+function isIntegerInRange(value: number, min: number, max: number): boolean {
+  return Number.isInteger(value) && value >= min && value <= max;
+}
+
+function validateLocalDateTime(local: LocalDateTime): void {
+  const { year, month, day, hour, minute } = local;
+  if (!isIntegerInRange(year, 1000, 9999)) {
+    throw new ChoreValidationError("local year must be 1000–9999");
+  }
+  if (!isIntegerInRange(month, 1, 12)) {
+    throw new ChoreValidationError("local month must be 1–12");
+  }
+  if (!isIntegerInRange(day, 1, daysInMonth(year, month))) {
+    throw new ChoreValidationError("local day is not valid for the month");
+  }
+  if (!isIntegerInRange(hour, 0, 23)) {
+    throw new ChoreValidationError("local hour must be 0–23");
+  }
+  if (!isIntegerInRange(minute, 0, 59)) {
+    throw new ChoreValidationError("local minute must be 0–59");
+  }
+}
+
 function toUtcMs(local: LocalDateTime): number {
   return Date.UTC(
     local.year,
@@ -128,10 +159,8 @@ export function currentCheckinWindow(
   schedule: CheckinSchedule = DEFAULT_CHECKIN_SCHEDULE,
 ): CheckinWindow {
   validateSchedule(schedule);
+  validateLocalDateTime(local);
   const nowMs = toUtcMs(local);
-  if (Number.isNaN(nowMs)) {
-    throw new ChoreValidationError("invalid local date and time");
-  }
   const now = new Date(nowMs);
   const nowWeekday = now.getUTCDay() === 0 ? 7 : now.getUTCDay();
   const daysBack = (nowWeekday - schedule.weekday + 7) % 7;
