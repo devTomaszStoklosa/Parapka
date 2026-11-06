@@ -5,7 +5,7 @@ import type { Envelope } from "@parapka/protocol";
 
 export interface DeviceRecord {
   readonly deviceId: string;
-  /** Ed25519 public key, base64. */
+  /** Ed25519 public key, base64url without padding (32 bytes). */
   readonly signingPublicKey: string;
   readonly createdAtMs: number;
 }
