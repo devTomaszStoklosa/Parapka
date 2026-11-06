@@ -488,7 +488,7 @@ Treść po odszyfrowaniu (XChaCha20-Poly1305, kierunkowy klucz pary):
 
 Operacja `delete` zostawia tombstone. Edycja pól (`upsert`) nie przywraca usuniętej encji; cofa usunięcie tylko jawna operacja `restore`, której `hlc` jest późniejszy niż `hlc` tombstone (§7.5).
 
-**Kodowania:** pola `nonce` i `ciphertext` koperty są w standardowym base64 z dopełnieniem (`=`). W standardowym base64 z dopełnieniem są też `signingPublicKey` przy rejestracji (`POST /v1/devices`) i podpis w nagłówku `X-Signature`. Klucze publiczne w ładunku zaproszenia (kod QR i link, §7.3), czyli tekstowa postać kluczy z `packages/crypto`, są w base64url bez dopełnienia.
+**Kodowania:** pola `nonce` i `ciphertext` koperty są w standardowym base64 z dopełnieniem (`=`). Klucz publiczny `signingPublicKey` przy rejestracji (`POST /v1/devices`, dokładnie 32 bajty) i podpis w nagłówku `X-Signature` (64 bajty) są w base64url bez dopełnienia (RFC 4648 §5), w kanonicznej postaci, jak klucze z `packages/crypto` i w ładunku zaproszenia (kod QR i link, §7.3); standardowe base64 (`+`, `/`, `=`) jest odrzucane. `nonce` wyzwania jest w base64url.
 
 Endpointy relaya (szkic):
 
@@ -507,7 +507,7 @@ Endpointy relaya (szkic):
 | POST | `/v1/pairs/{id}/acks` | Potwierdzenie odbioru; relay usuwa potwierdzone koperty. |
 | DELETE | `/v1/pairs/{id}` | Zamknięcie skrzynki pary (rozłączenie). |
 
-**Uwierzytelnienie:** urządzenie pobiera wyzwanie (`challengeId`, `nonce`), jednorazowe i ważne 5 minut, i podpisuje kluczem Ed25519 tekst złożony z linii oddzielonych znakiem `\n`: prefiks `parapka-relay-auth-v1`, metoda HTTP, URL żądania, `challengeId`, `nonce` i SHA-256 surowego ciała żądania (szesnastkowo). Żądanie niesie nagłówki `X-Device-Id`, `X-Challenge-Id` i `X-Signature`. Relay zużywa wyzwanie nawet przy błędnym podpisie; każdy błąd to jednolite 401. Wszystkie endpointy poza rejestracją i wydaniem wyzwania wymagają tego uwierzytelnienia.
+**Uwierzytelnienie:** urządzenie pobiera wyzwanie (`challengeId`, `nonce`), jednorazowe i ważne 5 minut, i podpisuje kluczem Ed25519 tekst złożony z linii oddzielonych znakiem `\n`: prefiks `parapka-relay-auth-v1`, metoda HTTP, URL żądania, `challengeId`, `nonce` i SHA-256 surowego ciała żądania (szesnastkowo). Żądanie niesie nagłówki `X-Device-Id`, `X-Challenge-Id` i `X-Signature` (podpis w base64url bez dopełnienia). Relay zużywa wyzwanie nawet przy błędnym podpisie; każdy błąd to jednolite 401. Wszystkie endpointy poza rejestracją i wydaniem wyzwania wymagają tego uwierzytelnienia.
 
 Limity: koperta ≤ 64 KB, limit żądań na urządzenie, TTL niedostarczonych kopert 30 dni.
 

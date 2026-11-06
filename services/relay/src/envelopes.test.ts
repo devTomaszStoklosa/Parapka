@@ -36,7 +36,7 @@ async function register(): Promise<TestDevice> {
   const publicB64 = publicKey
     .export({ format: "der", type: "spki" })
     .subarray(-32)
-    .toString("base64");
+    .toString("base64url");
   const response = await app.inject({
     method: "POST",
     url: "/v1/devices",
@@ -46,7 +46,7 @@ async function register(): Promise<TestDevice> {
   return {
     deviceId: response.json<{ deviceId: string }>().deviceId,
     sign: (text) =>
-      sign(null, Buffer.from(text), privateKey).toString("base64"),
+      sign(null, Buffer.from(text), privateKey).toString("base64url"),
   };
 }
 

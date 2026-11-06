@@ -33,7 +33,7 @@ async function register(): Promise<TestDevice> {
   const publicB64 = publicKey
     .export({ format: "der", type: "spki" })
     .subarray(-32)
-    .toString("base64");
+    .toString("base64url");
   const response = await app.inject({
     method: "POST",
     url: "/v1/devices",
@@ -44,7 +44,7 @@ async function register(): Promise<TestDevice> {
     deviceId: response.json<{ deviceId: string }>().deviceId,
     publicKey: publicB64,
     sign: (text) =>
-      sign(null, Buffer.from(text), privateKey).toString("base64"),
+      sign(null, Buffer.from(text), privateKey).toString("base64url"),
   };
 }
 
@@ -188,7 +188,7 @@ describe("challenges", () => {
     expect(response.statusCode).toBe(401);
   });
 
-  it("a used one gets 401, even when the first request failed", async () => {
+  it("a used one gets 401; a standard base64 signature gets 401", async () => {
     const device = await register();
     const sent = await challenge(device.deviceId);
     const url = `/v1/devices/${device.deviceId}/push-token`;
@@ -211,7 +211,8 @@ describe("challenges", () => {
       nonce: sent.nonce,
       body: Buffer.from(BODY),
     });
-    expect((await send("AAAA")).statusCode).toBe(401);
+    const std = Buffer.from(device.sign(text), "base64url").toString("base64");
+    expect((await send(std)).statusCode).toBe(401);
     expect((await send(device.sign(text))).statusCode).toBe(401);
   });
 });

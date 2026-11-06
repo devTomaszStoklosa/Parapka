@@ -4,7 +4,7 @@ import type { Envelope } from "./envelope.js";
 
 /** POST /v1/devices */
 export interface RegisterDeviceRequest {
-  /** Ed25519 public key used to sign requests, base64. */
+  /** Ed25519 public key used to sign requests, base64url without padding (RFC 4648 §5), 32 bytes. */
   readonly signingPublicKey: string;
 }
 export interface RegisterDeviceResponse {

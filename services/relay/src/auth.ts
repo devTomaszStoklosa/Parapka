@@ -35,12 +35,19 @@ export function buildSignedText(parts: SignedRequestParts): string {
   );
 }
 
-/** Imports a base64 Ed25519 public key (32 bytes); null when it is malformed. */
-export function importPublicKey(base64: string): KeyObject | null {
-  const raw = Buffer.from(base64, "base64");
-  if (raw.length !== ED25519_KEY_LENGTH || raw.toString("base64") !== base64) {
-    return null;
-  }
+const ED25519_SIGNATURE_LENGTH = 64;
+
+/** Decodes canonical unpadded base64url of the given length; null otherwise. */
+function decodeBase64Url(text: string, length: number): Buffer | null {
+  const raw = Buffer.from(text, "base64url");
+  if (raw.length !== length || raw.toString("base64url") !== text) return null;
+  return raw;
+}
+
+/** Imports a base64url Ed25519 public key (32 bytes); null when it is malformed. */
+export function importPublicKey(base64url: string): KeyObject | null {
+  const raw = decodeBase64Url(base64url, ED25519_KEY_LENGTH);
+  if (raw === null) return null;
   return createPublicKey({
     key: Buffer.concat([ED25519_SPKI_PREFIX, raw]),
     format: "der",
@@ -48,20 +55,20 @@ export function importPublicKey(base64: string): KeyObject | null {
   });
 }
 
-/** Verifies the base64 signature over the text with the base64 public key. */
+/** Verifies the base64url signature over the text with the base64url public key. */
 export function verifySignature(
-  publicKeyBase64: string,
+  publicKeyBase64Url: string,
   text: string,
-  signatureBase64: string,
+  signatureBase64Url: string,
 ): boolean {
-  const key = importPublicKey(publicKeyBase64);
+  const key = importPublicKey(publicKeyBase64Url);
   if (key === null) return false;
-  return verify(
-    null,
-    Buffer.from(text, "utf8"),
-    key,
-    Buffer.from(signatureBase64, "base64"),
+  const signature = decodeBase64Url(
+    signatureBase64Url,
+    ED25519_SIGNATURE_LENGTH,
   );
+  if (signature === null) return false;
+  return verify(null, Buffer.from(text, "utf8"), key, signature);
 }
 
 function header(request: FastifyRequest, name: string): string | null {
