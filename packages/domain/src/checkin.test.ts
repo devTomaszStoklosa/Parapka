@@ -118,6 +118,26 @@ describe("currentCheckinWindow", () => {
       ChoreValidationError,
     );
   });
+
+  it.each([
+    ["2026-02-30", at([2026, 2, 30])],
+    ["2027-02-29", at([2027, 2, 29])],
+    ["month 13", at([2026, 13, 1])],
+    ["month 0", at([2026, 0, 1])],
+    ["hour 24", at([2026, 11, 5], 24, 0)],
+    ["minute 60", at([2026, 11, 5], 12, 60)],
+    ["fractional day", at([2026, 11, 5.5])],
+    ["fractional hour", at([2026, 11, 5], 1.5, 0)],
+    ["year 99", at([99, 11, 5])],
+    ["year 10000", at([10000, 1, 1])],
+  ])("rejects %s", (_name, local) => {
+    expect(() => currentCheckinWindow(local)).toThrow(ChoreValidationError);
+  });
+
+  it("accepts 2028-02-29", () => {
+    const w = currentCheckinWindow(at([2028, 2, 29], 10, 0));
+    expect(w.start).toEqual(at([2028, 2, 27], 19, 0));
+  });
 });
 
 describe("createCheckinAnswers", () => {
@@ -224,7 +244,7 @@ describe("partner state is not disclosed (ZP-2)", () => {
     ]);
   });
 
-  it("the edit error is the same whoever filled in first", () => {
+  it("rejects editing once the partner has filled in", () => {
     const answers = createCheckinAnswers({ mood: 3, energy: 3, closeness: 3 });
     expect(() =>
       editCheckinAnswers({ answers, partnerFilled: true }, answers),

@@ -89,8 +89,13 @@ function isDataRule(rule: EngineRule): boolean {
   return DATA_KEYS.some((key) => key in rule.when);
 }
 
+/** Code unit order, so the result does not depend on the device locale. */
+function compareIds(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function byPriority(a: EngineRule, b: EngineRule): number {
-  return b.priority - a.priority || a.id.localeCompare(b.id);
+  return b.priority - a.priority || compareIds(a.id, b.id);
 }
 
 function inRange(
@@ -244,7 +249,7 @@ function pickHint(
     for (const category of shuffled(rule.categories, random)) {
       const candidates = input.templates
         .filter((t) => t.category === category && !blocked.has(t.id))
-        .sort((a, b) => a.id.localeCompare(b.id));
+        .sort((a, b) => compareIds(a.id, b.id));
       if (candidates.length === 0) continue;
       const template = candidates[
         Math.floor(random() * candidates.length)
