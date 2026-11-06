@@ -1,7 +1,7 @@
 import { generateKeyPairSync, sign } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildApp } from "./app.js";
 import { buildSignedText } from "./auth.js";
 import { RecordingPushSender, SYNC_MARKER } from "./push.js";
@@ -216,6 +216,92 @@ describe("push without content", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     await sendFrom(p.a, p.mailbox);
     expect(pushes.sent).toHaveLength(1);
+  });
+});
+
+describe("dead connection detection", () => {
+  let tick: () => void;
+  let stop: ReturnType<typeof vi.fn>;
+  let intervalMs: number;
+
+  beforeEach(async () => {
+    await app.close();
+    stop = vi.fn();
+    store = new MemoryStore();
+    pushes = new RecordingPushSender();
+    app = buildApp({
+      store,
+      clock: { nowMs: () => 1_700_000_000_000 },
+      pushSender: pushes,
+      pingScheduler: (callback, interval) => {
+        tick = callback;
+        intervalMs = interval;
+        return stop as () => void;
+      },
+    });
+    await app.ready();
+  });
+
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+  // The injected client does not answer pings by itself; a live phone does.
+  function answerPings(socket: WebSocket): void {
+    socket.on("ping", () => {
+      socket.pong();
+    });
+  }
+
+  it("pings every 30 seconds", async () => {
+    const p = await pair();
+    const socket = await connect(p.b, p.mailbox);
+    const ping = new Promise<void>((resolve) => socket.once("ping", resolve));
+    tick();
+    await ping;
+    expect(intervalMs).toBe(30_000);
+    socket.terminate();
+  });
+
+  it("keeps a connection that answers with pongs", async () => {
+    const p = await pair();
+    const socket = await connect(p.b, p.mailbox);
+    answerPings(socket);
+    for (let i = 0; i < 3; i += 1) {
+      tick();
+      await settle();
+    }
+    expect(socket.readyState).toBe(socket.OPEN);
+    socket.terminate();
+  });
+
+  it("closes a connection that missed a pong", async () => {
+    const p = await pair();
+    const socket = await connect(p.b, p.mailbox);
+    const closed = new Promise<void>((resolve) =>
+      socket.once("close", resolve),
+    );
+    tick();
+    await settle();
+    expect(socket.readyState).toBe(socket.OPEN);
+    tick();
+    await closed;
+  });
+
+  it("pushes to the partner once its only dead connection is gone", async () => {
+    const p = await pair();
+    await store.setPushToken(p.b.deviceId, { platform: "fcm", token: "T" });
+    await connect(p.b, p.mailbox);
+    tick();
+    await settle();
+    tick();
+    await settle();
+    await sendFrom(p.a, p.mailbox);
+    expect(pushes.sent).toHaveLength(1);
+  });
+
+  it("stops the ping timer when the app closes", async () => {
+    expect(stop).not.toHaveBeenCalled();
+    await app.close();
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 });
 

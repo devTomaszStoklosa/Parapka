@@ -48,9 +48,49 @@ async function notifyPartner(
   await pushTo(app, partnerId);
 }
 
+/** How often the relay pings every connection. */
+export const PING_INTERVAL_MS = 30_000;
+
+/** Runs `tick` every `intervalMs`; the returned function stops it. */
+export type PingScheduler = (
+  tick: () => void,
+  intervalMs: number,
+) => () => void;
+
+const defaultScheduler: PingScheduler = (tick, intervalMs) => {
+  const timer = setInterval(tick, intervalMs);
+  timer.unref();
+  return () => {
+    clearInterval(timer);
+  };
+};
+
+// A socket that did not answer the previous ping is dead: a phone in the
+// background often leaves the TCP connection hanging without closing it.
+function heartbeatTick(sockets: Sockets, alive: Set<WebSocket>): void {
+  for (const own of sockets.values()) {
+    for (const socket of own) {
+      if (!alive.has(socket)) {
+        // The "close" handler removes the socket from the registry.
+        socket.terminate();
+        continue;
+      }
+      alive.delete(socket);
+      socket.ping();
+    }
+  }
+}
+
 /** Registers the WebSocket route and the notifier of new envelopes. */
 export function registerNotifyRoutes(app: FastifyInstance): void {
   const sockets: Sockets = new Map();
+  const alive = new Set<WebSocket>();
+  const stopPings = (app.relay.pingScheduler ?? defaultScheduler)(() => {
+    heartbeatTick(sockets, alive);
+  }, PING_INTERVAL_MS);
+  app.addHook("onClose", () => {
+    stopPings();
+  });
   app.decorate("notifier", {
     notifyPartner: (mailboxId, senderDeviceId) =>
       notifyPartner(app, sockets, mailboxId, senderDeviceId),
@@ -73,7 +113,10 @@ export function registerNotifyRoutes(app: FastifyInstance): void {
         const own = sockets.get(deviceId) ?? new Set();
         own.add(socket);
         sockets.set(deviceId, own);
+        alive.add(socket);
+        socket.on("pong", () => alive.add(socket));
         socket.on("close", () => {
+          alive.delete(socket);
           own.delete(socket);
           if (own.size === 0 && sockets.get(deviceId) === own) {
             sockets.delete(deviceId);
