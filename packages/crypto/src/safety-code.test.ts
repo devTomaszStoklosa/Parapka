@@ -82,10 +82,12 @@ describe("computeSafetyCode", () => {
     for (const [side, field] of cases) {
       for (const length of [0, 31, 33]) {
         it(`${side}.${field} with ${String(length)} bytes`, () => {
-          const own = fixed(1);
-          const peer = fixed(2);
-          const target = side === "own" ? own : peer;
-          target[field] = new Uint8Array(length);
+          const bad = {
+            ...fixed(side === "own" ? 1 : 2),
+            [field]: new Uint8Array(length),
+          };
+          const own = side === "own" ? bad : fixed(1);
+          const peer = side === "own" ? fixed(2) : bad;
           expect(() => computeSafetyCode(sodium, own, peer)).toThrow(
             "Invalid key length",
           );
