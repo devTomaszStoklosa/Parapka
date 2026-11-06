@@ -72,6 +72,30 @@ describe("computeSafetyCode", () => {
     }
   });
 
+  describe("rejects keys that are not 32 bytes", () => {
+    const cases = [
+      ["own", "signing"],
+      ["own", "agreement"],
+      ["peer", "signing"],
+      ["peer", "agreement"],
+    ] as const;
+    for (const [side, field] of cases) {
+      for (const length of [0, 31, 33]) {
+        it(`${side}.${field} with ${String(length)} bytes`, () => {
+          const bad = {
+            ...fixed(side === "own" ? 1 : 2),
+            [field]: new Uint8Array(length),
+          };
+          const own = side === "own" ? bad : fixed(1);
+          const peer = side === "own" ? fixed(2) : bad;
+          expect(() => computeSafetyCode(sodium, own, peer)).toThrow(
+            "Invalid key length",
+          );
+        });
+      }
+    }
+  });
+
   it("always has 6 digits", () => {
     for (let i = 0; i < 200; i++) {
       expect(computeSafetyCode(sodium, random(), random())).toMatch(/^\d{6}$/);
