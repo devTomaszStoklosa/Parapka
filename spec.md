@@ -480,24 +480,34 @@ Treść po odszyfrowaniu (XChaCha20-Poly1305, kierunkowy klucz pary):
   "changes": [
     { "entity": "Chore", "id": "uuidv7", "op": "upsert",
       "fields": { "title": { "value": "Odkurzanie", "hlc": "<hlc>" } } },
-    { "entity": "Hint", "id": "uuidv7", "op": "delete", "hlc": "<hlc>" }
+    { "entity": "Hint", "id": "uuidv7", "op": "delete", "hlc": "<hlc>" },
+    { "entity": "Hint", "id": "uuidv7", "op": "restore", "hlc": "<hlc>" }
   ]
 }
 ```
+
+Operacja `delete` zostawia tombstone. Edycja pól (`upsert`) nie przywraca usuniętej encji; cofa usunięcie tylko jawna operacja `restore`, której `hlc` jest późniejszy niż `hlc` tombstone (§7.5).
+
+**Kodowania:** pola `nonce` i `ciphertext` koperty są w standardowym base64 z dopełnieniem (`=`). Klucze publiczne urządzenia i ładunek zaproszenia (kod QR i link, §7.3) są w base64url bez dopełnienia.
 
 Endpointy relaya (szkic):
 
 | Metoda | Ścieżka | Cel |
 |---|---|---|
 | POST | `/v1/devices` | Rejestracja urządzenia (klucz publiczny podpisu). |
+| POST | `/v1/devices/{id}/challenges` | Wydanie jednorazowego wyzwania do podpisu (bez uwierzytelnienia). |
 | PUT | `/v1/devices/{id}/push-token` | Token APNs/FCM. |
 | DELETE | `/v1/devices/{id}` | Usunięcie urządzenia i wszystkich jego danych. |
 | POST | `/v1/invitations` | Utworzenie zaproszenia. |
 | POST | `/v1/invitations/{id}/accept` | Przyjęcie zaproszenia i utworzenie skrzynki pary. |
+| GET | `/v1/invitations/{id}/keys` | Pobranie przez A zaszyfrowanych kluczy B (po przyjęciu zaproszenia). |
 | POST | `/v1/pairs/{id}/envelopes` | Wysłanie koperty. |
 | GET | `/v1/pairs/{id}/envelopes?after={cursor}` | Pobranie kopert; przy otwartej aplikacji także przez WebSocket. |
+| GET | `/v1/pairs/{id}/ws` | WebSocket: powiadomienie o nowych kopertach przy otwartej aplikacji. |
 | POST | `/v1/pairs/{id}/acks` | Potwierdzenie odbioru; relay usuwa potwierdzone koperty. |
 | DELETE | `/v1/pairs/{id}` | Zamknięcie skrzynki pary (rozłączenie). |
+
+**Uwierzytelnienie:** urządzenie pobiera wyzwanie (`challengeId`, `nonce`), jednorazowe i ważne 5 minut, i podpisuje kluczem Ed25519 tekst złożony z linii oddzielonych znakiem `\n`: prefiks `parapka-relay-auth-v1`, metoda HTTP, URL żądania, `challengeId`, `nonce` i SHA-256 surowego ciała żądania (szesnastkowo). Żądanie niesie nagłówki `X-Device-Id`, `X-Challenge-Id` i `X-Signature`. Relay zużywa wyzwanie nawet przy błędnym podpisie; każdy błąd to jednolite 401. Wszystkie endpointy poza rejestracją i wydaniem wyzwania wymagają tego uwierzytelnienia.
 
 Limity: koperta ≤ 64 KB, limit żądań na urządzenie, TTL niedostarczonych kopert 30 dni.
 
@@ -515,7 +525,7 @@ Każda zmiana ma znacznik Hybrid Logical Clock (HLC), więc rozbieżne zegary te
 | Dane | Zasada |
 |---|---|
 | `Chore`, `MentalLoadItem`, ustawienia pary | Ostatnia zmiana wygrywa, osobno dla każdego pola. |
-| Usunięcie `Chore` i `MentalLoadItem` | Tombstone; usunięcie wygrywa z równoległą edycją; przywrócenie to nowa zmiana z późniejszym HLC. |
+| Usunięcie `Chore` i `MentalLoadItem` | Tombstone; usunięcie wygrywa z równoległą edycją; przywrócenie to jawna operacja `restore` z późniejszym HLC niż tombstone (§7.4); edycja pól nie przywraca encji. |
 | `ChoreCompletion` | Jedno odhaczenie na wystąpienie; przy podwójnym zostaje wcześniejsze. |
 | `CarrierChange`, `HandoverRequest` | Tylko dopisywanie; bieżący stan to ostatni wpis według HLC. |
 | `CheckIn` | Jeden autor; nowe wersje tylko do zablokowania edycji (§7.4). |
