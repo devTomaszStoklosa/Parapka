@@ -6,7 +6,7 @@ import Fastify, {
 import { registerEnvelopeRoutes } from "./envelopes.js";
 import { registerDeviceRoutes } from "./devices.js";
 import { registerInvitationRoutes } from "./invitations.js";
-import { registerNotifyRoutes } from "./notify.js";
+import { registerNotifyRoutes, type PingScheduler } from "./notify.js";
 import type { PushSender } from "./push.js";
 import type { RelayStore } from "./store/store.js";
 
@@ -17,6 +17,8 @@ export interface AppDependencies {
   readonly requestsPerWindow?: number;
   /** Sends pushes without content; without it the relay sends none. */
   readonly pushSender?: PushSender;
+  /** Schedules the WebSocket pings; tests inject it, defaults to a timer. */
+  readonly pingScheduler?: PingScheduler;
   /** Fastify logger options (see logging.ts); without it nothing is logged. */
   readonly logger?: FastifyServerOptions["logger"];
 }
