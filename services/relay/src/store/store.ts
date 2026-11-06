@@ -77,7 +77,8 @@ export interface RelayStore {
    * Marks the invitation as accepted by `deviceId`, stores the ciphertext and
    * creates the mailbox, all or nothing. Changes nothing and returns "used"
    * when the invitation does not exist or was already accepted, or "paired"
-   * when either device already has a mailbox.
+   * when either device already has an open mailbox (a closing one does not
+   * count).
    */
   acceptInvitation(
     invitationId: string,
@@ -91,16 +92,22 @@ export interface RelayStore {
 
   putMailbox(mailbox: MailboxRecord): Promise<void>;
   getMailbox(pairMailboxId: string): Promise<MailboxRecord | null>;
-  /** The mailbox in which the device is A or B. */
+  /** The open (not closing) mailbox in which the device is A or B. */
   findMailboxByDevice(deviceId: string): Promise<MailboxRecord | null>;
   /** Deletes the mailbox with its envelopes. */
   deleteMailbox(pairMailboxId: string): Promise<boolean>;
 
   /**
    * Marks the mailbox as closed at `closedAtMs`; an earlier closing time is
-   * kept. Returns false when the mailbox does not exist.
+   * kept. Deletes at once the envelopes not sent by `closedByDeviceId`, i.e.
+   * those addressed to the closing device. Returns false when the mailbox does
+   * not exist.
    */
-  closeMailbox(pairMailboxId: string, closedAtMs: number): Promise<boolean>;
+  closeMailbox(
+    pairMailboxId: string,
+    closedAtMs: number,
+    closedByDeviceId: string,
+  ): Promise<boolean>;
   /** Deletes the mailboxes closed at or before `cutoffMs` with their envelopes. */
   deleteClosedMailboxesBefore(cutoffMs: number): Promise<number>;
 

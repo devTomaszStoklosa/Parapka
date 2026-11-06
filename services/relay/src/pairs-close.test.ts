@@ -161,13 +161,40 @@ describe("closing a mailbox", () => {
     await send(p, p.a, "e1");
     await send(p, p.a, "e2");
     await close(p, p.a);
-    expect(await invite(p.a)).toBe(409);
     await ack(p, p.b, ["e1"]);
     expect(await store.getMailbox(p.mailbox)).not.toBeNull();
     await ack(p, p.b, ["e2"]);
     expect(await store.getMailbox(p.mailbox)).toBeNull();
     expect(await invite(p.a)).toBe(201);
     expect(await invite(p.b)).toBe(201);
+  });
+
+  it("deletes at once the envelopes addressed to the closing device", async () => {
+    const p = await pair();
+    await send(p, p.a, "e1");
+    await send(p, p.b, "e2");
+    await close(p, p.a);
+    const toA = await fetchAll(p, p.a);
+    expect(toA.json<{ envelopes: unknown[] }>().envelopes).toHaveLength(0);
+    const toB = await fetchAll(p, p.b);
+    expect(toB.json<{ envelopes: unknown[] }>().envelopes).toHaveLength(1);
+  });
+
+  it("lets both devices pair anew while the old mailbox is closing", async () => {
+    const p = await pair();
+    await send(p, p.a, "e1");
+    await close(p, p.a);
+    expect(await store.getMailbox(p.mailbox)).not.toBeNull();
+    const c = await register();
+    const next = await pairDevices(p.a, c);
+    expect(next.mailbox).not.toBe(p.mailbox);
+    const d = await register();
+    const other = await pairDevices(p.b, d);
+    expect(other.mailbox).not.toBe(p.mailbox);
+    expect((await fetchAll(p, p.b)).statusCode).toBe(200);
+    expect((await ack(p, p.b, ["e1"])).statusCode).toBe(200);
+    expect(await store.getMailbox(p.mailbox)).toBeNull();
+    expect(await store.getMailbox(next.mailbox)).not.toBeNull();
   });
 
   it("removes the mailbox after 30 days by the clock", async () => {

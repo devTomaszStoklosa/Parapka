@@ -91,8 +91,9 @@ export class MemoryStore implements RelayStore {
     }
     const paired = [...this.mailboxes.values()].some(
       (m) =>
-        [m.deviceIdA, m.deviceIdB].includes(mailbox.deviceIdA) ||
-        [m.deviceIdA, m.deviceIdB].includes(mailbox.deviceIdB),
+        m.closedAtMs === undefined &&
+        ([m.deviceIdA, m.deviceIdB].includes(mailbox.deviceIdA) ||
+          [m.deviceIdA, m.deviceIdB].includes(mailbox.deviceIdB)),
     );
     if (paired) return Promise.resolve("paired");
     this.invitations.set(invitationId, {
@@ -125,7 +126,10 @@ export class MemoryStore implements RelayStore {
 
   findMailboxByDevice(deviceId: string): Promise<MailboxRecord | null> {
     for (const mailbox of this.mailboxes.values()) {
-      if (mailbox.deviceIdA === deviceId || mailbox.deviceIdB === deviceId) {
+      if (
+        mailbox.closedAtMs === undefined &&
+        (mailbox.deviceIdA === deviceId || mailbox.deviceIdB === deviceId)
+      ) {
         return Promise.resolve(mailbox);
       }
     }
@@ -141,9 +145,21 @@ export class MemoryStore implements RelayStore {
     return Promise.resolve(this.mailboxes.delete(pairMailboxId));
   }
 
-  closeMailbox(pairMailboxId: string, closedAtMs: number): Promise<boolean> {
+  closeMailbox(
+    pairMailboxId: string,
+    closedAtMs: number,
+    closedByDeviceId: string,
+  ): Promise<boolean> {
     const mailbox = this.mailboxes.get(pairMailboxId);
     if (mailbox === undefined) return Promise.resolve(false);
+    for (const [id, row] of this.envelopes) {
+      if (
+        row.envelope.pairMailboxId === pairMailboxId &&
+        row.envelope.senderDeviceId !== closedByDeviceId
+      ) {
+        this.envelopes.delete(id);
+      }
+    }
     this.mailboxes.set(pairMailboxId, {
       ...mailbox,
       closedAtMs: mailbox.closedAtMs ?? closedAtMs,
