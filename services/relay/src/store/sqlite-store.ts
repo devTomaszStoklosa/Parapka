@@ -144,7 +144,7 @@ export class SqliteStore implements RelayStore {
         return Promise.resolve("used");
       }
       const paired = this.one(
-        "SELECT 1 AS ok FROM mailboxes WHERE device_id_a IN (?, ?) OR device_id_b IN (?, ?)",
+        "SELECT 1 AS ok FROM mailboxes WHERE closed_at_ms IS NULL AND (device_id_a IN (?, ?) OR device_id_b IN (?, ?))",
         mailbox.deviceIdA,
         mailbox.deviceIdB,
         mailbox.deviceIdA,
@@ -205,7 +205,7 @@ export class SqliteStore implements RelayStore {
 
   findMailboxByDevice(deviceId: string): Promise<MailboxRecord | null> {
     const row = this.one(
-      "SELECT * FROM mailboxes WHERE device_id_a = ? OR device_id_b = ? LIMIT 1",
+      "SELECT * FROM mailboxes WHERE closed_at_ms IS NULL AND (device_id_a = ? OR device_id_b = ?) LIMIT 1",
       deviceId,
       deviceId,
     );
@@ -224,7 +224,21 @@ export class SqliteStore implements RelayStore {
     return Promise.resolve(n > 0);
   }
 
-  closeMailbox(pairMailboxId: string, closedAtMs: number): Promise<boolean> {
+  closeMailbox(
+    pairMailboxId: string,
+    closedAtMs: number,
+    closedByDeviceId: string,
+  ): Promise<boolean> {
+    const exists = this.one(
+      "SELECT 1 AS ok FROM mailboxes WHERE pair_mailbox_id = ?",
+      pairMailboxId,
+    );
+    if (exists === null) return Promise.resolve(false);
+    this.changed(
+      "DELETE FROM envelopes WHERE pair_mailbox_id = ? AND json_extract(body, '$.senderDeviceId') IS NOT ?",
+      pairMailboxId,
+      closedByDeviceId,
+    );
     const n = this.changed(
       "UPDATE mailboxes SET closed_at_ms = COALESCE(closed_at_ms, ?) WHERE pair_mailbox_id = ?",
       closedAtMs,

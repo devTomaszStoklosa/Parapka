@@ -34,6 +34,15 @@ function ids(list: readonly { envelope: Envelope }[]): string[] {
   return list.map((e) => e.envelope.envelopeId);
 }
 
+async function listed(
+  store: RelayStore,
+  after: string | null = null,
+  limit = 10,
+  exclude?: string,
+): Promise<string> {
+  return ids(await store.listEnvelopes("mb1", after, limit, exclude)).join();
+}
+
 function deviceTests(store: GetStore): void {
   it("stores devices and push tokens", async () => {
     expect(await store().getDevice("d1")).toBeNull();
@@ -81,17 +90,9 @@ function shortLivedTests(store: GetStore): void {
   });
 
   it("purges expired challenges and invitations only", async () => {
-    const challenge = { deviceId: "d", nonce: "N" };
-    await store().putChallenge({
-      ...challenge,
-      challengeId: "old",
-      expiresAtMs: 10,
-    });
-    await store().putChallenge({
-      ...challenge,
-      challengeId: "new",
-      expiresAtMs: 11,
-    });
+    const c = { deviceId: "d", nonce: "N" };
+    await store().putChallenge({ ...c, challengeId: "old", expiresAtMs: 10 });
+    await store().putChallenge({ ...c, challengeId: "new", expiresAtMs: 11 });
     await store().putInvitation({
       ...INVITATION,
       invitationId: "old",
@@ -112,15 +113,8 @@ function envelopeTests(store: GetStore): void {
     await store().addEnvelope(envelope("x1", "other"), 3);
     await store().addEnvelope(envelope("e3"), 4);
 
-    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual([
-      "e1",
-      "e2",
-      "e3",
-    ]);
-    expect(ids(await store().listEnvelopes("mb1", first.cursor, 10))).toEqual([
-      "e2",
-      "e3",
-    ]);
+    expect(await listed(store())).toBe("e1,e2,e3");
+    expect(await listed(store(), first.cursor)).toBe("e2,e3");
     expect(await store().listEnvelopes("mb1", null, 2)).toHaveLength(2);
   });
 
@@ -137,7 +131,7 @@ function envelopeTests(store: GetStore): void {
     await store().addEnvelope(envelope("e2"), 2);
     await store().addEnvelope(envelope("x1", "other"), 3);
     expect(await store().deleteEnvelopes("mb1", ["e1", "x1", "zz"])).toBe(1);
-    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual(["e2"]);
+    expect(await listed(store())).toBe("e2");
     expect(await store().listEnvelopes("other", null, 10)).toHaveLength(1);
   });
 }
@@ -151,21 +145,16 @@ function senderAndExpiryTests(store: GetStore): void {
     await store().addEnvelope(from("e1", "a"), 1);
     await store().addEnvelope(from("e2", "a"), 2);
     await store().addEnvelope(from("e3", "b"), 3);
-    expect(ids(await store().listEnvelopes("mb1", null, 1, "a"))).toEqual([
-      "e3",
-    ]);
+    expect(await listed(store(), null, 1, "a")).toBe("e3");
     expect(await store().deleteEnvelopes("mb1", ["e1", "e3"], "a")).toBe(1);
-    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual([
-      "e1",
-      "e2",
-    ]);
+    expect(await listed(store())).toBe("e1,e2");
   });
 
   it("deletes envelopes received at or before a time", async () => {
     await store().addEnvelope(envelope("e1"), 10);
     await store().addEnvelope(envelope("e2"), 11);
     expect(await store().deleteEnvelopesReceivedBefore(10)).toBe(1);
-    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual(["e2"]);
+    expect(await listed(store())).toBe("e2");
   });
 }
 
@@ -241,14 +230,30 @@ function acceptTests(store: GetStore): void {
     expect((await store().getInvitation("i2"))?.acceptedByDeviceId).toBeNull();
     expect(await store().getMailbox("mb2")).toBeNull();
   });
+
+  it("lets devices with a closing mailbox pair anew", async () => {
+    await store().putMailbox(MAILBOX);
+    await store().closeMailbox("mb1", 5, "a");
+    expect(await store().findMailboxByDevice("a")).toBeNull();
+    await store().putInvitation({ ...INVITATION, invitationId: "i2" });
+    const next = { ...MAILBOX, pairMailboxId: "mb2" };
+    expect(await store().acceptInvitation("i2", "b", "K", next)).toBe(
+      "accepted",
+    );
+    expect((await store().findMailboxByDevice("a"))?.pairMailboxId).toBe("mb2");
+    expect(await store().getMailbox("mb1")).not.toBeNull();
+  });
 }
 
 function closingTests(store: GetStore): void {
   it("closes a mailbox once and keeps the first closing time", async () => {
-    expect(await store().closeMailbox("mb1", 5)).toBe(false);
+    expect(await store().closeMailbox("mb1", 5, "a")).toBe(false);
     await store().putMailbox(MAILBOX);
-    expect(await store().closeMailbox("mb1", 5)).toBe(true);
-    expect(await store().closeMailbox("mb1", 8)).toBe(true);
+    await store().addEnvelope(envelope("e1"), 1);
+    await store().addEnvelope({ ...envelope("e2"), senderDeviceId: "a" }, 1);
+    expect(await store().closeMailbox("mb1", 5, "a")).toBe(true);
+    expect(await listed(store())).toBe("e2");
+    expect(await store().closeMailbox("mb1", 8, "a")).toBe(true);
     expect(await store().getMailbox("mb1")).toEqual({
       ...MAILBOX,
       closedAtMs: 5,
@@ -261,8 +266,8 @@ function closingTests(store: GetStore): void {
     await store().putMailbox({ ...MAILBOX, pairMailboxId: "mb3" });
     await store().addEnvelope(envelope("e1"), 1);
     await store().addEnvelope(envelope("e2", "mb2"), 1);
-    await store().closeMailbox("mb1", 10);
-    await store().closeMailbox("mb2", 11);
+    await store().closeMailbox("mb1", 10, "dev1");
+    await store().closeMailbox("mb2", 11, "dev1");
     expect(await store().deleteClosedMailboxesBefore(10)).toBe(1);
     expect(await store().getMailbox("mb1")).toBeNull();
     expect(await store().listEnvelopes("mb1", null, 10)).toEqual([]);
@@ -279,18 +284,9 @@ function deviceCascadeTests(store: GetStore): void {
       signingPublicKey: "k",
       createdAtMs: 1,
     });
-    await store().putChallenge({
-      challengeId: "c1",
-      deviceId: "dev1",
-      nonce: "n",
-      expiresAtMs: 9,
-    });
-    await store().putChallenge({
-      challengeId: "c2",
-      deviceId: "other",
-      nonce: "n",
-      expiresAtMs: 9,
-    });
+    const c = { nonce: "n", expiresAtMs: 9 };
+    await store().putChallenge({ ...c, challengeId: "c1", deviceId: "dev1" });
+    await store().putChallenge({ ...c, challengeId: "c2", deviceId: "other" });
     await store().putInvitation({ ...INVITATION, deviceId: "dev1" });
     await store().addEnvelope(envelope("e1"), 1);
     await store().addEnvelope({ ...envelope("e2"), senderDeviceId: "x" }, 1);
@@ -298,7 +294,7 @@ function deviceCascadeTests(store: GetStore): void {
     expect(await store().takeChallenge("c1")).toBeNull();
     expect(await store().takeChallenge("c2")).not.toBeNull();
     expect(await store().getInvitation("i1")).toBeNull();
-    expect(ids(await store().listEnvelopes("mb1", null, 10))).toEqual(["e2"]);
+    expect(await listed(store())).toBe("e2");
   });
 }
 

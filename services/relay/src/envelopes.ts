@@ -95,7 +95,11 @@ function closePair(app: FastifyInstance, limiter: Limiter): void {
     },
     async (request, reply) => {
       const { store, clock } = app.relay;
-      await store.closeMailbox(request.params.id, clock.nowMs());
+      await store.closeMailbox(
+        request.params.id,
+        clock.nowMs(),
+        request.deviceId as string,
+      );
       await dropIfDrained(store, request.params.id);
       return reply.code(204).send();
     },
