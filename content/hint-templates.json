@@ -1,5 +1,5 @@
 {
-  "contentVersion": 2,
+  "contentVersion": 3,
   "entries": [
     {
       "id": "relief-dinner",
@@ -95,9 +95,9 @@
       "id": "relief-bedding",
       "category": "relief",
       "text": {
-        "feminine": "Zmień dziś pościel na świeżą, zanim ona o tym pomyśli.",
-        "masculine": "Zmień dziś pościel na świeżą, zanim on o tym pomyśli.",
-        "neutral": "Zmień dziś pościel na świeżą, zanim ta osoba o tym pomyśli."
+        "feminine": "Przygotuj jej rzeczy na jutro, zanim ona o tym pomyśli.",
+        "masculine": "Przygotuj jego rzeczy na jutro, zanim on o tym pomyśli.",
+        "neutral": "Przygotuj rzeczy tej osoby na jutro, zanim zdąży o tym pomyśleć."
       },
       "review": "unreviewed"
     },
@@ -315,9 +315,9 @@
       "id": "tenderness-dance",
       "category": "tenderness",
       "text": {
-        "feminine": "Włącz ulubioną piosenkę jej i potańczcie chwilę w kuchni.",
-        "masculine": "Włącz ulubioną piosenkę jego i potańczcie chwilę w kuchni.",
-        "neutral": "Włącz ulubioną piosenkę tej osoby i potańczcie chwilę w kuchni."
+        "feminine": "Włącz jej ulubioną piosenkę i potańczcie chwilę w kuchni.",
+        "masculine": "Włącz jego ulubioną piosenkę i potańczcie chwilę w kuchni.",
+        "neutral": "Włącz piosenkę, którą ta osoba lubi najbardziej, i potańczcie chwilę w kuchni."
       },
       "review": "unreviewed"
     },
@@ -435,9 +435,9 @@
       "id": "attention-details",
       "category": "attention",
       "text": {
-        "feminine": "Zapytaj o szczegóły dnia jej i naprawdę ich posłuchaj.",
-        "masculine": "Zapytaj o szczegóły dnia jego i naprawdę ich posłuchaj.",
-        "neutral": "Zapytaj o szczegóły dnia tej osoby i naprawdę ich posłuchaj."
+        "feminine": "Zapytaj o jej szczegóły dnia i naprawdę ich posłuchaj.",
+        "masculine": "Zapytaj o jego szczegóły dnia i naprawdę ich posłuchaj.",
+        "neutral": "Zapytaj, jak minął dzień, i naprawdę posłuchaj odpowiedzi."
       },
       "review": "unreviewed"
     },
@@ -445,9 +445,9 @@
       "id": "attention-plan-ask",
       "category": "attention",
       "text": {
-        "feminine": "Zapytaj ją, na co ma dziś ochotę, i zrób to.",
-        "masculine": "Zapytaj go, na co ma dziś ochotę, i zrób to.",
-        "neutral": "Zapytaj tę osobę, na co ma dziś ochotę, i zrób to."
+        "feminine": "Zapytaj ją, co chciałaby dziś robić, i zrób to.",
+        "masculine": "Zapytaj go, co chciałby dziś robić, i zrób to.",
+        "neutral": "Zapytaj tę osobę, co chciałaby dziś robić, i zrób to."
       },
       "review": "unreviewed"
     },
@@ -525,9 +525,9 @@
       "id": "space-bathroom",
       "category": "space",
       "text": {
-        "feminine": "Zadbaj o to, żeby nikt nie przeszkadzał jej w łazience.",
-        "masculine": "Zadbaj o to, żeby nikt nie przeszkadzał mu w łazience.",
-        "neutral": "Zadbaj o to, żeby nikt nie przeszkadzał tej osobie w łazience."
+        "feminine": "Zadbaj o to, żeby nikt nie przeszkadzał jej w chwili ciszy.",
+        "masculine": "Zadbaj o to, żeby nikt nie przeszkadzał mu w chwili ciszy.",
+        "neutral": "Zadbaj o to, żeby nikt nie przeszkadzał tej osobie w chwili ciszy."
       },
       "review": "unreviewed"
     },
@@ -647,7 +647,7 @@
       "text": {
         "feminine": "Podziękuj jej dziś za jedną konkretną rzecz, którą ona zrobiła.",
         "masculine": "Podziękuj mu dziś za jedną konkretną rzecz, którą on zrobił.",
-        "neutral": "Podziękuj tej osobie dziś za jedną konkretną rzecz, którą ta osoba zrobiła."
+        "neutral": "Podziękuj tej osobie dziś za jedną konkretną rzecz, którą zrobiła."
       },
       "review": "unreviewed"
     },
@@ -657,7 +657,7 @@
       "text": {
         "feminine": "Powiedz jej szczerze, co w niej dziś doceniasz.",
         "masculine": "Powiedz mu szczerze, co w nim dziś doceniasz.",
-        "neutral": "Powiedz tej osobie szczerze, co w tej osobie dziś doceniasz."
+        "neutral": "Powiedz tej osobie szczerze, co dziś w niej doceniasz."
       },
       "review": "unreviewed"
     },
@@ -707,7 +707,7 @@
       "text": {
         "feminine": "Powiedz jej, że doceniasz, jak ona sobie radzi.",
         "masculine": "Powiedz mu, że doceniasz, jak on sobie radzi.",
-        "neutral": "Powiedz tej osobie, że doceniasz, jak ta osoba sobie radzi."
+        "neutral": "Powiedz tej osobie, że doceniasz, jak sobie radzi."
       },
       "review": "unreviewed"
     },
@@ -715,8 +715,8 @@
       "id": "appreciation-treat",
       "category": "appreciation",
       "text": {
-        "feminine": "Kup ulubione ciasto jej i podaj je z uśmiechem.",
-        "masculine": "Kup ulubione ciasto jego i podaj je z uśmiechem.",
+        "feminine": "Kup jej ulubione ciasto i podaj je z uśmiechem.",
+        "masculine": "Kup jego ulubione ciasto i podaj je z uśmiechem.",
         "neutral": "Kup ulubione ciasto tej osoby i podaj je z uśmiechem."
       },
       "review": "unreviewed"
@@ -735,9 +735,9 @@
       "id": "appreciation-effort",
       "category": "appreciation",
       "text": {
-        "feminine": "Zauważ wysiłek jej w czymś, co zwykle umyka uwadze.",
-        "masculine": "Zauważ wysiłek jego w czymś, co zwykle umyka uwadze.",
-        "neutral": "Zauważ wysiłek tej osoby w czymś, co zwykle umyka uwadze."
+        "feminine": "Zauważ jej wysiłek w czymś, co zwykle umyka uwadze.",
+        "masculine": "Zauważ jego wysiłek w czymś, co zwykle umyka uwadze.",
+        "neutral": "Zauważ cudzy wysiłek w czymś, co zwykle umyka uwadze."
       },
       "review": "unreviewed"
     },
@@ -797,7 +797,7 @@
       "text": {
         "feminine": "Wypisz trzy rzeczy, które lubisz u niej, i przeczytaj je jej.",
         "masculine": "Wypisz trzy rzeczy, które lubisz u niego, i przeczytaj je mu.",
-        "neutral": "Wypisz trzy rzeczy, które lubisz u tej osoby, i przeczytaj je tej osobie."
+        "neutral": "Wypisz trzy rzeczy, które lubisz u tej osoby, i przeczytaj je na głos."
       },
       "review": "unreviewed"
     }
