@@ -2,6 +2,7 @@ import type { DevicePublicKeys } from "./device-keys.js";
 import type { Sodium } from "./sodium.js";
 
 const DOMAIN = "parapka/pair-safety-code/v1\0";
+const KEY_LENGTH = 32;
 const HASH_LENGTH = 16;
 const REDUCED_BYTES = 8;
 const MODULUS = 1_000_000;
@@ -16,6 +17,12 @@ export function reduceToSixDigits(hash: Uint8Array): string {
 }
 
 function keySet(keys: DevicePublicKeys): Uint8Array {
+  if (
+    keys.signing.length !== KEY_LENGTH ||
+    keys.agreement.length !== KEY_LENGTH
+  ) {
+    throw new Error("Invalid key length");
+  }
   const out = new Uint8Array(keys.signing.length + keys.agreement.length);
   out.set(keys.signing, 0);
   out.set(keys.agreement, keys.signing.length);
