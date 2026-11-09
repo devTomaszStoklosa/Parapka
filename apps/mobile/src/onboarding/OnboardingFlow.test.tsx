@@ -220,3 +220,45 @@ it("sets the PIN in the PIN step", async () => {
   const saved = await createProfileRepository(platform.database).get();
   expect(saved?.pinDecision).toBe("set");
 });
+
+it("saves the alternative answers: no children, a toggled goal, shared goals", async () => {
+  const { platform, onDone } = setup();
+  type(o.name.label, "Ola");
+  next();
+  click("radio", o.formMasculine);
+  next();
+  click("checkbox", o.adult.confirm.masculine);
+  next();
+  click("radio", o.tenure["<1"]);
+  next();
+  click("radio", o.children.yes);
+  click("radio", o.children.no);
+  next();
+  click("checkbox", o.goals.closeness);
+  click("checkbox", o.goals.closeness);
+  click("checkbox", o.goals.passion);
+  click("switch", o.goals.share);
+  next();
+  click("radio", o.cycle.yes);
+  next();
+  click("checkbox", o.disclaimer.confirm);
+  next();
+  type(o.cycleSetup.lastPeriod, "2026-10-01");
+  type(o.cycleSetup.periodLength, "4");
+  next();
+  click("button", o.pin.skip);
+  next();
+  await finish(onDone);
+
+  const saved = await createProfileRepository(platform.database).get();
+  expect(saved).toMatchObject({
+    hasChildren: false,
+    childrenCount: 0,
+    goals: ["passion"],
+    shareGoalsWithPartner: true,
+  });
+  expect(
+    (await createCycleSettingsRepository(platform.database).get())
+      ?.periodLength,
+  ).toBe(4);
+});
