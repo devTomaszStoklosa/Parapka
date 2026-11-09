@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "description": "Parapka app: Expo with React Native Web, browser first (spec 7.1).",
-  "type": "module",
   "main": "index.ts",
   "scripts": {
     "web:build": "expo export --platform web --output-dir dist"
