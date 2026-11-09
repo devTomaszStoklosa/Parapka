@@ -20,6 +20,12 @@ import { createPinStore, type PinStore } from "./pin-store";
 
 let sodium: Sodium;
 let visibility = "visible";
+let contentRenders = 0;
+
+function Content() {
+  contentRenders += 1;
+  return <div>secret content</div>;
+}
 
 beforeAll(async () => {
   sodium = await createWebSodium();
@@ -27,6 +33,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   visibility = "visible";
+  contentRenders = 0;
   Object.defineProperty(document, "visibilityState", {
     configurable: true,
     get: () => visibility,
@@ -58,7 +65,7 @@ async function setup(withPin = true, timeout?: LockTimeout) {
       sodium={sodium}
       clock={clock}
     >
-      <div>secret content</div>
+      <Content />
     </LockGate>,
   );
   return {
@@ -128,6 +135,19 @@ it("locks after a 1 minute timeout only when the time has passed", async () => {
   setAppState("visible");
   expect(screen.queryByText("secret content")).toBeNull();
   expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
+});
+
+it("does not render the content once after the time set for the lock", async () => {
+  const { advance } = await setup(true, "oneMinute");
+  await screen.findByText(t("lock.pin.unlockTitle"));
+  await unlockWith("123456");
+
+  setAppState("hidden");
+  advance(60_000);
+  contentRenders = 0;
+  setAppState("visible");
+  expect(contentRenders).toBe(0);
+  expect(screen.queryByText("secret content")).toBeNull();
 });
 
 it("resets the app after the forgotten PIN is confirmed twice", async () => {

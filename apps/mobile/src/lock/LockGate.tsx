@@ -86,7 +86,11 @@ function useLock(props: LockGateProps, store: PinStore, active: boolean) {
     });
   }, [active, clock]);
 
-  return { lock, setLock, hasPin, setHasPin };
+  // Derived in the render, so that coming back after the time set for the lock
+  // never renders the content once before the effect above locks it.
+  const effective = lock !== null && active ? onForeground(lock, clock) : lock;
+
+  return { lock: effective, setLock, hasPin, setHasPin };
 }
 
 /**
