@@ -259,6 +259,19 @@ it("closes the invitation and shows a message when the relay fails", async () =>
   expect(await screen.findByText(pl.pairing.error)).toBeTruthy();
 });
 
+it("retries a failed poll and reports keys that cannot be read", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  renderScreen();
+  await click(pl.pairing.invite);
+  await screen.findByLabelText(pl.pairing.invitation.qrLabel);
+  relay.failure = new RelayError("server", 500);
+  await poll();
+  relay.failure = null;
+  relay.keys = "garbage";
+  await poll();
+  expect(await screen.findByText(pl.pairing.invitation.invalid)).toBeTruthy();
+});
+
 it("closes the waiting screen", async () => {
   renderScreen();
   await click(pl.pairing.invite);

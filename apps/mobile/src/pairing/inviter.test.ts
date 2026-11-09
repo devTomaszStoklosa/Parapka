@@ -187,3 +187,30 @@ it("removes the pair when the codes differ", async () => {
   expect(await keyStore.get("pair/send-key")).toBeNull();
   expect(await inviter.pendingSafetyCode()).toBeNull();
 });
+
+it("fails when the device has no keys or no credentials", async () => {
+  const { keyStore } = await setup();
+  const keys = generateDeviceKeys(sodium);
+  const publicKeys = {
+    signing: base64urlEncode(keys.signing.publicKey),
+    agreement: base64urlEncode(keys.agreement.publicKey),
+  };
+  const make = (own: unknown) =>
+    createInviter({
+      sodium,
+      keyStore,
+      clock: { nowMs: () => 0 },
+      identity: {
+        ensureRegistered: () => Promise.resolve("registered"),
+        publicKeys: () => Promise.resolve(own),
+        credentials: () => Promise.resolve(null),
+      } as never,
+      pairs: createPairRepository(createMemoryDatabase(), keyStore),
+      relay: () => {
+        throw new Error("unused");
+      },
+      appUrl: "https://app.example",
+    });
+  await expect(make(null).start()).rejects.toThrow("No device keys");
+  await expect(make(publicKeys).start()).rejects.toThrow();
+});
