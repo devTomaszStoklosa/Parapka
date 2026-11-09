@@ -1,4 +1,5 @@
 import { buildApp } from "./app.js";
+import { parseAllowedOrigins } from "./cors.js";
 import { purgeClosedMailboxes, purgeExpiredEnvelopes } from "./envelopes.js";
 import { loggerOptions } from "./logging.js";
 import { purgeTechnicalData } from "./retention.js";
@@ -10,7 +11,15 @@ const databasePath = process.env["RELAY_DB_PATH"] ?? "relay.db";
 
 const store = new SqliteStore(databasePath);
 const clock = { nowMs: () => Date.now() };
-const app = buildApp({ store, clock, logger: loggerOptions() });
+const allowedOrigins = parseAllowedOrigins(
+  process.env["RELAY_ALLOWED_ORIGINS"],
+);
+const app = buildApp({
+  store,
+  clock,
+  logger: loggerOptions(),
+  allowedOrigins,
+});
 
 const PURGE_INTERVAL_MS = 60 * 60 * 1000;
 const purgeTimer = setInterval(() => {

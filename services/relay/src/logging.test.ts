@@ -76,4 +76,39 @@ describe("request log", () => {
     expect(log).not.toContain("CIPHERTEXT-VALUE");
     expect(log).not.toContain("ciphertext");
   });
+
+  it("holds no credential of a WebSocket query", async () => {
+    const lines: string[] = [];
+    const stream = new Writable({
+      write(chunk: Buffer, _encoding, done) {
+        lines.push(chunk.toString("utf8"));
+        done();
+      },
+    });
+    const app = buildApp({
+      store: new MemoryStore(),
+      clock: { nowMs: () => 0 },
+      logger: loggerOptions(stream),
+    });
+    await app.ready();
+    await expect(
+      app.injectWS(
+        "/v1/pairs/p1/ws?deviceId=DEVICE-QUERY&challengeId=CHALLENGE-QUERY&signature=SIGNATURE-QUERY",
+      ),
+    ).rejects.toThrow(/401/);
+    await app.close();
+
+    const log = lines.join("");
+    expect(log).toContain("/v1/pairs/p1/ws");
+    for (const secret of [
+      "DEVICE-QUERY",
+      "CHALLENGE-QUERY",
+      "SIGNATURE-QUERY",
+      "deviceId=",
+      "challengeId=",
+      "signature=",
+    ]) {
+      expect(log).not.toContain(secret);
+    }
+  });
 });

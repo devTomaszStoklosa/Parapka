@@ -3,6 +3,7 @@ import Fastify, {
   type FastifyInstance,
   type FastifyServerOptions,
 } from "fastify";
+import { registerCors } from "./cors.js";
 import { registerEnvelopeRoutes } from "./envelopes.js";
 import { registerDeviceRoutes } from "./devices.js";
 import { registerInvitationRoutes } from "./invitations.js";
@@ -21,6 +22,8 @@ export interface AppDependencies {
   readonly pingScheduler?: PingScheduler;
   /** Fastify logger options (see logging.ts); without it nothing is logged. */
   readonly logger?: FastifyServerOptions["logger"];
+  /** Origins a browser may call from (CORS); without them the relay sends no CORS headers. */
+  readonly allowedOrigins?: readonly string[];
 }
 
 /** Builds the relay application; it does not listen on a port. */
@@ -47,6 +50,7 @@ export function buildApp(deps: AppDependencies): FastifyInstance {
       }
     },
   );
+  registerCors(app, deps.allowedOrigins ?? []);
   app.get("/health", () => ({ status: "ok" }));
   registerDeviceRoutes(app);
   registerInvitationRoutes(app);
