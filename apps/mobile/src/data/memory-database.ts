@@ -25,7 +25,7 @@ export function createMemoryDatabase(): LocalDatabase {
       const records = [...(collections.get(collection) ?? [])];
       return Promise.resolve(
         records
-          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .sort(([a], [b]) => (a < b ? -1 : 1))
           .map(([id, value]) => ({ id, value: copy(value) })),
       );
     },

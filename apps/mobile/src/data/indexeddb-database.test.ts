@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
 import "fake-indexeddb/auto";
 import type { Sodium } from "@parapka/crypto";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { KeyStore } from "../platform/key-store";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
 import { createWebSodium } from "../platform/web-sodium";
@@ -180,5 +188,30 @@ describe("clear", () => {
     await db.put("a", "1", "new");
     expect(await keyStore.get(DATABASE_KEY_NAME)).not.toEqual(oldKey);
     expect(await db.get("a", "1")).toBe("new");
+  });
+});
+
+describe("failures", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("rejects when IndexedDB cannot be opened", async () => {
+    const req = {} as IDBOpenDBRequest;
+    vi.spyOn(indexedDB, "open").mockImplementation(() => {
+      queueMicrotask(() => {
+        req.onerror?.(new Event("error"));
+      });
+      return req;
+    });
+    await expect(create().get("a", "1")).rejects.toThrow();
+  });
+
+  it("retries opening after a failure", async () => {
+    const db = create();
+    vi.spyOn(keyStore, "get").mockRejectedValueOnce(new Error("locked"));
+    await expect(db.get("a", "1")).rejects.toThrow("locked");
+    await db.put("a", "1", "ok");
+    expect(await db.get("a", "1")).toBe("ok");
   });
 });
