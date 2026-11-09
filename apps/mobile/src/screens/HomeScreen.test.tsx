@@ -3,8 +3,8 @@ import { HINT_DAYS_AHEAD } from "@parapka/domain";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 
-import { App } from "../App";
 import { pl } from "../i18n/pl";
+import { TabNavigator } from "../navigation/TabNavigator";
 import { HomeScreen } from "./HomeScreen";
 
 afterEach(cleanup);
@@ -18,8 +18,8 @@ it("renders the texts from the translation file", () => {
   ).toBeTruthy();
 });
 
-it("renders the tab navigator as the root component", () => {
-  render(<App />);
+it("renders the tab navigator", () => {
+  render(<TabNavigator cycleEnabled={false} />);
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
   expect(screen.getAllByRole("tab")).toHaveLength(4);
 });

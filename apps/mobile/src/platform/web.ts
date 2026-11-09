@@ -1,3 +1,4 @@
+import { createIndexedDbDatabase } from "../data/indexeddb-database";
 import { systemClock } from "./clock";
 import type { Platform } from "./context";
 import { createIndexedDbKeyStore } from "./indexeddb-key-store";
@@ -8,9 +9,12 @@ import { createWebSodium } from "./web-sodium";
  * without hardware protection: tests and browser-first work only (native: M9).
  */
 export async function createWebPlatform(): Promise<Platform> {
+  const sodium = await createWebSodium();
+  const keyStore = createIndexedDbKeyStore();
   return {
-    sodium: await createWebSodium(),
-    keyStore: createIndexedDbKeyStore(),
+    sodium,
+    keyStore,
     clock: systemClock,
+    database: createIndexedDbDatabase({ sodium, keyStore }),
   };
 }

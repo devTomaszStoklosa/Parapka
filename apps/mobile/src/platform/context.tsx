@@ -1,5 +1,6 @@
 import type { Sodium } from "@parapka/crypto";
 import type { Clock } from "@parapka/domain";
+import type { LocalDatabase } from "../data/local-database";
 import { createContext, useContext, type ReactNode } from "react";
 import type { KeyStore } from "./key-store";
 
@@ -8,6 +9,8 @@ export interface Platform {
   sodium: Sodium;
   keyStore: KeyStore;
   clock: Clock;
+  /** Encrypted local database, opened and migrated. */
+  database: LocalDatabase;
 }
 
 const PlatformContext = createContext<Platform | null>(null);

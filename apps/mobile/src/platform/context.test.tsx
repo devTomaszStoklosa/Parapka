@@ -28,6 +28,8 @@ it("creates a complete web platform", async () => {
   await platform.keyStore.set("k", Uint8Array.of(7));
   expect(await platform.keyStore.get("k")).toEqual(Uint8Array.of(7));
   expect(platform.clock.nowMs()).toBeGreaterThan(0);
+  await platform.database.put("test", "a", { n: 1 });
+  expect(await platform.database.get("test", "a")).toEqual({ n: 1 });
 });
 
 it("throws outside a provider", () => {
