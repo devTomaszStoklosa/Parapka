@@ -8,11 +8,12 @@
     "node": ">=22"
   },
   "workspaces": [
+    "apps/*",
     "packages/*",
     "services/*"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc --noEmit -p services/relay",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p services/relay && tsc --noEmit -p apps/mobile",
     "lint": "eslint --max-warnings=0 .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
