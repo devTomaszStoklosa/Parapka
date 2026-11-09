@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { Sodium } from "@parapka/crypto";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, expect, it } from "vitest";
 
 import { App } from "./App";
@@ -100,4 +100,56 @@ it("shows an error when the database cannot be opened", async () => {
   };
   render(<App createPlatform={() => Promise.resolve(platform)} />);
   expect(await screen.findByText(pl.app.error)).toBeTruthy();
+});
+
+const o = pl.onboarding;
+const click = (role: string, name: string) => {
+  fireEvent.click(screen.getByRole(role, { name }));
+};
+const next = () => {
+  click("button", o.next);
+};
+const type = (label: string, value: string) => {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+};
+const enterPin = (pin: string) => {
+  pin.split("").forEach((digit, index) => {
+    type(pl.lock.pin.digit.replace("{position}", String(index + 1)), digit);
+  });
+};
+
+it("does not lock right after a PIN was set in onboarding, but does on the next start", async () => {
+  const platform = memoryPlatform();
+  const { unmount } = render(
+    <App createPlatform={() => Promise.resolve(platform)} />,
+  );
+  await screen.findByText(o.name.title);
+  type(o.name.label, "Ola");
+  next();
+  click("radio", o.formFeminine);
+  next();
+  click("checkbox", o.adult.confirm.feminine);
+  next();
+  click("radio", o.tenure["3-7"]);
+  next();
+  click("radio", o.children.no);
+  next();
+  click("checkbox", o.goals.closeness);
+  next();
+  click("radio", o.cycle.no);
+  next();
+  click("button", o.pin.set);
+  enterPin("123456");
+  await screen.findByText(pl.lock.pin.confirmTitle);
+  enterPin("123456");
+  await screen.findByText(o.pin.isSet);
+  next();
+  click("button", o.finish);
+  expect(await screen.findAllByRole("tab")).toHaveLength(4);
+  expect(screen.queryByText(pl.lock.pin.unlockTitle)).toBeNull();
+
+  unmount();
+  render(<App createPlatform={() => Promise.resolve(platform)} />);
+  expect(await screen.findByText(pl.lock.pin.unlockTitle)).toBeTruthy();
+  expect(screen.queryAllByRole("tab")).toHaveLength(0);
 });

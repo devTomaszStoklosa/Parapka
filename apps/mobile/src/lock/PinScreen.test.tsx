@@ -152,3 +152,69 @@ it("asks for the current PIN before a change", async () => {
   });
   expect(onSetPin).toHaveBeenCalledWith("222222");
 });
+
+it("keeps the fields active after a wrong PIN before the 5th mistake", async () => {
+  // The screen was mounted at 0, the attempt happens at 5 000 (the old bug).
+  let now = 0;
+  const testClock: Clock = { nowMs: () => now };
+  const onAttempt = vi
+    .fn()
+    .mockImplementationOnce(() => {
+      now = 5_000;
+      return Promise.resolve({ status: "wrong", delayMs: 0 });
+    })
+    .mockResolvedValue({ status: "ok" });
+  const onDone = vi.fn();
+  render(
+    <PinScreen
+      mode="unlock"
+      clock={testClock}
+      onAttempt={onAttempt}
+      onDone={onDone}
+    />,
+  );
+  typePin("111111");
+  expect(await screen.findByText(t("lock.pin.wrong"))).toBeTruthy();
+  expect(screen.queryByText(/Kolejna próba/)).toBeNull();
+  expect(screen.getByLabelText<HTMLInputElement>("Cyfra 1 z 6").readOnly).toBe(
+    false,
+  );
+  typePin("123456");
+  await vi.waitFor(() => {
+    expect(onDone).toHaveBeenCalled();
+  });
+});
+
+it("counts the delay down every second to zero, then enables the fields", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  let now = 0;
+  const testClock: Clock = { nowMs: () => now };
+  render(
+    <PinScreen
+      mode="unlock"
+      clock={testClock}
+      onAttempt={vi.fn().mockResolvedValue({ status: "wrong", delayMs: 3_000 })}
+      onDone={vi.fn()}
+    />,
+  );
+  typePin("111111");
+  expect(
+    await screen.findByText(t("lock.pin.delay", { seconds: 3 })),
+  ).toBeTruthy();
+  for (const seconds of [2, 1]) {
+    now += 1_000;
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByText(t("lock.pin.delay", { seconds }))).toBeTruthy();
+  }
+  now += 1_000;
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  expect(screen.queryByText(/Kolejna próba/)).toBeNull();
+  expect(screen.getByLabelText<HTMLInputElement>("Cyfra 1 z 6").readOnly).toBe(
+    false,
+  );
+  vi.useRealTimers();
+});

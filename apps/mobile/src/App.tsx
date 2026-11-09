@@ -32,12 +32,14 @@ type ProfileState = Profile | null | undefined | "failed";
 
 /**
  * Onboarding until a profile is saved, then the tabs (FR-ONB-06: no pair
- * needed). The lock gate is mounted anew when the PIN decision changes, so that
- * a PIN set in onboarding locks the app at once (FR-SEC-01).
+ * needed). The lock gate is mounted anew when the PIN decision changes, to load
+ * the new PIN state; a PIN set in onboarding does not lock the app at once, it
+ * locks after the app goes to the background and on the next start (FR-SEC-01).
  */
 function Session({ platform }: { platform: Platform }) {
   const { database } = platform;
   const [profile, setProfile] = useState<ProfileState>();
+  const [onboarded, setOnboarded] = useState(false);
 
   useEffect(() => {
     // The database opens lazily: a failed key or migration shows up here.
@@ -57,9 +59,15 @@ function Session({ platform }: { platform: Platform }) {
       keyStore={platform.keyStore}
       sodium={platform.sodium}
       clock={platform.clock}
+      startUnlocked={onboarded}
     >
       {profile === null ? (
-        <OnboardingFlow onDone={setProfile} />
+        <OnboardingFlow
+          onDone={(saved) => {
+            setOnboarded(true);
+            setProfile(saved);
+          }}
+        />
       ) : (
         <TabNavigator cycleEnabled={profile.cycle === "yes"} />
       )}

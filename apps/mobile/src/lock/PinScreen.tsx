@@ -107,8 +107,8 @@ function PinFields({
 function useSecondsLeft(clock: Clock, untilMs: number): number {
   const [now, setNow] = useState(clock.nowMs());
   useEffect(() => {
-    if (untilMs <= clock.nowMs()) return undefined;
     setNow(clock.nowMs());
+    if (untilMs <= clock.nowMs()) return undefined;
     const timer = setInterval(() => {
       setNow(clock.nowMs());
     }, 1000);
@@ -140,7 +140,7 @@ function usePinFlow(props: PinScreenProps) {
       retry(null);
       return;
     }
-    setBlockedUntilMs(clock.nowMs() + result.delayMs);
+    setBlockedUntilMs(result.delayMs > 0 ? clock.nowMs() + result.delayMs : 0);
     retry(result.status === "wrong" ? "lock.pin.wrong" : null);
   };
 

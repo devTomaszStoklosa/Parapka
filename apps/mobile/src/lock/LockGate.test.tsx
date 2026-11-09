@@ -49,7 +49,11 @@ function setAppState(state: "visible" | "hidden") {
   });
 }
 
-async function setup(withPin = true, timeout?: LockTimeout) {
+async function setup(
+  withPin = true,
+  timeout?: LockTimeout,
+  startUnlocked = false,
+) {
   let now = 1_000;
   const clock: Clock = { nowMs: () => now };
   const database = createMemoryDatabase();
@@ -64,6 +68,7 @@ async function setup(withPin = true, timeout?: LockTimeout) {
       keyStore={keyStore}
       sodium={sodium}
       clock={clock}
+      startUnlocked={startUnlocked}
     >
       <Content />
     </LockGate>,
@@ -91,6 +96,17 @@ it("shows the PIN screen, not the content, on start", async () => {
   await setup();
   expect(await screen.findByText(t("lock.pin.unlockTitle"))).toBeTruthy();
   expect(screen.queryByText("secret content")).toBeNull();
+});
+
+it("starts unlocked when asked to, and locks after the background", async () => {
+  await setup(true, undefined, true);
+  expect(await screen.findByText("secret content")).toBeTruthy();
+  expect(screen.queryByText(t("lock.pin.unlockTitle"))).toBeNull();
+
+  setAppState("hidden");
+  setAppState("visible");
+  expect(screen.queryByText("secret content")).toBeNull();
+  expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
 });
 
 it("shows the content when no PIN is set", async () => {
