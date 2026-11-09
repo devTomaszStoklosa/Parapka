@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 import "fake-indexeddb/auto";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { Sodium } from "@parapka/crypto";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
 import type { KeyStore } from "../platform/key-store";
@@ -142,6 +150,21 @@ describe("IndexedDB database key", () => {
 });
 
 describe("IndexedDB failures", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("rejects when the database cannot be opened", async () => {
+    const req: IDBOpenDBRequest = {} as IDBOpenDBRequest;
+    vi.spyOn(indexedDB, "open").mockImplementation(() => {
+      queueMicrotask(() => {
+        req.onerror?.(new Event("error"));
+      });
+      return req;
+    });
+    await expect(create().get("a", "1")).rejects.toThrow(Error);
+  });
+
   it("rejects a stored record that is not binary", async () => {
     const db = create();
     await db.put("a", "1", "x");
