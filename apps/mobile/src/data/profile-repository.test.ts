@@ -20,13 +20,14 @@ const profile: Profile = {
   name: "Ola",
   form: "feminine",
   adultConfirmed: true,
-  relationshipMonths: 30,
+  relationshipTenure: "3-7",
   hasChildren: true,
-  goals: [
-    { text: "Więcej czasu razem", shareWithPartner: true },
-    { text: "Prywatny cel", shareWithPartner: false },
-  ],
-  hasCycle: true,
+  childrenCount: 2,
+  goals: ["time-together", "other"],
+  otherGoalText: "Wspólna podróż",
+  shareGoalsWithPartner: false,
+  cycle: "yes",
+  pinDecision: "skipped",
 };
 
 function suite(name: string, create: () => Promise<LocalDatabase>): void {
