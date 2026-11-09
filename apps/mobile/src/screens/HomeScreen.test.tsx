@@ -18,7 +18,8 @@ it("renders the texts from the translation file", () => {
   ).toBeTruthy();
 });
 
-it("renders the home screen as the root component", () => {
+it("renders the tab navigator as the root component", () => {
   render(<App />);
-  expect(screen.getByText(pl.home.title)).toBeTruthy();
+  expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
+  expect(screen.getAllByRole("tab")).toHaveLength(4);
 });
