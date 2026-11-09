@@ -146,6 +146,36 @@ export const pl = {
         "Aplikacja działa także bez pary. Partnera możesz dodać później.",
     },
   },
+  pairing: {
+    title: "Para",
+    invite: "Zaproś partnera",
+    alreadyPaired: "Najpierw rozłącz obecną parę",
+    paired: "Jesteście w parze.",
+    offline: "Brak połączenia z serwerem. Spróbuj ponownie za chwilę.",
+    error: "Nie udało się utworzyć zaproszenia. Spróbuj ponownie.",
+    rejected:
+      "Para została odrzucona, a jej klucze usunięte. Zaproszenie możesz utworzyć od nowa.",
+    invitation: {
+      qrLabel: "Kod QR zaproszenia",
+      hint: "Pokaż ten kod partnerowi albo wyślij mu link. Zaproszenie jest jednorazowe.",
+      validUntil: "Ważne do {time}",
+      copy: "Kopiuj link",
+      copied: "Link skopiowany.",
+      waiting: "Czekamy, aż partner przyjmie zaproszenie.",
+      expired: "Zaproszenie wygasło",
+      invalid:
+        "Nie udało się odczytać kluczy partnera. Utwórz nowe zaproszenie.",
+      renew: "Utwórz nowe zaproszenie",
+      cancel: "Zamknij",
+    },
+    safety: {
+      title: "Kod bezpieczeństwa",
+      instruction:
+        "Porównaj ten kod z kodem na urządzeniu partnera. Muszą być takie same, zanim zaczniecie synchronizację.",
+      same: "Kody są takie same",
+      different: "Różnią się",
+    },
+  },
   greeting: {
     ready: {
       feminine: "{name}, jesteś gotowa.",

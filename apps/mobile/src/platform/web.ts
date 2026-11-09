@@ -20,5 +20,6 @@ export async function createWebPlatform(): Promise<Platform> {
     database: createIndexedDbDatabase({ sodium, keyStore }),
     sha256: webSha256,
     relayUrl: configuredRelayUrl(),
+    appUrl: location.origin,
   };
 }
