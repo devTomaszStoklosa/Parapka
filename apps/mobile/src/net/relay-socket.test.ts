@@ -111,3 +111,34 @@ it("stops after close()", async () => {
   open.sockets[0]?.onclose?.();
   expect(open.delays).toEqual([]);
 });
+
+it("uses the global timers by default", async () => {
+  vi.useFakeTimers();
+  try {
+    const sockets: FakeSocket[] = [];
+    const relay = connectRelaySocket({
+      url: () => Promise.resolve("wss://relay.test/ws"),
+      createSocket: (url) => {
+        const socket = new FakeSocket(url);
+        sockets.push(socket);
+        return socket;
+      },
+      onSync: vi.fn(),
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    sockets[0]?.onclose?.();
+    sockets[0]?.onclose?.();
+    relay.close();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(sockets).toHaveLength(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("does not open a socket when closed while the URL is pending", async () => {
+  const { relay, sockets } = setup();
+  relay.close();
+  await tick();
+  expect(sockets).toHaveLength(0);
+});
