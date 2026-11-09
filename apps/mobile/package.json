@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",
+    "@parapka/crypto": "*",
     "@parapka/domain": "*",
     "expo": "~58.0.23",
+    "libsodium-wrappers-sumo": "0.8.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@testing-library/react": "16.3.3",
     "@types/react": "~19.3.0",
+    "fake-indexeddb": "6.2.8",
     "jsdom": "31.0.0"
   }
 }
