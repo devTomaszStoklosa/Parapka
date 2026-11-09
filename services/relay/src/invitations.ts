@@ -139,9 +139,21 @@ function fetchKeys(app: FastifyInstance): void {
       ) {
         return reply.code(404).send({ error: "invitation not accepted" });
       }
+      // The invitation keeps no mailbox id: the open mailbox of A with the
+      // accepting device is the pair created by the acceptance.
+      const mailbox = await app.relay.store.findMailboxByDevice(
+        invitation.deviceId,
+      );
+      if (
+        mailbox === null ||
+        mailbox.deviceIdB !== invitation.acceptedByDeviceId
+      ) {
+        return reply.code(410).send({ error: "pair no longer exists" });
+      }
       return reply.code(200).send({
         encryptedKeys: invitation.encryptedKeysB,
         acceptedByDeviceId: invitation.acceptedByDeviceId,
+        pairMailboxId: mailbox.pairMailboxId,
       } satisfies FetchInvitationKeysResponse);
     },
   );
