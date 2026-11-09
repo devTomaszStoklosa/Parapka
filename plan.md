@@ -128,7 +128,7 @@ Ostatni etap, gdy reszta jest gotowa. Spike „development build na telefonie”
 
 - **M9.1:** spike: development build z SQLCipher, `react-native-libsodium` i Keychain/Keystore (R-7, NFR-PRV-01, NFR-PRV-02); prowadzi autor z Claude lokalnie, poza pipeline'em, bo wymaga budowania na telefon.
 - **M9.2:** adaptery natywne `Sodium`, `KeyStore` i bazy (SQLCipher) za interfejsami z M5.
-- **M9.3:** biometria i zasłona w przełączniku z `FLAG_SECURE` (FR-SEC-02).
+- **M9.3:** biometria (FR-SEC-01) oraz zasłona w przełączniku z `FLAG_SECURE` (FR-SEC-02).
 - **M9.4:** powiadomienia push bez treści: APNs i FCM, rozszerzenie powiadomień na iOS (FR-NOT-02, FR-NOT-03).
 - **M9.5:** skanowanie kodu QR aparatem (FR-PAIR-01).
 - **M9.6:** wyłączenie kopii zapasowych (NFR-PRV-02) i zachowanie w tle.
@@ -156,8 +156,9 @@ Ostatni etap, gdy reszta jest gotowa. Spike „development build na telefonie”
 | FR-MNT-01, FR-MNT-03, FR-MNT-07, FR-MNT-08 | M7 |
 | FR-NOT-01, FR-NOT-04 do FR-NOT-07 | M8 |
 | FR-NOT-02, FR-NOT-03 | M4 (relay), M9 (push) |
-| FR-SEC-01, FR-SEC-06, FR-SEC-07 | M5 |
-| FR-SEC-02 | M5 (blokada PIN-em), M9 (część natywna: biometria, `FLAG_SECURE`) |
+| FR-SEC-01 | M5 (PIN), M9 (biometria) |
+| FR-SEC-06, FR-SEC-07 | M5 |
+| FR-SEC-02 | M9 (zasłona w przełączniku, `FLAG_SECURE`) |
 | FR-SEC-03 | wszystkie etapy (kryterium przeglądu: brak lokalizacji, statusu online i potwierdzeń odczytu) |
 | FR-SEC-04, FR-SEC-05 | M4 (relay), M8 |
 | NFR-PRV-01, NFR-PRV-02 | M9 (M5 tylko adaptery web do testów) |
