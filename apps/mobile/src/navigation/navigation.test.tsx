@@ -50,6 +50,11 @@ it("falls back to today when the active cycle tab disappears", () => {
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.cycle.title);
   rerender(<TabNavigator cycleEnabled={false} />);
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
+
+  fireEvent.click(screen.getByText(pl.screens.push));
+  expect(screen.getByText("Poziom stosu: 2")).toBeTruthy();
+  rerender(<TabNavigator cycleEnabled />);
+  expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
 });
 
 it("switches tabs and keeps a separate stack per tab", () => {

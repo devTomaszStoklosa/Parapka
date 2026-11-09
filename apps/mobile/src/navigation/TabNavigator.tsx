@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { View } from "react-native";
 
 import { TabPlaceholderScreen } from "../screens/TabPlaceholderScreen";
@@ -11,6 +11,13 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
   const tabs = TAB_IDS.filter((tab) => cycleEnabled || tab !== "cycle");
   // The cycle tab may disappear while it is active.
   const active = tabs.includes(state.active) ? state.active : "today";
+
+  // Keep the reducer in sync, so push and pop act on the visible tab.
+  useEffect(() => {
+    if (active !== state.active) {
+      dispatch({ type: "select", tab: active });
+    }
+  }, [active, state.active]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
