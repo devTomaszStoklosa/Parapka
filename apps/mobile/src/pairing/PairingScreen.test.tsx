@@ -41,6 +41,8 @@ const fake = vi.hoisted(() => ({
   relay: null as unknown as FakeRelay,
   now: 0,
   count: 0,
+  fetch: null as
+    null | ((url: string, init?: RequestInit) => Promise<Response>),
 }));
 
 // jsdom has its own Uint8Array, which libsodium rejects when signing; the relay
@@ -53,22 +55,25 @@ vi.mock("../net/relay-client", async () => {
     return Promise.resolve();
   };
   return {
-    createRelayClient: () => ({
-      createInvitation: () =>
-        call("createInvitation").then(() => ({
-          invitationId: `inv${String((fake.count += 1))}`,
-          expiresAt: new Date(fake.now + 24 * 3600 * 1000).toISOString(),
-        })),
-      fetchInvitationKeys: () =>
-        call("fetchInvitationKeys").then(() => {
-          if (fake.relay.keys === null) throw new RelayError("notFound", 404);
-          return {
-            encryptedKeys: fake.relay.keys,
-            acceptedByDeviceId: "device-b",
-            pairMailboxId: "mailbox",
-          };
-        }),
-    }),
+    createRelayClient: (options: { fetch: typeof fake.fetch }) => {
+      fake.fetch = options.fetch;
+      return {
+        createInvitation: () =>
+          call("createInvitation").then(() => ({
+            invitationId: `inv${String((fake.count += 1))}`,
+            expiresAt: new Date(fake.now + 24 * 3600 * 1000).toISOString(),
+          })),
+        fetchInvitationKeys: () =>
+          call("fetchInvitationKeys").then(() => {
+            if (fake.relay.keys === null) throw new RelayError("notFound", 404);
+            return {
+              encryptedKeys: fake.relay.keys,
+              acceptedByDeviceId: "device-b",
+              pairMailboxId: "mailbox",
+            };
+          }),
+      };
+    },
   };
 });
 
@@ -301,4 +306,15 @@ it("draws the matrix with a quiet zone and a label", () => {
   const image = screen.getByLabelText("qr");
   // 2 rows plus 4 rows of quiet zone on each side.
   expect(image.children).toHaveLength(10);
+});
+
+it("gives the relay client the global fetch", async () => {
+  const response = new Response("{}");
+  const globalFetch = vi.fn(() => Promise.resolve(response));
+  vi.stubGlobal("fetch", globalFetch);
+  renderScreen();
+  await click(pl.pairing.invite);
+  const result = await fake.fetch?.("/x", { method: "GET" });
+  expect(result).toBe(response);
+  expect(globalFetch).toHaveBeenCalledWith("/x", { method: "GET" });
 });

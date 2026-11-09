@@ -51,7 +51,7 @@ function usePairing() {
       sodium,
       keyStore,
       database,
-      relay: () => relay(),
+      relay,
     });
     const pairs = createPairRepository(database, keyStore);
     const inviter = createInviter({
