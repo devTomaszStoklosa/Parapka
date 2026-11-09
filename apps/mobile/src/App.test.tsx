@@ -10,6 +10,7 @@ import { createProfileRepository } from "./data/profile-repository";
 import { pl } from "./i18n/pl";
 import { createPinStore } from "./lock/pin-store";
 import type { Platform } from "./platform/context";
+import { webSha256 } from "./platform/sha256";
 import { createMemoryKeyStore } from "./platform/memory-key-store";
 import { createWebSodium } from "./platform/web-sodium";
 
@@ -41,6 +42,8 @@ function memoryPlatform(): Platform {
     keyStore: createMemoryKeyStore(),
     clock: { nowMs: () => 1_000 },
     database: createMemoryDatabase(),
+    sha256: webSha256,
+    relayUrl: "unused",
   };
 }
 

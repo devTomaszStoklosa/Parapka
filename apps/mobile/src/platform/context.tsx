@@ -3,6 +3,7 @@ import type { Clock } from "@parapka/domain";
 import type { LocalDatabase } from "../data/local-database";
 import { createContext, useContext, type ReactNode } from "react";
 import type { KeyStore } from "./key-store";
+import type { Sha256 } from "./sha256";
 
 /** Platform dependencies that screens receive through context (spec 7.2). */
 export interface Platform {
@@ -11,6 +12,9 @@ export interface Platform {
   clock: Clock;
   /** Encrypted local database, opened and migrated. */
   database: LocalDatabase;
+  sha256: Sha256;
+  /** Address of the relay, from the configuration. */
+  relayUrl: string;
 }
 
 const PlatformContext = createContext<Platform | null>(null);
