@@ -50,6 +50,39 @@ describe("request log", () => {
     }
   });
 
+  it("holds no authentication query parameter of the WebSocket route", async () => {
+    const lines: string[] = [];
+    const stream = new Writable({
+      write(chunk: Buffer, _encoding, done) {
+        lines.push(chunk.toString("utf8"));
+        done();
+      },
+    });
+    const app = buildApp({
+      store: new MemoryStore(),
+      clock: { nowMs: () => 0 },
+      logger: loggerOptions(stream),
+    });
+    await app.ready();
+    await app
+      .injectWS(
+        "/v1/pairs/p1/ws?deviceId=DEVICE-VALUE&challengeId=CHALLENGE-VALUE&signature=SIGNATURE-VALUE",
+      )
+      .catch(() => undefined);
+    await app.close();
+
+    const log = lines.join("");
+    expect(log).toContain("/v1/pairs/p1/ws");
+    for (const secret of [
+      "DEVICE-VALUE",
+      "CHALLENGE-VALUE",
+      "SIGNATURE-VALUE",
+      "signature=",
+    ]) {
+      expect(log).not.toContain(secret);
+    }
+  });
+
   it("holds no body fragment when the JSON is invalid", async () => {
     const lines: string[] = [];
     const stream = new Writable({

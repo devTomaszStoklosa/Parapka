@@ -3,6 +3,7 @@ import Fastify, {
   type FastifyInstance,
   type FastifyServerOptions,
 } from "fastify";
+import { registerCors } from "./cors.js";
 import { registerEnvelopeRoutes } from "./envelopes.js";
 import { registerDeviceRoutes } from "./devices.js";
 import { registerInvitationRoutes } from "./invitations.js";
@@ -20,6 +21,8 @@ export interface AppDependencies {
   /** Schedules the WebSocket pings; tests inject it, defaults to a timer. */
   readonly pingScheduler?: PingScheduler;
   /** Fastify logger options (see logging.ts); without it nothing is logged. */
+  /** Origins that may call the relay from a browser; none by default. */
+  readonly allowedOrigins?: readonly string[];
   readonly logger?: FastifyServerOptions["logger"];
 }
 
@@ -47,6 +50,7 @@ export function buildApp(deps: AppDependencies): FastifyInstance {
       }
     },
   );
+  registerCors(app, deps.allowedOrigins ?? []);
   app.get("/health", () => ({ status: "ok" }));
   registerDeviceRoutes(app);
   registerInvitationRoutes(app);

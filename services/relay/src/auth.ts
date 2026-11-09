@@ -76,14 +76,69 @@ function header(request: FastifyRequest, name: string): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+const WEBSOCKET_ROUTE = "/v1/pairs/:id/ws";
+const QUERY_AUTH_PARAMS = ["deviceId", "challengeId", "signature"];
+
+interface Credentials {
+  readonly deviceId: string | null;
+  readonly challengeId: string | null;
+  readonly signature: string | null;
+  /** The URL the device signed. */
+  readonly url: string;
+}
+
+function fromHeaders(request: FastifyRequest): Credentials {
+  return {
+    deviceId: header(request, "x-device-id"),
+    challengeId: header(request, "x-challenge-id"),
+    signature: header(request, "x-signature"),
+    url: request.url,
+  };
+}
+
+/**
+ * Credentials of a browser WebSocket, which cannot set headers: they are
+ * query parameters, and the signed URL is the path with the remaining query.
+ */
+function fromQuery(request: FastifyRequest): Credentials {
+  const [path = "", query = ""] = request.url.split("?", 2);
+  const found = new Map<string, string>();
+  const kept: string[] = [];
+  for (const pair of query.split("&")) {
+    const key = decodeParam(pair.split("=", 1)[0] ?? "");
+    if (!QUERY_AUTH_PARAMS.includes(key)) {
+      if (pair.length > 0) kept.push(pair);
+    } else if (!found.has(key)) {
+      found.set(key, decodeParam(pair.slice(key.length + 1)));
+    }
+  }
+  const value = (key: string): string | null => {
+    const text = found.get(key);
+    return text === undefined || text.length === 0 ? null : text;
+  };
+  return {
+    deviceId: value("deviceId"),
+    challengeId: value("challengeId"),
+    signature: value("signature"),
+    url: kept.length === 0 ? path : `${path}?${kept.join("&")}`,
+  };
+}
+
+function decodeParam(text: string): string {
+  try {
+    return decodeURIComponent(text.replaceAll("+", " "));
+  } catch {
+    return text;
+  }
+}
+
 /** The id of the device whose signature the request carries; null otherwise. */
 async function verifiedDeviceId(
   request: FastifyRequest,
+  credentials: Credentials,
 ): Promise<string | null> {
   const { store, clock } = request.server.relay;
-  const deviceId = header(request, "x-device-id");
-  const challengeId = header(request, "x-challenge-id");
-  const signature = header(request, "x-signature");
+  const { deviceId, challengeId, signature, url } = credentials;
   if (deviceId === null || challengeId === null || signature === null) {
     return null;
   }
@@ -100,7 +155,7 @@ async function verifiedDeviceId(
   if (device === null) return null;
   const text = buildSignedText({
     method: request.method,
-    url: request.url,
+    url,
     challengeId,
     nonce: challenge.nonce,
     body: request.rawBody ?? new Uint8Array(),
@@ -113,12 +168,31 @@ async function verifiedDeviceId(
 /**
  * Pre-handler: authenticates the device by the signature over a server
  * challenge and sets `request.deviceId`; every failure is a uniform 401.
+ * A browser WebSocket cannot set headers, so the WebSocket route without
+ * the auth headers takes `deviceId`, `challengeId` and `signature` from the
+ * query; no other route does.
  */
 export async function authenticate(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<FastifyReply | undefined> {
-  const deviceId = await verifiedDeviceId(request);
+  const fromHeader = fromHeaders(request);
+  const credentials =
+    request.routeOptions.url === WEBSOCKET_ROUTE &&
+    fromHeader.deviceId === null &&
+    fromHeader.challengeId === null &&
+    fromHeader.signature === null
+      ? fromQuery(request)
+      : fromHeader;
+  return finish(request, reply, credentials);
+}
+
+async function finish(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  credentials: Credentials,
+): Promise<FastifyReply | undefined> {
+  const deviceId = await verifiedDeviceId(request, credentials);
   if (deviceId === null) {
     return reply.code(401).send({ error: "unauthorized" });
   }
