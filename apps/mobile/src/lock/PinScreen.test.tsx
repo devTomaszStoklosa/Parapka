@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import type { Clock } from "@parapka/domain";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { t } from "../i18n";
