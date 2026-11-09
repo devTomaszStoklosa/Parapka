@@ -12,7 +12,10 @@ import { afterEach, expect, it, vi } from "vitest";
 import { t } from "../i18n";
 import { PinScreen } from "./PinScreen";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const clock: Clock = { nowMs: () => 0 };
 
@@ -81,7 +84,6 @@ it("tells about the delay in neutral words", async () => {
     vi.advanceTimersByTime(1000);
   });
   unmount();
-  vi.useRealTimers();
 });
 
 it("calls onForgot from the link", () => {
@@ -201,20 +203,25 @@ it("counts the delay down every second to zero, then enables the fields", async 
   expect(
     await screen.findByText(t("lock.pin.delay", { seconds: 3 })),
   ).toBeTruthy();
+  // Let the effect with setInterval run before the clock is advanced.
+  await act(() => Promise.resolve());
   for (const seconds of [2, 1]) {
     now += 1_000;
-    act(() => {
-      vi.advanceTimersByTime(1000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
     });
-    expect(screen.getByText(t("lock.pin.delay", { seconds }))).toBeTruthy();
+    expect(
+      await screen.findByText(t("lock.pin.delay", { seconds })),
+    ).toBeTruthy();
   }
   now += 1_000;
-  act(() => {
-    vi.advanceTimersByTime(1000);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
   });
-  expect(screen.queryByText(/Kolejna próba/)).toBeNull();
+  await vi.waitFor(() => {
+    expect(screen.queryByText(/Kolejna próba/)).toBeNull();
+  });
   expect(screen.getByLabelText<HTMLInputElement>("Cyfra 1 z 6").readOnly).toBe(
     false,
   );
-  vi.useRealTimers();
 });
