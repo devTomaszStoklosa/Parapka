@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { Clock } from "@parapka/domain";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { t } from "../i18n";
@@ -52,10 +52,11 @@ it("unlocks with the right PIN", async () => {
 });
 
 it("tells about the delay in neutral words", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
   const onAttempt = vi
     .fn()
     .mockResolvedValue({ status: "wrong", delayMs: 30_000 });
-  render(
+  const { unmount } = render(
     <PinScreen
       mode="unlock"
       clock={clock}
@@ -70,6 +71,11 @@ it("tells about the delay in neutral words", async () => {
   expect(screen.getByText(t("lock.pin.wrong"))).toBeTruthy();
   const field = screen.getByLabelText<HTMLInputElement>("Cyfra 1 z 6");
   expect(field.readOnly).toBe(true);
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  unmount();
+  vi.useRealTimers();
 });
 
 it("calls onForgot from the link", () => {
