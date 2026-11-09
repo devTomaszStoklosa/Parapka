@@ -500,7 +500,7 @@ Endpointy relaya (szkic):
 | DELETE | `/v1/devices/{id}` | Usunięcie urządzenia i wszystkich jego danych. |
 | POST | `/v1/invitations` | Utworzenie zaproszenia. |
 | POST | `/v1/invitations/{id}/accept` | Przyjęcie zaproszenia i utworzenie skrzynki pary. |
-| GET | `/v1/invitations/{id}/keys` | Pobranie przez A zaszyfrowanych kluczy B (po przyjęciu zaproszenia). |
+| GET | `/v1/invitations/{id}/keys` | Pobranie przez A zaszyfrowanych kluczy B i `pairMailboxId` skrzynki pary (po przyjęciu zaproszenia); 410, gdy para już nie istnieje. |
 | POST | `/v1/pairs/{id}/envelopes` | Wysłanie koperty. |
 | GET | `/v1/pairs/{id}/envelopes?after={cursor}` | Pobranie kopert; przy otwartej aplikacji także przez WebSocket. |
 | GET | `/v1/pairs/{id}/ws` | WebSocket: powiadomienie o nowych kopertach przy otwartej aplikacji. |

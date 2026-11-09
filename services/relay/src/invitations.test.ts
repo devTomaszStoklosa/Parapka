@@ -233,12 +233,14 @@ describe("GET /v1/invitations/{id}/keys", () => {
     const id = await invite(a);
     const url = `/v1/invitations/${id}/keys`;
     expect((await call(a, "GET", url)).statusCode).toBe(404);
-    await accept(b, id, "OPAQUE");
+    const accepted = await accept(b, id, "OPAQUE");
+    const { pairMailboxId } = accepted.json<{ pairMailboxId: string }>();
     const own = await call(a, "GET", url);
     expect(own.statusCode).toBe(200);
     expect(own.json()).toEqual({
       encryptedKeys: "OPAQUE",
       acceptedByDeviceId: b.deviceId,
+      pairMailboxId,
     });
     expect((await call(b, "GET", url)).statusCode).toBe(403);
     expect((await call(c, "GET", url)).statusCode).toBe(403);
@@ -246,5 +248,29 @@ describe("GET /v1/invitations/{id}/keys", () => {
     expect((await call(a, "GET", "/v1/invitations/nope/keys")).statusCode).toBe(
       404,
     );
+  });
+
+  it("answers 410 when the pair mailbox is closed", async () => {
+    const a = await register();
+    const b = await register();
+    const id = await invite(a);
+    const { pairMailboxId } = (await accept(b, id)).json<{
+      pairMailboxId: string;
+    }>();
+    await store.closeMailbox(pairMailboxId, now, b.deviceId);
+    const response = await call(a, "GET", `/v1/invitations/${id}/keys`);
+    expect(response.statusCode).toBe(410);
+  });
+
+  it("answers 410 when the pair mailbox is deleted", async () => {
+    const a = await register();
+    const b = await register();
+    const id = await invite(a);
+    const { pairMailboxId } = (await accept(b, id)).json<{
+      pairMailboxId: string;
+    }>();
+    await store.deleteMailbox(pairMailboxId);
+    const response = await call(a, "GET", `/v1/invitations/${id}/keys`);
+    expect(response.statusCode).toBe(410);
   });
 });

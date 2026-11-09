@@ -44,6 +44,7 @@ export interface AcceptInvitationResponse {
 export interface FetchInvitationKeysResponse {
   readonly encryptedKeys: string;
   readonly acceptedByDeviceId: string;
+  readonly pairMailboxId: string;
 }
 
 /** POST /v1/pairs/{id}/envelopes */
