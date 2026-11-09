@@ -1,5 +1,6 @@
-import { HomeScreen } from "./screens/HomeScreen";
+import { TabNavigator } from "./navigation/TabNavigator";
 
 export function App() {
-  return <HomeScreen />;
+  // TODO(settings): the cycle panel switch comes from the profile settings.
+  return <TabNavigator cycleEnabled={false} />;
 }
