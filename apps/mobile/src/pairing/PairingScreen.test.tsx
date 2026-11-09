@@ -24,6 +24,7 @@ import { createWebSodium } from "../platform/web-sodium";
 import { POLL_INTERVAL_MS } from "./InviteScreen";
 import { createPairRepository } from "./pair-repository";
 import { PairingScreen } from "./PairingScreen";
+import { QrView, runsOfRow } from "./QrView";
 
 const NOW = Date.UTC(2030, 0, 1);
 
@@ -263,4 +264,28 @@ it("closes the waiting screen", async () => {
   await click(pl.pairing.invite);
   await click(pl.pairing.invitation.cancel);
   expect(await screen.findByText(pl.pairing.invite)).toBeTruthy();
+});
+
+it("merges neighbouring modules of one colour", () => {
+  expect(runsOfRow([true, true, false, true])).toEqual([
+    { dark: true, length: 2 },
+    { dark: false, length: 1 },
+    { dark: true, length: 1 },
+  ]);
+  expect(runsOfRow([])).toEqual([]);
+});
+
+it("draws the matrix with a quiet zone and a label", () => {
+  render(
+    <QrView
+      matrix={[
+        [true, false],
+        [false, true],
+      ]}
+      accessibilityLabel="qr"
+    />,
+  );
+  const image = screen.getByLabelText("qr");
+  // 2 rows plus 4 rows of quiet zone on each side.
+  expect(image.children).toHaveLength(10);
 });
