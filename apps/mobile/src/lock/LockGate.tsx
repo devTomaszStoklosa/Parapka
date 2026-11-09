@@ -25,6 +25,8 @@ export interface LockGateProps {
   keyStore: KeyStore;
   sodium: Sodium;
   clock: Clock;
+  /** Starts unlocked, e.g. right after the PIN was set in onboarding. */
+  startUnlocked?: boolean;
   children: ReactNode;
 }
 
@@ -72,7 +74,8 @@ function useLock(props: LockGateProps, store: PinStore, active: boolean) {
     void Promise.all([store.hasPin(), store.loadSettings()]).then(
       ([pinSet, settings]) => {
         setHasPin(pinSet);
-        setLock(initialLockState(settings.timeout));
+        const initial = initialLockState(settings.timeout);
+        setLock(props.startUnlocked ? unlock(initial) : initial);
       },
     );
   }, [store]);

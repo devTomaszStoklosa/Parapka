@@ -69,7 +69,7 @@ export const pl = {
     formMasculine: "Męskiej („jesteś gotowy”)",
     formNeutral: "Neutralnej („masz wszystko gotowe”)",
     adult: {
-      title: "Pełnoletniość",
+      title: "Pełnoletność",
       hint: "Parapka jest przeznaczona dla osób, które skończyły 18 lat.",
       confirm: {
         feminine: "Potwierdzam, że jestem pełnoletnia",
