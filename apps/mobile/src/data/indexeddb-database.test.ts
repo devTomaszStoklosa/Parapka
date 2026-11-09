@@ -141,6 +141,36 @@ describe("IndexedDB database key", () => {
   });
 });
 
+describe("IndexedDB failures", () => {
+  it("rejects a stored record that is not binary", async () => {
+    const db = create();
+    await db.put("a", "1", "x");
+    await rawPut(["a", "1"], "plain");
+    await expect(db.get("a", "1")).rejects.toThrow("not binary");
+  });
+
+  it("retries the setup after it failed", async () => {
+    let failures = 1;
+    const flaky: KeyStore = {
+      ...keyStore,
+      get: (name) => {
+        if (failures-- > 0) {
+          return Promise.reject(new Error("key store down"));
+        }
+        return keyStore.get(name);
+      },
+    };
+    const db = createIndexedDbDatabase({ sodium, keyStore: flaky });
+    await expect(db.get("a", "1")).rejects.toThrow("key store down");
+    expect(await db.get("a", "1")).toBeNull();
+  });
+
+  it("lets a migration call clear without effect", async () => {
+    const db = create([{ version: 1, run: (inner) => inner.clear() }]);
+    expect(await db.list("a")).toEqual([]);
+  });
+});
+
 describe("IndexedDB clear", () => {
   it("removes the data, the schema version and the key", async () => {
     const db = create();

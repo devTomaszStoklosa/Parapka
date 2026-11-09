@@ -24,11 +24,12 @@ export function createMemoryDatabase(): LocalDatabase {
       return Promise.resolve();
     },
     list: (collection) => {
-      const records = [...(collections.get(collection) ?? [])];
+      const records =
+        collections.get(collection) ?? new Map<string, JsonValue>();
       return Promise.resolve(
-        records
-          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-          .map(([id, value]) => ({ id, value: copy(value) })),
+        [...records.keys()]
+          .sort()
+          .map((id) => ({ id, value: copy(records.get(id) as JsonValue) })),
       );
     },
     clear: () => {
