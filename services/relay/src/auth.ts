@@ -76,17 +76,81 @@ function header(request: FastifyRequest, name: string): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+interface Credentials {
+  readonly deviceId: string;
+  readonly challengeId: string;
+  readonly signature: string;
+  /** The URL that was signed. */
+  readonly url: string;
+}
+
+const QUERY_CREDENTIALS: readonly string[] = [
+  "deviceId",
+  "challengeId",
+  "signature",
+];
+
+/** The URL without the three credential parameters; its `?` goes too when nothing remains. */
+function urlWithoutCredentials(url: string): string {
+  const mark = url.indexOf("?");
+  if (mark === -1) return url;
+  const kept = url
+    .slice(mark + 1)
+    .split("&")
+    .filter((part) => !QUERY_CREDENTIALS.includes(part.split("=")[0] ?? ""));
+  const path = url.slice(0, mark);
+  return kept.length === 0 ? path : `${path}?${kept.join("&")}`;
+}
+
+function queryValue(
+  query: Record<string, unknown>,
+  name: string,
+): string | null {
+  const value = query[name];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * Reads the credentials from the headers. A WebSocket upgrade, whose browser
+ * API cannot set headers, may carry them in the query instead.
+ */
+function credentialsOf(request: FastifyRequest): Credentials | null {
+  const deviceId = header(request, "x-device-id");
+  const challengeId = header(request, "x-challenge-id");
+  const signature = header(request, "x-signature");
+  if (deviceId !== null && challengeId !== null && signature !== null) {
+    return { deviceId, challengeId, signature, url: request.url };
+  }
+  if (request.headers.upgrade?.toLowerCase() !== "websocket") return null;
+  const query = request.query as Record<string, unknown>;
+  const fromQuery = {
+    deviceId: queryValue(query, "deviceId"),
+    challengeId: queryValue(query, "challengeId"),
+    signature: queryValue(query, "signature"),
+  };
+  if (
+    fromQuery.deviceId === null ||
+    fromQuery.challengeId === null ||
+    fromQuery.signature === null
+  ) {
+    return null;
+  }
+  return {
+    deviceId: fromQuery.deviceId,
+    challengeId: fromQuery.challengeId,
+    signature: fromQuery.signature,
+    url: urlWithoutCredentials(request.url),
+  };
+}
+
 /** The id of the device whose signature the request carries; null otherwise. */
 async function verifiedDeviceId(
   request: FastifyRequest,
 ): Promise<string | null> {
   const { store, clock } = request.server.relay;
-  const deviceId = header(request, "x-device-id");
-  const challengeId = header(request, "x-challenge-id");
-  const signature = header(request, "x-signature");
-  if (deviceId === null || challengeId === null || signature === null) {
-    return null;
-  }
+  const credentials = credentialsOf(request);
+  if (credentials === null) return null;
+  const { deviceId, challengeId, signature } = credentials;
   // The challenge is consumed even when the check below fails.
   const challenge = await store.takeChallenge(challengeId);
   if (
@@ -100,7 +164,7 @@ async function verifiedDeviceId(
   if (device === null) return null;
   const text = buildSignedText({
     method: request.method,
-    url: request.url,
+    url: credentials.url,
     challengeId,
     nonce: challenge.nonce,
     body: request.rawBody ?? new Uint8Array(),
