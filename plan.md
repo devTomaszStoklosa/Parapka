@@ -131,8 +131,9 @@ Ostatni etap, gdy reszta jest gotowa. Spike „development build na telefonie”
 - **M9.3:** biometria i zasłona w przełączniku z `FLAG_SECURE` (FR-SEC-02).
 - **M9.4:** powiadomienia push bez treści: APNs i FCM, rozszerzenie powiadomień na iOS (FR-NOT-02, FR-NOT-03).
 - **M9.5:** skanowanie kodu QR aparatem (FR-PAIR-01).
-- **M9.6:** wyłączenie kopii zapasowych (NFR-PLAT-01) i zachowanie w tle.
-- **M9.7:** test end-to-end na dwóch emulatorach z lokalnym relayem (NFR-QA-03) i przygotowanie do sklepów.
+- **M9.6:** wyłączenie kopii zapasowych (NFR-PRV-02) i zachowanie w tle.
+- **M9.7:** wspierane wersje systemów i orientacja ekranu (NFR-PLAT-01), sprawdzane już w development buildzie.
+- **M9.8:** test end-to-end na dwóch emulatorach z lokalnym relayem (NFR-QA-03) i przygotowanie do sklepów.
 
 ## 4. Śledzenie wymagań
 
