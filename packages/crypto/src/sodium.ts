@@ -70,4 +70,10 @@ export interface Sodium {
     context: string,
     key: Uint8Array,
   ): Uint8Array;
+
+  /**
+   * `crypto_pwhash` (Argon2id, interactive limits); the salt is 16 bytes.
+   * The same password and salt give the same result.
+   */
+  pwhash(length: number, password: Uint8Array, salt: Uint8Array): Uint8Array;
 }

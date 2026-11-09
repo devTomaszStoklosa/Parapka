@@ -158,6 +158,24 @@ describe("crypto_kdf_derive_from_key", () => {
   });
 });
 
+describe("crypto_pwhash", () => {
+  const salt = (fill: number) => new Uint8Array(16).fill(fill);
+  const password = (value: string) =>
+    Uint8Array.from(value, (char) => char.charCodeAt(0));
+
+  it("is deterministic for the same password and salt", () => {
+    const first = api.pwhash(32, password("123456"), salt(1));
+    expect(first).toHaveLength(32);
+    expect(api.pwhash(32, password("123456"), salt(1))).toEqual(first);
+  });
+
+  it("gives a different result for another salt or password", () => {
+    const first = api.pwhash(32, password("123456"), salt(1));
+    expect(api.pwhash(32, password("123456"), salt(2))).not.toEqual(first);
+    expect(api.pwhash(32, password("123457"), salt(1))).not.toEqual(first);
+  });
+});
+
 describe("randomBytes", () => {
   it("returns the requested length", () => {
     expect(api.randomBytes(24)).toHaveLength(24);

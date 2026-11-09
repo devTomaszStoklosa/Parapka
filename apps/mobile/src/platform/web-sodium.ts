@@ -76,5 +76,15 @@ export async function createWebSodium(): Promise<Sodium> {
     kdfDeriveFromKey(outLength, id, ctx, master) {
       return sumo.crypto_kdf_derive_from_key(outLength, id, ctx, master);
     },
+    pwhash(outLength, password, salt) {
+      return sumo.crypto_pwhash(
+        outLength,
+        password,
+        salt,
+        sumo.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+        sumo.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+        sumo.crypto_pwhash_ALG_ARGON2ID13,
+      );
+    },
   };
 }

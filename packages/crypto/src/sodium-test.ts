@@ -1,6 +1,35 @@
 import lib from "libsodium-wrappers-sumo";
 import type { Sodium } from "./sodium.js";
 
+const aead: Pick<Sodium, "aeadEncrypt" | "aeadDecrypt"> = {
+  aeadEncrypt: (message, additionalData, nonce, key) =>
+    lib.crypto_aead_xchacha20poly1305_ietf_encrypt(
+      message,
+      additionalData,
+      null,
+      nonce,
+      key,
+    ),
+  aeadDecrypt: (ciphertext, additionalData, nonce, key) =>
+    lib.crypto_aead_xchacha20poly1305_ietf_decrypt(
+      null,
+      ciphertext,
+      additionalData,
+      nonce,
+      key,
+    ),
+};
+
+const pwhash: Sodium["pwhash"] = (length, password, salt) =>
+  lib.crypto_pwhash(
+    length,
+    password,
+    salt,
+    lib.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+    lib.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+    lib.crypto_pwhash_ALG_ARGON2ID13,
+  );
+
 /** Sodium backed by libsodium-wrappers-sumo, for tests only. */
 export async function createTestSodium(): Promise<Sodium> {
   await lib.ready;
@@ -30,25 +59,11 @@ export async function createTestSodium(): Promise<Sodium> {
         serverPrivateKey,
         clientPublicKey,
       ),
-    aeadEncrypt: (message, additionalData, nonce, key) =>
-      lib.crypto_aead_xchacha20poly1305_ietf_encrypt(
-        message,
-        additionalData,
-        null,
-        nonce,
-        key,
-      ),
-    aeadDecrypt: (ciphertext, additionalData, nonce, key) =>
-      lib.crypto_aead_xchacha20poly1305_ietf_decrypt(
-        null,
-        ciphertext,
-        additionalData,
-        nonce,
-        key,
-      ),
+    ...aead,
     hash: (length, message, key = null) =>
       lib.crypto_generichash(length, message, key),
     kdfDeriveFromKey: (length, subkeyId, context, key) =>
       lib.crypto_kdf_derive_from_key(length, subkeyId, context, key),
+    pwhash,
   };
 }
