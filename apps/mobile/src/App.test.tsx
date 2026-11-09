@@ -91,3 +91,13 @@ it("asks for the PIN before the content when a PIN is set", async () => {
   expect(await screen.findByText(pl.lock.pin.unlockTitle)).toBeTruthy();
   expect(screen.queryAllByRole("tab")).toHaveLength(0);
 });
+
+it("shows an error when the database cannot be opened", async () => {
+  const platform = memoryPlatform();
+  platform.database = {
+    ...platform.database,
+    get: () => Promise.reject(new Error("no key")),
+  };
+  render(<App createPlatform={() => Promise.resolve(platform)} />);
+  expect(await screen.findByText(pl.app.error)).toBeTruthy();
+});

@@ -7,11 +7,7 @@ import { t, type TranslationKey } from "./i18n";
 import { LockGate } from "./lock/LockGate";
 import { TabNavigator } from "./navigation/TabNavigator";
 import { OnboardingFlow } from "./onboarding/OnboardingFlow";
-import {
-  PlatformProvider,
-  usePlatform,
-  type Platform,
-} from "./platform/context";
+import { PlatformProvider, type Platform } from "./platform/context";
 import { createWebPlatform } from "./platform/web";
 import { AppText } from "./ui/AppText";
 import { colors, spacing } from "./ui/theme";
@@ -32,18 +28,43 @@ function Message({ text }: { text: TranslationKey }) {
   );
 }
 
-/** Onboarding until a profile is saved, then the tabs (FR-ONB-06: no pair needed). */
-function Root() {
-  const { database } = usePlatform();
-  const [profile, setProfile] = useState<Profile | null | undefined>();
+type ProfileState = Profile | null | undefined | "failed";
+
+/**
+ * Onboarding until a profile is saved, then the tabs (FR-ONB-06: no pair
+ * needed). The lock gate is mounted anew when the PIN decision changes, so that
+ * a PIN set in onboarding locks the app at once (FR-SEC-01).
+ */
+function Session({ platform }: { platform: Platform }) {
+  const { database } = platform;
+  const [profile, setProfile] = useState<ProfileState>();
 
   useEffect(() => {
-    void createProfileRepository(database).get().then(setProfile);
+    // The database opens lazily: a failed key or migration shows up here.
+    createProfileRepository(database)
+      .get()
+      .then(setProfile, () => {
+        setProfile("failed");
+      });
   }, [database]);
 
   if (profile === undefined) return <Message text="app.loading" />;
-  if (profile === null) return <OnboardingFlow onDone={setProfile} />;
-  return <TabNavigator cycleEnabled={profile.cycle === "yes"} />;
+  if (profile === "failed") return <Message text="app.error" />;
+  return (
+    <LockGate
+      key={profile?.pinDecision ?? "none"}
+      database={database}
+      keyStore={platform.keyStore}
+      sodium={platform.sodium}
+      clock={platform.clock}
+    >
+      {profile === null ? (
+        <OnboardingFlow onDone={setProfile} />
+      ) : (
+        <TabNavigator cycleEnabled={profile.cycle === "yes"} />
+      )}
+    </LockGate>
+  );
 }
 
 function usePlatformLoader(create: () => Promise<Platform>) {
@@ -72,14 +93,7 @@ export function App({
   if (!platform) return <Message text="app.loading" />;
   return (
     <PlatformProvider platform={platform}>
-      <LockGate
-        database={platform.database}
-        keyStore={platform.keyStore}
-        sodium={platform.sodium}
-        clock={platform.clock}
-      >
-        <Root />
-      </LockGate>
+      <Session platform={platform} />
     </PlatformProvider>
   );
 }

@@ -35,24 +35,30 @@ function inRange(value: number, min: number, max: number): boolean {
   return Number.isInteger(value) && value >= min && value <= max;
 }
 
-function isDate(value: string): boolean {
+function isDate(value: string, today?: string): boolean {
   try {
-    toDayNumber(value);
-    return true;
+    const day = toDayNumber(value);
+    return today === undefined || day <= toDayNumber(today);
   } catch {
     return false;
   }
 }
 
-/** Valid settings, or null when a value is out of range or not a date. */
-export function parseCycleSettings(input: {
-  lastPeriodStart: string;
-  cycleLength: number;
-  periodLength: number;
-}): CycleSettings | null {
+/**
+ * Valid settings, or null when a value is out of range, not a date or (with
+ * `today`) a start of the last period in the future.
+ */
+export function parseCycleSettings(
+  input: {
+    lastPeriodStart: string;
+    cycleLength: number;
+    periodLength: number;
+  },
+  today?: string,
+): CycleSettings | null {
   const { lastPeriodStart, cycleLength, periodLength } = input;
   if (
-    !isDate(lastPeriodStart) ||
+    !isDate(lastPeriodStart, today) ||
     !inRange(cycleLength, MIN_CYCLE_LENGTH, MAX_CYCLE_LENGTH) ||
     !inRange(periodLength, MIN_PERIOD_LENGTH, MAX_PERIOD_LENGTH)
   ) {

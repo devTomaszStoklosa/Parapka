@@ -32,7 +32,7 @@ function setup() {
   const platform: Platform = {
     sodium,
     keyStore: createMemoryKeyStore(),
-    clock: { nowMs: () => 1_000 },
+    clock: { nowMs: () => Date.UTC(2026, 10, 9, 12) },
     database: createMemoryDatabase(),
   };
   const onDone = vi.fn();
@@ -198,6 +198,36 @@ function enterPin(pin: string) {
     type(pl.lock.pin.digit.replace("{position}", String(index + 1)), digit);
   });
 }
+
+it("goes back from the PIN screen and allows skipping", () => {
+  setup();
+  answerCommonSteps();
+  click("radio", o.cycle["not-now"]);
+  next();
+  click("button", o.pin.set);
+  click("button", o.back);
+  expect(title()).toBe(o.pin.title);
+  click("button", o.pin.skip);
+  next();
+  expect(title()).toBe(o.device.title);
+});
+
+it("rejects a start of the last period in the future", () => {
+  setup();
+  answerCommonSteps();
+  click("radio", o.cycle.yes);
+  next();
+  click("checkbox", o.disclaimer.confirm);
+  next();
+  type(o.cycleSetup.lastPeriod, "2099-01-01");
+  expect(
+    screen.getByRole("button", { name: o.next }).getAttribute("aria-disabled"),
+  ).toBe("true");
+  type(o.cycleSetup.lastPeriod, "2026-11-09");
+  expect(
+    screen.getByRole("button", { name: o.next }).getAttribute("aria-disabled"),
+  ).not.toBe("true");
+});
 
 it("sets the PIN in the PIN step", async () => {
   const { platform, onDone } = setup();

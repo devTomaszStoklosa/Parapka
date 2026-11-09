@@ -7,10 +7,11 @@ import { t, type TranslationKey } from "../i18n";
 import { PinScreen } from "../lock/PinScreen";
 import { createPinStore } from "../lock/pin-store";
 import { usePlatform } from "../platform/context";
-import { StepFrame } from "./controls";
+import { Button, StepFrame } from "./controls";
 import {
   buildResult,
   canContinue,
+  initialDraft,
   initialOnboardingState,
   isLastStep,
   onboardingReducer,
@@ -74,6 +75,14 @@ const BODIES: Record<Step, (props: BodyProps) => ReactNode> = {
   device: () => <DeviceStep />,
 };
 
+/** The local date as YYYY-MM-DD. */
+function localDate(ms: number): string {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const year = String(d.getFullYear());
+  return `${year}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function useFinish(onDone: (profile: Profile) => void) {
   const { database } = usePlatform();
   const [saving, setSaving] = useState(false);
@@ -91,19 +100,23 @@ function useFinish(onDone: (profile: Profile) => void) {
   return { saving, finish };
 }
 
-function PinSetup({ onDone }: { onDone: () => void }) {
+function PinSetup(props: { onDone: () => void; onBack: () => void }) {
+  const { onDone, onBack } = props;
   const { database, sodium, clock } = usePlatform();
   const store = useMemo(
     () => createPinStore({ database, sodium, clock }),
     [database, sodium, clock],
   );
   return (
-    <PinScreen
-      mode="set"
-      clock={clock}
-      onSetPin={(pin) => store.setPin(pin)}
-      onDone={onDone}
-    />
+    <>
+      <PinScreen
+        mode="set"
+        clock={clock}
+        onSetPin={(pin) => store.setPin(pin)}
+        onDone={onDone}
+      />
+      <Button label={t("onboarding.back")} onPress={onBack} />
+    </>
   );
 }
 
@@ -157,9 +170,14 @@ export function OnboardingFlow({
 }: {
   onDone: (profile: Profile) => void;
 }) {
+  const { clock } = usePlatform();
   const [state, dispatch] = useReducer(
     onboardingReducer,
-    initialOnboardingState,
+    clock,
+    (c): OnboardingState => ({
+      ...initialOnboardingState,
+      draft: { ...initialDraft, today: localDate(c.nowMs()) },
+    }),
   );
   const [settingPin, setSettingPin] = useState(false);
   const { saving, finish } = useFinish(onDone);
@@ -170,6 +188,9 @@ export function OnboardingFlow({
         onDone={() => {
           setSettingPin(false);
           dispatch({ type: "patch", patch: { pinDecision: "set" } });
+        }}
+        onBack={() => {
+          setSettingPin(false);
         }}
       />
     );

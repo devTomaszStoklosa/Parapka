@@ -44,6 +44,8 @@ export interface Draft {
   readonly cycleLength: string;
   readonly periodLength: string;
   readonly pinDecision: PinDecision | null;
+  /** Today as YYYY-MM-DD: the last period cannot start later. */
+  readonly today: string;
 }
 
 export interface OnboardingState {
@@ -75,6 +77,7 @@ export const initialDraft: Draft = {
   cycleLength: "28",
   periodLength: "5",
   pinDecision: null,
+  today: "9999-12-31",
 };
 
 export const initialOnboardingState: OnboardingState = {
@@ -117,11 +120,14 @@ function childrenValid(draft: Draft): boolean {
 
 function cycleSettingsOf(draft: Draft): CycleSettings | null {
   if (draft.cycleUnknown) return UNKNOWN_CYCLE_SETTINGS;
-  return parseCycleSettings({
-    lastPeriodStart: draft.lastPeriodStart.trim(),
-    cycleLength: parseCount(draft.cycleLength) ?? Number.NaN,
-    periodLength: parseCount(draft.periodLength) ?? Number.NaN,
-  });
+  return parseCycleSettings(
+    {
+      lastPeriodStart: draft.lastPeriodStart.trim(),
+      cycleLength: parseCount(draft.cycleLength) ?? Number.NaN,
+      periodLength: parseCount(draft.periodLength) ?? Number.NaN,
+    },
+    draft.today,
+  );
 }
 
 const VALID: Record<Step, (draft: Draft) => boolean> = {

@@ -42,6 +42,23 @@ describe("parseCycleSettings", () => {
   });
 });
 
+describe("parseCycleSettings with today", () => {
+  it("accepts today and the past", () => {
+    expect(parseCycleSettings(valid, "2026-10-01")).not.toBeNull();
+    expect(parseCycleSettings(valid, "2026-11-09")).not.toBeNull();
+  });
+
+  it("rejects a start of the last period in the future", () => {
+    expect(parseCycleSettings(valid, "2026-09-30")).toBeNull();
+    expect(
+      parseCycleSettings(
+        { ...valid, lastPeriodStart: "2099-01-01" },
+        "2026-11-09",
+      ),
+    ).toBeNull();
+  });
+});
+
 describe("UNKNOWN_CYCLE_SETTINGS", () => {
   it("keeps the defaults", () => {
     expect(UNKNOWN_CYCLE_SETTINGS).toEqual({
