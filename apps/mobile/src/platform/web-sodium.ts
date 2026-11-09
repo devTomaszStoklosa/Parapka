@@ -1,54 +1,80 @@
-import lib from "libsodium-wrappers-sumo";
+import sumo from "libsodium-wrappers-sumo";
 import type { Sodium } from "@parapka/crypto";
 
-/** Sodium backed by libsodium-wrappers-sumo, for the web build. */
-export async function createWebSodium(): Promise<Sodium> {
-  await lib.ready;
+type Sumo = typeof sumo;
+
+function signing(api: Sumo): Pick<Sodium, "signKeyPair" | "sign" | "verify"> {
   return {
-    randomBytes: (length) => lib.randombytes_buf(length),
-    signKeyPair: () => {
-      const { publicKey, privateKey } = lib.crypto_sign_keypair();
-      return { publicKey, privateKey };
+    signKeyPair() {
+      const pair = api.crypto_sign_keypair();
+      return { publicKey: pair.publicKey, privateKey: pair.privateKey };
     },
-    sign: (message, privateKey) =>
-      lib.crypto_sign_detached(message, privateKey),
-    verify: (signature, message, publicKey) =>
-      lib.crypto_sign_verify_detached(signature, message, publicKey),
-    kxKeyPair: () => {
-      const { publicKey, privateKey } = lib.crypto_kx_keypair();
-      return { publicKey, privateKey };
+    sign(msg, secret) {
+      return api.crypto_sign_detached(msg, secret);
     },
-    kxClientSessionKeys: (clientPublicKey, clientPrivateKey, serverPublicKey) =>
-      lib.crypto_kx_client_session_keys(
-        clientPublicKey,
-        clientPrivateKey,
-        serverPublicKey,
-      ),
-    kxServerSessionKeys: (serverPublicKey, serverPrivateKey, clientPublicKey) =>
-      lib.crypto_kx_server_session_keys(
-        serverPublicKey,
-        serverPrivateKey,
-        clientPublicKey,
-      ),
-    aeadEncrypt: (message, additionalData, nonce, key) =>
-      lib.crypto_aead_xchacha20poly1305_ietf_encrypt(
-        message,
-        additionalData,
+    verify(sig, msg, pub) {
+      return api.crypto_sign_verify_detached(sig, msg, pub);
+    },
+  };
+}
+
+function keyExchange(
+  api: Sumo,
+): Pick<Sodium, "kxKeyPair" | "kxClientSessionKeys" | "kxServerSessionKeys"> {
+  return {
+    kxKeyPair() {
+      const pair = api.crypto_kx_keypair();
+      return { publicKey: pair.publicKey, privateKey: pair.privateKey };
+    },
+    kxClientSessionKeys(ownPublic, ownSecret, peerPublic) {
+      return api.crypto_kx_client_session_keys(
+        ownPublic,
+        ownSecret,
+        peerPublic,
+      );
+    },
+    kxServerSessionKeys(ownPublic, ownSecret, peerPublic) {
+      return api.crypto_kx_server_session_keys(
+        ownPublic,
+        ownSecret,
+        peerPublic,
+      );
+    },
+  };
+}
+
+/** Sodium for the web build on libsodium-wrappers-sumo (waits for `ready`). */
+export async function createWebSodium(): Promise<Sodium> {
+  await sumo.ready;
+  return {
+    ...signing(sumo),
+    ...keyExchange(sumo),
+    randomBytes(count) {
+      return sumo.randombytes_buf(count);
+    },
+    aeadEncrypt(plain, ad, nonce, key) {
+      return sumo.crypto_aead_xchacha20poly1305_ietf_encrypt(
+        plain,
+        ad,
         null,
         nonce,
         key,
-      ),
-    aeadDecrypt: (ciphertext, additionalData, nonce, key) =>
-      lib.crypto_aead_xchacha20poly1305_ietf_decrypt(
+      );
+    },
+    aeadDecrypt(sealed, ad, nonce, key) {
+      return sumo.crypto_aead_xchacha20poly1305_ietf_decrypt(
         null,
-        ciphertext,
-        additionalData,
+        sealed,
+        ad,
         nonce,
         key,
-      ),
-    hash: (length, message, key = null) =>
-      lib.crypto_generichash(length, message, key),
-    kdfDeriveFromKey: (length, subkeyId, context, key) =>
-      lib.crypto_kdf_derive_from_key(length, subkeyId, context, key),
+      );
+    },
+    hash(outLength, data, key = null) {
+      return sumo.crypto_generichash(outLength, data, key);
+    },
+    kdfDeriveFromKey(outLength, id, ctx, master) {
+      return sumo.crypto_kdf_derive_from_key(outLength, id, ctx, master);
+    },
   };
 }
