@@ -4,13 +4,16 @@ import {
   verify,
   type KeyObject,
 } from "node:crypto";
+import {
+  AUTH_CONTEXT_PREFIX,
+  buildSignedText as buildSignedTextFromHash,
+} from "@parapka/protocol";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 /** A challenge is valid for 5 minutes. */
 export const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
-/** Starts every signed text, so a request signature cannot be mistaken for another signature of the same key. */
-export const AUTH_CONTEXT_PREFIX = "parapka-relay-auth-v1\n";
+export { AUTH_CONTEXT_PREFIX };
 
 // DER prefix of an Ed25519 SubjectPublicKeyInfo; the 32 key bytes follow.
 const ED25519_SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
@@ -26,13 +29,13 @@ export interface SignedRequestParts {
 
 /** The text a device signs: prefix, method, path, challenge and body hash. */
 export function buildSignedText(parts: SignedRequestParts): string {
-  const bodyHash = createHash("sha256").update(parts.body).digest("hex");
-  return (
-    AUTH_CONTEXT_PREFIX +
-    [parts.method, parts.url, parts.challengeId, parts.nonce, bodyHash].join(
-      "\n",
-    )
-  );
+  return buildSignedTextFromHash({
+    method: parts.method,
+    url: parts.url,
+    challengeId: parts.challengeId,
+    nonce: parts.nonce,
+    bodyHashHex: createHash("sha256").update(parts.body).digest("hex"),
+  });
 }
 
 const ED25519_SIGNATURE_LENGTH = 64;

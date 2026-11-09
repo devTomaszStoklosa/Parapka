@@ -14,6 +14,7 @@ import { createMemoryDatabase } from "../data/memory-database";
 import { createProfileRepository } from "../data/profile-repository";
 import { pl } from "../i18n/pl";
 import { createPinStore } from "../lock/pin-store";
+import { webSha256 } from "../platform/sha256";
 import { PlatformProvider, type Platform } from "../platform/context";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
 import { createWebSodium } from "../platform/web-sodium";
@@ -34,6 +35,8 @@ function setup() {
     keyStore: createMemoryKeyStore(),
     clock: { nowMs: () => Date.UTC(2026, 10, 9, 12) },
     database: createMemoryDatabase(),
+    sha256: webSha256,
+    relayUrl: "unused",
   };
   const onDone = vi.fn();
   render(

@@ -2,6 +2,8 @@ import { createIndexedDbDatabase } from "../data/indexeddb-database";
 import { systemClock } from "./clock";
 import type { Platform } from "./context";
 import { createIndexedDbKeyStore } from "./indexeddb-key-store";
+import { configuredRelayUrl } from "../net/relay-config";
+import { webSha256 } from "./sha256";
 import { createWebSodium } from "./web-sodium";
 
 /**
@@ -16,5 +18,7 @@ export async function createWebPlatform(): Promise<Platform> {
     keyStore,
     clock: systemClock,
     database: createIndexedDbDatabase({ sodium, keyStore }),
+    sha256: webSha256,
+    relayUrl: configuredRelayUrl(),
   };
 }
