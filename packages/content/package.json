@@ -3,5 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Content library of Parapka: types, validation and loading of the JSON files in content/ (spec 8, 7.6).",
-  "type": "module"
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
 }

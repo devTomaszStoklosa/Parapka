@@ -4,6 +4,10 @@
   "private": true,
   "description": "Crypto layer of Parapka over the Sodium interface (spec 7.2).",
   "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "devDependencies": {
     "libsodium-wrappers-sumo": "0.8.4"
   }

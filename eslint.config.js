@@ -8,7 +8,7 @@ import tseslint from "typescript-eslint";
 const maxComplexity = Number(process.env.SDLC_MAX_FUNCTION_COMPLEXITY ?? 10);
 
 export default defineConfig(
-  { ignores: ["coverage/", "dist/"] },
+  { ignores: ["coverage/", "**/dist/", "**/.expo/"] },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   {
@@ -34,13 +34,43 @@ export default defineConfig(
     },
   },
   {
-    files: ["**/*.test.ts"],
+    files: ["**/*.test.ts", "**/*.test.tsx"],
     rules: { "max-lines-per-function": "off" },
   },
   {
     files: ["**/*.js"],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: { process: "readonly" } },
+  },
+  {
+    files: ["apps/*/metro.config.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        require: "readonly",
+        module: "writable",
+        __dirname: "readonly",
+      },
+    },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
+  {
+    // Expo modules do not load in Vitest, so only index.ts at the root uses them.
+    files: ["apps/mobile/src/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["expo", "expo-*", "expo/*"],
+              message:
+                "src/ must not import Expo modules (they fail in Vitest).",
+            },
+          ],
+        },
+      ],
+    },
   },
   prettier,
 );

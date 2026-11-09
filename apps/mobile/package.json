@@ -1,0 +1,24 @@
+{
+  "name": "@parapka/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Parapka app: Expo with React Native Web, browser first (spec 7.1).",
+  "main": "index.ts",
+  "scripts": {
+    "web:build": "expo export --platform web --output-dir dist"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~58.0.17",
+    "@parapka/domain": "*",
+    "expo": "~58.0.23",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-web": "~0.21.4"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.3",
+    "@types/react": "~19.3.0",
+    "jsdom": "31.0.0"
+  }
+}
