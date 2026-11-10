@@ -18,9 +18,9 @@ export interface Platform {
   relayUrl: string;
   /** Address the app is served from, the base of invitation links. */
   appUrl: string;
-  /** The invitation text the app was opened with (`/pair#<text>`), read once; web only. */
   /** Opens a WebSocket to the relay. */
   createSocket?: (url: string) => SocketLike;
+  /** The invitation text the app was opened with (`/pair#<text>`), read once; web only. */
   launchInvitation?: () => string | null;
 }
 
