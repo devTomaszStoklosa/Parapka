@@ -104,7 +104,9 @@ function PairedStatus({
 
 function Status({ kind }: { kind: "loading" | "unavailable" }) {
   if (kind === "loading") return null;
-  return <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>;
+  return (
+    <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>
+  );
 }
 
 function SafetyStep({

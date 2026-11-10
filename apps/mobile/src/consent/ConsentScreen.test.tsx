@@ -141,7 +141,9 @@ async function openPaired(partner: { get: () => Promise<unknown> }) {
       <PairingScreen
         inviter={unused}
         acceptor={unused}
-        pairs={{ current: () => Promise.resolve({ state: "confirmed" } as never) }}
+        pairs={{
+          current: () => Promise.resolve({ state: "confirmed" } as never),
+        }}
         consent={{ canSync: () => Promise.resolve(true), save: vi.fn() }}
         profiles={{ get: () => Promise.resolve(null) }}
         partner={partner as never}

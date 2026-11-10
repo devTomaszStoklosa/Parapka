@@ -187,7 +187,9 @@ describe("SyncEngine gates", () => {
     const registry = createHandlerRegistry();
     registry.register(hints);
     hints.edit("c1", "title", "Dishes");
-    await a.restart({ registry, isShared: () => Promise.resolve(false) }).push();
+    await a
+      .restart({ registry, isShared: () => Promise.resolve(false) })
+      .push();
     expect(await received(b)).toBe(1);
     expect(hints.committedCount).toBe(0);
     await a.restart({ registry, isShared: () => Promise.resolve(true) }).push();
