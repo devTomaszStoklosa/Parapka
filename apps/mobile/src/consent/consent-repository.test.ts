@@ -110,3 +110,12 @@ it("keeps the other categories and the text version when one changes", async () 
   expect(record?.states).toEqual({ ...defaults, CHECKIN: true });
   expect(record?.textVersion).toBe(CONSENT_TEXT_VERSION);
 });
+
+it("stores the date of the change when a category is switched", async () => {
+  const { consent, time } = await setup();
+  await consent.save(defaults);
+  time.now = 9_000;
+  await consent.setCategory("CHECKIN", true);
+
+  expect((await consent.current())?.savedAtMs).toBe(9_000);
+});
