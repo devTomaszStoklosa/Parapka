@@ -37,6 +37,7 @@ function setup() {
     database: createMemoryDatabase(),
     sha256: webSha256,
     relayUrl: "unused",
+    appUrl: "unused",
   };
   const onDone = vi.fn();
   render(

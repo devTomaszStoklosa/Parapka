@@ -15,6 +15,8 @@ export interface Platform {
   sha256: Sha256;
   /** Address of the relay, from the configuration. */
   relayUrl: string;
+  /** Address the app is served from, the base of invitation links. */
+  appUrl: string;
 }
 
 const PlatformContext = createContext<Platform | null>(null);
