@@ -119,3 +119,8 @@ it("stores the date of the change when a category is switched", async () => {
 
   expect((await consent.current())?.savedAtMs).toBe(9_000);
 });
+
+it("does not allow the sync before any consent is saved", async () => {
+  const { consent } = await setup();
+  expect(await consent.canSync()).toBe(false);
+});
