@@ -136,6 +136,19 @@ describe("Identity", () => {
     );
   });
 
+  it("gives the agreement key pair after init() and null after clear()", async () => {
+    const { identity, keyStore } = setup();
+    expect(await identity.agreementKeyPair()).toBeNull();
+    await identity.init();
+    const pair = must(await identity.agreementKeyPair());
+    expect(pair.publicKey).toEqual(must(await identity.publicKeys()).agreement);
+    expect(pair.privateKey).toEqual(
+      await keyStore.get("identity/agreement-private"),
+    );
+    await identity.clear();
+    expect(await identity.agreementKeyPair()).toBeNull();
+  });
+
   it("removes the keys and the device id on clear()", async () => {
     const { identity, keyStore, database } = setup();
     await identity.init();
