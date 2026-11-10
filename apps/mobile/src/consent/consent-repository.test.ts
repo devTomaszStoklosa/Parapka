@@ -93,3 +93,9 @@ it("refuses to change a consent that was not given", async () => {
   const { consent } = await setup();
   await expect(consent.setCategory("CHECKIN", true)).rejects.toThrow();
 });
+
+it("reports a saved consent as allowing the sync", async () => {
+  const { consent } = await setup();
+  await consent.save(defaults);
+  expect(await consent.canSync()).toBe(true);
+});
