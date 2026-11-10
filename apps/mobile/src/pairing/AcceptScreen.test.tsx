@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
+import type { Profile } from "../data/profile";
 import { pl } from "../i18n/pl";
 import type { Acceptor, AcceptResult } from "./acceptor";
 import { AcceptScreen } from "./AcceptScreen";
@@ -24,9 +25,20 @@ function fakeAcceptor(accept: Acceptor["accept"]) {
   };
 }
 
+const profile = { cycle: "no", shareGoalsWithPartner: false } as Profile;
+const consent = { save: vi.fn(() => Promise.resolve()) };
+
 async function open(acceptor: Acceptor, onDone = vi.fn()) {
   await act(async () => {
-    render(<AcceptScreen acceptor={acceptor} text="abc" onDone={onDone} />);
+    render(
+      <AcceptScreen
+        acceptor={acceptor}
+        consent={consent}
+        profiles={{ get: () => Promise.resolve(profile) }}
+        text="abc"
+        onDone={onDone}
+      />,
+    );
     await Promise.resolve();
   });
   return onDone;
@@ -48,6 +60,9 @@ it("accepts the text and shows the safety code, then confirms", async () => {
   expect(screen.getByText("042042")).toBeTruthy();
   await click(p.safety.same);
   expect(acceptor.confirm).toHaveBeenCalledOnce();
+  expect(onDone).not.toHaveBeenCalled();
+  await click(pl.consent.save);
+  expect(consent.save).toHaveBeenCalledOnce();
   expect(onDone).toHaveBeenCalledOnce();
 });
 

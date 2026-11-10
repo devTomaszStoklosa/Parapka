@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 
+import { ConsentScreen } from "../consent/ConsentScreen";
+import type { ConsentRepository } from "../consent/consent-repository";
+import type { ProfileRepository } from "../data/profile-repository";
 import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
@@ -16,12 +19,14 @@ type PairingView =
   | { kind: "idle"; rejected: boolean }
   | { kind: "invite" }
   | { kind: "safety"; code: string }
+  | { kind: "consent" }
   | { kind: "paired" }
   | { kind: "unavailable" };
 
 /** Reads the stored pair: what the person sees when the screen opens. */
 function useInitialView(
   pairs: Pick<PairRepository, "current">,
+  consent: Pick<ConsentRepository, "canSync">,
   loadSafetyCode: () => Promise<string>,
 ): [PairingView, (view: PairingView) => void] {
   const [view, setView] = useState<PairingView>({ kind: "loading" });
@@ -33,8 +38,9 @@ function useInitialView(
     void pairs
       .current()
       .then(async (pair) => {
-        if (pair?.state === "confirmed") show({ kind: "paired" });
-        else if (pair) show({ kind: "safety", code: await loadSafetyCode() });
+        if (pair?.state === "confirmed") {
+          show({ kind: (await consent.canSync()) ? "paired" : "consent" });
+        } else if (pair) show({ kind: "safety", code: await loadSafetyCode() });
         else show({ kind: "idle", rejected: false });
       })
       .catch(() => {
@@ -43,7 +49,7 @@ function useInitialView(
     return () => {
       active = false;
     };
-  }, [pairs, loadSafetyCode]);
+  }, [pairs, consent, loadSafetyCode]);
   return [view, setView];
 }
 
@@ -91,8 +97,26 @@ function SafetyStep({
     <SafetyCodeScreen
       code={code}
       inviter={inviter}
-      onConfirmed={go({ kind: "paired" })}
+      onConfirmed={go({ kind: "consent" })}
       onRejected={go({ kind: "idle", rejected: true })}
+    />
+  );
+}
+
+function ConsentStep({
+  consent,
+  profiles,
+  go,
+}: {
+  consent: Pick<ConsentRepository, "save">;
+  profiles: Pick<ProfileRepository, "get">;
+  go: (next: PairingView) => () => void;
+}) {
+  return (
+    <ConsentScreen
+      consent={consent}
+      profiles={profiles}
+      onSaved={go({ kind: "paired" })}
     />
   );
 }
@@ -102,15 +126,19 @@ export function PairingScreen({
   inviter,
   acceptor,
   pairs,
+  consent,
+  profiles,
   loadSafetyCode,
 }: {
   inviter: Inviter;
   acceptor: Pick<Acceptor, "accept">;
   pairs: Pick<PairRepository, "current">;
+  consent: Pick<ConsentRepository, "canSync" | "save">;
+  profiles: Pick<ProfileRepository, "get">;
   /** The code of a stored `pending-confirmation` pair. */
   loadSafetyCode: () => Promise<string>;
 }) {
-  const [view, setView] = useInitialView(pairs, loadSafetyCode);
+  const [view, setView] = useInitialView(pairs, consent, loadSafetyCode);
   const go = (next: PairingView) => () => {
     setView(next);
   };
@@ -128,6 +156,8 @@ export function PairingScreen({
       );
     case "safety":
       return <SafetyStep code={view.code} inviter={inviter} go={go} />;
+    case "consent":
+      return <ConsentStep consent={consent} profiles={profiles} go={go} />;
     case "loading":
     case "unavailable":
     case "paired":

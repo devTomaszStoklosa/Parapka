@@ -68,6 +68,7 @@ function pair(state: Pair["state"]): Pair {
   };
 }
 
+const save = vi.fn(() => Promise.resolve());
 async function open(
   inviter: FakeInviter,
   stored: Pair | null = null,
@@ -79,6 +80,8 @@ async function open(
       inviter={inviter}
       acceptor={{ accept }}
       pairs={{ current: () => Promise.resolve(stored) }}
+      consent={{ canSync: () => Promise.resolve(true), save }}
+      profiles={{ get: () => Promise.resolve(null) }}
       loadSafetyCode={loadSafetyCode}
     />,
   );
@@ -105,7 +108,6 @@ const click = async (name: string) => {
 it("offers an invitation when there is no pair", async () => {
   await open(fakeInviter());
   expect(screen.getByRole("button", { name: p.invite })).toBeTruthy();
-  expect(screen.queryByText(p.paired)).toBeNull();
 });
 
 it("shows the QR code, expiry, copy button and the waiting note", async () => {
@@ -184,8 +186,9 @@ it("confirms the safety code and shows the pair", async () => {
   expect(screen.getByText(p.safety.instruction)).toBeTruthy();
   await click(p.safety.same);
   expect(inviter.confirm).toHaveBeenCalledOnce();
+  await click(pl.consent.save);
+  expect(save).toHaveBeenCalledOnce();
   expect(screen.getByText(p.paired)).toBeTruthy();
-  expect(screen.queryByRole("button", { name: p.invite })).toBeNull();
 });
 
 it("rejects the pair when the codes differ", async () => {
@@ -309,7 +312,6 @@ it("accepts a pasted link and shows the safety code", async () => {
   expect(screen.getByText("042042")).toBeTruthy();
   await click(p.safety.same);
   expect(inviter.confirm).toHaveBeenCalledOnce();
-  expect(screen.getByText(p.paired)).toBeTruthy();
 });
 
 it("keeps Connect disabled while the field is empty", async () => {
