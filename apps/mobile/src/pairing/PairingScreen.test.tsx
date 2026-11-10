@@ -39,6 +39,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const ACCEPTED: PollResult = { status: "accepted", safetyCode: "042042" };
+
 const created: CreateResult = {
   status: "created",
   link: LINK,
@@ -85,6 +87,11 @@ async function open(
   );
   await flush();
 }
+
+const renderInvite = (inviter: FakeInviter) =>
+  render(
+    <InviteScreen inviter={inviter} onAccepted={vi.fn()} onCancel={vi.fn()} />,
+  );
 
 /** Lets resolved promises run, and the timers move on by `ms`. */
 async function flush(ms = 0) {
@@ -142,9 +149,7 @@ it("says when the link cannot be copied", async () => {
 
 it("polls every few seconds while the screen is open and stops on unmount", async () => {
   const inviter = fakeInviter();
-  const view = render(
-    <InviteScreen inviter={inviter} onAccepted={vi.fn()} onCancel={vi.fn()} />,
-  );
+  const view = renderInvite(inviter);
   await flush();
   expect(inviter.poll).not.toHaveBeenCalled();
   await flush(POLL_INTERVAL_MS);
@@ -159,9 +164,7 @@ it("polls every few seconds while the screen is open and stops on unmount", asyn
 it("does not start another poll while the previous one runs", async () => {
   const inviter = fakeInviter();
   inviter.poll.mockReturnValue(new Promise(() => undefined));
-  render(
-    <InviteScreen inviter={inviter} onAccepted={vi.fn()} onCancel={vi.fn()} />,
-  );
+  renderInvite(inviter);
   await flush();
   await flush(POLL_INTERVAL_MS * 3);
   expect(inviter.poll).toHaveBeenCalledTimes(1);
@@ -175,10 +178,7 @@ it("returns to the start when the invitation is cancelled", async () => {
 });
 
 it("confirms the safety code and shows the pair", async () => {
-  const inviter = fakeInviter(created, {
-    status: "accepted",
-    safetyCode: "042042",
-  });
+  const inviter = fakeInviter(created, ACCEPTED);
   await open(inviter);
   await click(p.invite);
   await flush(POLL_INTERVAL_MS);
@@ -192,10 +192,7 @@ it("confirms the safety code and shows the pair", async () => {
 });
 
 it("rejects the pair when the codes differ", async () => {
-  const inviter = fakeInviter(created, {
-    status: "accepted",
-    safetyCode: "042042",
-  });
+  const inviter = fakeInviter(created, ACCEPTED);
   await open(inviter);
   await click(p.invite);
   await flush(POLL_INTERVAL_MS);
@@ -264,6 +261,19 @@ it("keeps waiting after a lost connection and clears the note", async () => {
   expect(screen.getByText(p.invitation.waiting)).toBeTruthy();
   await flush(POLL_INTERVAL_MS);
   expect(screen.queryByText(p.errors.offline)).toBeNull();
+});
+
+it("shows a message and a retry when the relay call throws", async () => {
+  const inviter = fakeInviter();
+  inviter.create.mockRejectedValueOnce(new Error("server"));
+  inviter.poll.mockRejectedValueOnce(new Error("server"));
+  await open(inviter);
+  await click(p.invite);
+  expect(screen.getByText(p.errors.offline)).toBeTruthy();
+  await click(p.newInvite);
+  await flush(POLL_INTERVAL_MS);
+  expect(screen.getByText(p.errors.offline)).toBeTruthy();
+  expect(screen.queryByRole("img")).toBeNull();
 });
 
 function memoryPlatform(): Platform {

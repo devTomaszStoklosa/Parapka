@@ -82,16 +82,22 @@ function useCreate(
   useEffect(() => {
     let active = true;
     setView({ kind: "loading" });
-    void inviter.create().then((result) => {
-      if (!active) return;
-      if (result.status === "created") {
-        setView({ ...result, kind: "waiting", offline: false, copy: "none" });
-      } else {
-        const failure =
-          result.status === "offline" ? "offline" : "alreadyPaired";
-        setView({ kind: "failed", failure });
-      }
-    });
+    inviter.create().then(
+      (result) => {
+        if (!active) return;
+        if (result.status === "created") {
+          setView({ ...result, kind: "waiting", offline: false, copy: "none" });
+        } else {
+          const failure =
+            result.status === "offline" ? "offline" : "alreadyPaired";
+          setView({ kind: "failed", failure });
+        }
+      },
+      () => {
+        // The relay failed in a way the inviter does not map to a result.
+        if (active) setView({ kind: "failed", failure: "offline" });
+      },
+    );
     return () => {
       active = false;
     };
@@ -121,6 +127,9 @@ function usePoll(
         else if (result.status === "waiting" || result.status === "offline") {
           patchWaiting(setView, { offline: result.status === "offline" });
         } else setView({ kind: "failed", failure: result.status });
+      } catch {
+        // Unmapped relay errors end the wait with a message and a retry.
+        if (active) setView({ kind: "failed", failure: "offline" });
       } finally {
         busy = false;
       }
