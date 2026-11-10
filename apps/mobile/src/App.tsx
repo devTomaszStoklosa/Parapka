@@ -6,6 +6,7 @@ import type { Profile } from "./data/profile";
 import { t, type TranslationKey } from "./i18n";
 import { LockGate } from "./lock/LockGate";
 import { TabNavigator } from "./navigation/TabNavigator";
+import { AcceptEntry } from "./pairing/AcceptEntry";
 import { OnboardingFlow } from "./onboarding/OnboardingFlow";
 import { PlatformProvider, type Platform } from "./platform/context";
 import { createWebPlatform } from "./platform/web";
@@ -40,6 +41,11 @@ function Session({ platform }: { platform: Platform }) {
   const { database } = platform;
   const [profile, setProfile] = useState<ProfileState>();
   const [onboarded, setOnboarded] = useState(false);
+  // The invitation text of an opened /pair link waits here until onboarding
+  // and the PIN are done.
+  const [invitation, setInvitation] = useState(
+    () => platform.launchInvitation?.() ?? null,
+  );
 
   useEffect(() => {
     // The database opens lazily: a failed key or migration shows up here.
@@ -66,6 +72,13 @@ function Session({ platform }: { platform: Platform }) {
           onDone={(saved) => {
             setOnboarded(true);
             setProfile(saved);
+          }}
+        />
+      ) : invitation !== null ? (
+        <AcceptEntry
+          text={invitation}
+          onDone={() => {
+            setInvitation(null);
           }}
         />
       ) : (

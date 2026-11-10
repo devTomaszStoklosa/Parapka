@@ -3,6 +3,7 @@ import { systemClock } from "./clock";
 import type { Platform } from "./context";
 import { createIndexedDbKeyStore } from "./indexeddb-key-store";
 import { configuredRelayUrl } from "../net/relay-config";
+import { createLaunchLinkReader } from "./launch-link";
 import { webSha256 } from "./sha256";
 import { createWebSodium } from "./web-sodium";
 
@@ -21,5 +22,6 @@ export async function createWebPlatform(): Promise<Platform> {
     sha256: webSha256,
     relayUrl: configuredRelayUrl(),
     appUrl: location.origin,
+    launchInvitation: createLaunchLinkReader(location, history),
   };
 }
