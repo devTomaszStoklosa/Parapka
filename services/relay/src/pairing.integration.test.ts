@@ -2,6 +2,7 @@ import { createMemoryDatabase } from "../../../apps/mobile/src/data/memory-datab
 import { createIdentity } from "../../../apps/mobile/src/identity/identity";
 import { createRelayClient } from "../../../apps/mobile/src/net/relay-client";
 import type { RelayFetch } from "../../../apps/mobile/src/net/relay-client";
+import { createAcceptor } from "../../../apps/mobile/src/pairing/acceptor";
 import { parseInvitationLink } from "../../../apps/mobile/src/pairing/invitation-link";
 import { createInviter } from "../../../apps/mobile/src/pairing/inviter";
 import { createPairRepository } from "../../../apps/mobile/src/pairing/pair-repository";
@@ -149,6 +150,37 @@ it("pairs A with B: equal codes and crossed keys", async () => {
   expect(await a.pairs.activePair()).toBeNull();
   await a.inviter.confirm();
   expect((await a.pairs.activePair())?.state).toBe("confirmed");
+});
+
+it("pairs A with a real acceptor B: same mailbox, code and crossed keys", async () => {
+  const a = await newInviter();
+  const link = await createdLink(a.inviter);
+  const bDevice = await newDevice();
+  const acceptor = createAcceptor({
+    sodium,
+    relay: client(bDevice.credentials),
+    identity: bDevice.identity,
+    pairs: bDevice.pairs,
+  });
+  const accepted = await acceptor.accept(link);
+  const polled = await a.inviter.poll();
+  expect(accepted.status).toBe("accepted");
+  expect(polled.status).toBe("accepted");
+  expect(accepted).toEqual(polled);
+  const pairA = await a.pairs.current();
+  const pairB = await bDevice.pairs.current();
+  expect(pairB).toMatchObject({
+    pairMailboxId: pairA?.pairMailboxId,
+    deviceId: null,
+  });
+  const keysA = await a.pairs.keys();
+  const keysB = await bDevice.pairs.keys();
+  expect(keysA).toEqual({
+    sendKey: keysB?.receiveKey,
+    receiveKey: keysB?.sendKey,
+  });
+  await acceptor.confirm();
+  expect((await bDevice.pairs.activePair())?.state).toBe("confirmed");
 });
 
 it("removes the pair and its keys on rejection", async () => {
