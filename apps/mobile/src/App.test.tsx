@@ -44,6 +44,7 @@ function memoryPlatform(): Platform {
     database: createMemoryDatabase(),
     sha256: webSha256,
     relayUrl: "unused",
+    appUrl: "unused",
   };
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from "react";
 import { View } from "react-native";
 
+import { SettingsScreen } from "../screens/SettingsScreen";
 import { TabPlaceholderScreen } from "../screens/TabPlaceholderScreen";
 import { colors } from "../ui/theme";
 import { initialNavState, navReducer, TAB_IDS } from "./stack-state";
@@ -22,16 +23,20 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ flex: 1 }}>
-        <TabPlaceholderScreen
-          tab={active}
-          depth={state.depth[active]}
-          onPush={() => {
-            dispatch({ type: "push" });
-          }}
-          onPop={() => {
-            dispatch({ type: "pop" });
-          }}
-        />
+        {active === "settings" ? (
+          <SettingsScreen />
+        ) : (
+          <TabPlaceholderScreen
+            tab={active}
+            depth={state.depth[active]}
+            onPush={() => {
+              dispatch({ type: "push" });
+            }}
+            onPop={() => {
+              dispatch({ type: "pop" });
+            }}
+          />
+        )}
       </View>
       <TabBar
         tabs={tabs}

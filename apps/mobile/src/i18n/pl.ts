@@ -25,6 +25,42 @@ export const pl = {
     pop: "Wstecz",
     depth: "Poziom stosu: {level}",
   },
+  pairing: {
+    title: "Para",
+    invite: "Zaproś partnera",
+    cancel: "Anuluj",
+    newInvite: "Nowe zaproszenie",
+    paired: "Jesteście w parze.",
+    unavailable:
+      "Nie można teraz połączyć się z serwerem. Sprawdź internet i spróbuj później.",
+    invitation: {
+      title: "Zaproszenie",
+      instruction:
+        "Poproś partnera, aby zeskanował ten kod w aplikacji albo otworzył link.",
+      qrLabel: "Kod QR z zaproszeniem",
+      copy: "Kopiuj link",
+      copied: "Link skopiowany.",
+      copyFailed: "Nie udało się skopiować linku. Spróbuj jeszcze raz.",
+      expires: "Ważne do {time}",
+      waiting: "Czekamy na partnera…",
+    },
+    safety: {
+      title: "Kod bezpieczeństwa",
+      instruction:
+        "Porównaj ten kod z kodem na telefonie partnera. Jeśli są takie same, potwierdź.",
+      same: "Kody są takie same",
+      different: "Różnią się",
+    },
+    rejected:
+      "Para została odrzucona. Kody się różniły, więc nic nie zostało zapisane.",
+    errors: {
+      alreadyPaired: "Najpierw rozłącz obecną parę.",
+      expired: "Zaproszenie wygasło.",
+      offline: "Brak połączenia z serwerem. Spróbuj ponownie za chwilę.",
+      invalid:
+        "Odpowiedź partnera jest nieprawidłowa. Utwórz nowe zaproszenie.",
+    },
+  },
   lock: {
     veil: "Parapka jest zablokowana, gdy nie jest na pierwszym planie.",
     pin: {

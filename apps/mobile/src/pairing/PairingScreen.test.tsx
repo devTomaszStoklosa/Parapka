@@ -1,0 +1,262 @@
+// @vitest-environment jsdom
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi, type Mock } from "vitest";
+
+import { pl } from "../i18n/pl";
+import { InviteScreen, POLL_INTERVAL_MS } from "./InviteScreen";
+import type { CreateResult, Inviter, PollResult } from "./inviter";
+import type { Pair } from "./pair-repository";
+import { PairingScreen } from "./PairingScreen";
+import { qrMatrix } from "./invitation-link";
+
+const p = pl.pairing;
+const LINK = "https://parapka.example/pair#abc";
+const EXPIRES_AT = Date.UTC(2026, 10, 9, 12, 30);
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+const created: CreateResult = {
+  status: "created",
+  link: LINK,
+  invitationId: "inv",
+  expiresAt: EXPIRES_AT,
+};
+
+interface FakeInviter {
+  create: Mock<Inviter["create"]>;
+  poll: Mock<Inviter["poll"]>;
+  confirm: Mock<Inviter["confirm"]>;
+  reject: Mock<Inviter["reject"]>;
+}
+
+function fakeInviter(
+  create: CreateResult = created,
+  ...polls: PollResult[]
+): FakeInviter {
+  const queue = [...polls];
+  return {
+    create: vi.fn(() => Promise.resolve(create)),
+    poll: vi.fn(() => Promise.resolve(queue.shift() ?? { status: "waiting" })),
+    confirm: vi.fn(() => Promise.resolve()),
+    reject: vi.fn(() => Promise.resolve()),
+  };
+}
+
+function pair(state: Pair["state"]): Pair {
+  return {
+    pairMailboxId: "mailbox",
+    deviceId: "device",
+    signingPublicKey: "s",
+    agreementPublicKey: "a",
+    state,
+  };
+}
+
+async function open(
+  inviter: FakeInviter,
+  stored: Pair | null = null,
+  loadSafetyCode = () => Promise.resolve("123456"),
+) {
+  render(
+    <PairingScreen
+      inviter={inviter}
+      pairs={{ current: () => Promise.resolve(stored) }}
+      loadSafetyCode={loadSafetyCode}
+    />,
+  );
+  await flush();
+}
+
+/** Lets resolved promises run, and the timers move on by `ms`. */
+async function flush(ms = 0) {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
+}
+
+const click = async (name: string) => {
+  fireEvent.click(screen.getByRole("button", { name }));
+  await flush();
+};
+
+it("offers an invitation when there is no pair", async () => {
+  await open(fakeInviter());
+  expect(screen.getByRole("button", { name: p.invite })).toBeTruthy();
+  expect(screen.queryByText(p.paired)).toBeNull();
+});
+
+it("shows the QR code, expiry, copy button and the waiting note", async () => {
+  const inviter = fakeInviter();
+  await open(inviter);
+  await click(p.invite);
+
+  const qr = screen.getByRole("img", { name: p.invitation.qrLabel });
+  expect(qr.children).toHaveLength(qrMatrix(LINK).length);
+  const time = new Date(EXPIRES_AT).toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  expect(
+    screen.getByText(p.invitation.expires.replace("{time}", time)),
+  ).toBeTruthy();
+  expect(screen.getByText(p.invitation.waiting)).toBeTruthy();
+  expect(screen.getByRole("button", { name: p.invitation.copy })).toBeTruthy();
+});
+
+it("copies the link", async () => {
+  const writeText = vi.fn(() => Promise.resolve());
+  vi.stubGlobal("navigator", { clipboard: { writeText } });
+  await open(fakeInviter());
+  await click(p.invite);
+  await click(p.invitation.copy);
+  expect(writeText).toHaveBeenCalledWith(LINK);
+  expect(screen.getByText(p.invitation.copied)).toBeTruthy();
+});
+
+it("says when the link cannot be copied", async () => {
+  vi.stubGlobal("navigator", {});
+  await open(fakeInviter());
+  await click(p.invite);
+  await click(p.invitation.copy);
+  expect(screen.getByText(p.invitation.copyFailed)).toBeTruthy();
+});
+
+it("polls every few seconds while the screen is open and stops on unmount", async () => {
+  const inviter = fakeInviter();
+  const view = render(
+    <InviteScreen inviter={inviter} onAccepted={vi.fn()} onCancel={vi.fn()} />,
+  );
+  await flush();
+  expect(inviter.poll).not.toHaveBeenCalled();
+  await flush(POLL_INTERVAL_MS);
+  expect(inviter.poll).toHaveBeenCalledTimes(1);
+  await flush(POLL_INTERVAL_MS);
+  expect(inviter.poll).toHaveBeenCalledTimes(2);
+  view.unmount();
+  await flush(POLL_INTERVAL_MS * 3);
+  expect(inviter.poll).toHaveBeenCalledTimes(2);
+});
+
+it("does not start another poll while the previous one runs", async () => {
+  const inviter = fakeInviter();
+  inviter.poll.mockReturnValue(new Promise(() => undefined));
+  render(
+    <InviteScreen inviter={inviter} onAccepted={vi.fn()} onCancel={vi.fn()} />,
+  );
+  await flush();
+  await flush(POLL_INTERVAL_MS * 3);
+  expect(inviter.poll).toHaveBeenCalledTimes(1);
+});
+
+it("returns to the start when the invitation is cancelled", async () => {
+  await open(fakeInviter());
+  await click(p.invite);
+  await click(p.cancel);
+  expect(screen.getByRole("button", { name: p.invite })).toBeTruthy();
+});
+
+it("confirms the safety code and shows the pair", async () => {
+  const inviter = fakeInviter(created, {
+    status: "accepted",
+    safetyCode: "042042",
+  });
+  await open(inviter);
+  await click(p.invite);
+  await flush(POLL_INTERVAL_MS);
+
+  expect(screen.getByText("042042")).toBeTruthy();
+  expect(screen.getByText(p.safety.instruction)).toBeTruthy();
+  await click(p.safety.same);
+  expect(inviter.confirm).toHaveBeenCalledOnce();
+  expect(screen.getByText(p.paired)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: p.invite })).toBeNull();
+});
+
+it("rejects the pair when the codes differ", async () => {
+  const inviter = fakeInviter(created, {
+    status: "accepted",
+    safetyCode: "042042",
+  });
+  await open(inviter);
+  await click(p.invite);
+  await flush(POLL_INTERVAL_MS);
+  await click(p.safety.different);
+
+  expect(inviter.reject).toHaveBeenCalledOnce();
+  expect(screen.getByText(p.rejected)).toBeTruthy();
+  expect(screen.getByRole("button", { name: p.invite })).toBeTruthy();
+});
+
+it("returns to the safety code of a pair waiting for confirmation", async () => {
+  await open(fakeInviter(), pair("pending-confirmation"));
+  expect(screen.getByText("123456")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: p.invite })).toBeNull();
+});
+
+it("shows that the people are paired", async () => {
+  await open(fakeInviter(), pair("confirmed"));
+  expect(screen.getByText(p.paired)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: p.invite })).toBeNull();
+});
+
+it("asks to leave the current pair first", async () => {
+  await open(fakeInviter({ status: "already-paired" }));
+  await click(p.invite);
+  expect(screen.getByText(p.errors.alreadyPaired)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: p.newInvite })).toBeNull();
+});
+
+it("says when the relay cannot be reached and allows a retry", async () => {
+  const inviter = fakeInviter({ status: "offline" });
+  await open(inviter);
+  await click(p.invite);
+  expect(screen.getByText(p.errors.offline)).toBeTruthy();
+  inviter.create.mockResolvedValue(created);
+  await click(p.newInvite);
+  expect(screen.getByRole("img", { name: p.invitation.qrLabel })).toBeTruthy();
+});
+
+it("offers a new invitation when the old one expired", async () => {
+  const inviter = fakeInviter(created, { status: "expired" });
+  await open(inviter);
+  await click(p.invite);
+  await flush(POLL_INTERVAL_MS);
+  expect(screen.getByText(p.errors.expired)).toBeTruthy();
+  expect(screen.queryByRole("img")).toBeNull();
+
+  await click(p.newInvite);
+  expect(inviter.create).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole("img", { name: p.invitation.qrLabel })).toBeTruthy();
+});
+
+it("reports an invalid answer of the partner", async () => {
+  await open(fakeInviter(created, { status: "invalid" }));
+  await click(p.invite);
+  await flush(POLL_INTERVAL_MS);
+  expect(screen.getByText(p.errors.invalid)).toBeTruthy();
+  expect(screen.getByRole("button", { name: p.newInvite })).toBeTruthy();
+});
+
+it("keeps waiting after a lost connection and clears the note", async () => {
+  await open(fakeInviter(created, { status: "offline" }));
+  await click(p.invite);
+  await flush(POLL_INTERVAL_MS);
+  expect(screen.getByText(p.errors.offline)).toBeTruthy();
+  expect(screen.getByText(p.invitation.waiting)).toBeTruthy();
+  await flush(POLL_INTERVAL_MS);
+  expect(screen.queryByText(p.errors.offline)).toBeNull();
+});

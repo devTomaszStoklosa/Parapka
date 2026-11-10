@@ -1,12 +1,50 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import type { Sodium } from "@parapka/crypto";
+import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
+import { createMemoryDatabase } from "../data/memory-database";
 import { pl } from "../i18n/pl";
+import { PlatformProvider, type Platform } from "../platform/context";
+import { createMemoryKeyStore } from "../platform/memory-key-store";
+import { webSha256 } from "../platform/sha256";
+import { createWebSodium } from "../platform/web-sodium";
 import { initialNavState, navReducer } from "./stack-state";
 import { TabNavigator } from "./TabNavigator";
 
-afterEach(cleanup);
+let sodium: Sodium;
+
+beforeAll(async () => {
+  sodium = await createWebSodium();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+function renderTabs(cycleEnabled: boolean) {
+  const platform: Platform = {
+    sodium,
+    keyStore: createMemoryKeyStore(),
+    clock: { nowMs: () => 1_000 },
+    database: createMemoryDatabase(),
+    sha256: webSha256,
+    relayUrl: "unused",
+    appUrl: "unused",
+  };
+  const tree = (enabled: boolean) => (
+    <PlatformProvider platform={platform}>
+      <TabNavigator cycleEnabled={enabled} />
+    </PlatformProvider>
+  );
+  const view = render(tree(cycleEnabled));
+  return {
+    rerender: (enabled: boolean) => {
+      view.rerender(tree(enabled));
+    },
+  };
+}
 
 it("reducer pushes, pops and resets the stack of the active tab only", () => {
   let s = navReducer(initialNavState, { type: "push" });
@@ -24,7 +62,7 @@ it("reducer pushes, pops and resets the stack of the active tab only", () => {
 });
 
 it("shows five accessible tabs with a selected state", () => {
-  render(<TabNavigator cycleEnabled />);
+  renderTabs(true);
   const tabs = screen.getAllByRole("tab");
   expect(tabs.map((tab) => tab.getAttribute("aria-label"))).toEqual(
     Object.values(pl.tabs),
@@ -39,26 +77,26 @@ it("shows five accessible tabs with a selected state", () => {
 });
 
 it("hides the cycle tab when the panel is disabled", () => {
-  render(<TabNavigator cycleEnabled={false} />);
+  renderTabs(false);
   expect(screen.getAllByRole("tab")).toHaveLength(4);
   expect(screen.queryByRole("tab", { name: pl.tabs.cycle })).toBeNull();
 });
 
 it("falls back to today when the active cycle tab disappears", () => {
-  const { rerender } = render(<TabNavigator cycleEnabled />);
+  const { rerender } = renderTabs(true);
   fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.cycle.title);
-  rerender(<TabNavigator cycleEnabled={false} />);
+  rerender(false);
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
 
   fireEvent.click(screen.getByText(pl.screens.push));
   expect(screen.getByText("Poziom stosu: 2")).toBeTruthy();
-  rerender(<TabNavigator cycleEnabled />);
+  rerender(true);
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
 });
 
 it("switches tabs and keeps a separate stack per tab", () => {
-  render(<TabNavigator cycleEnabled />);
+  renderTabs(true);
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
 
   fireEvent.click(screen.getByText(pl.screens.push));
@@ -78,7 +116,7 @@ it("switches tabs and keeps a separate stack per tab", () => {
 });
 
 it("returns to the root when the active tab is touched again", () => {
-  render(<TabNavigator cycleEnabled />);
+  renderTabs(true);
   fireEvent.click(screen.getByText(pl.screens.push));
   fireEvent.click(screen.getByText(pl.screens.push));
   expect(screen.getByText("Poziom stosu: 3")).toBeTruthy();
@@ -89,8 +127,16 @@ it("returns to the root when the active tab is touched again", () => {
 it.each(["today", "cycle", "planner", "head", "settings"] as const)(
   "shows the title of the %s tab",
   (tab) => {
-    render(<TabNavigator cycleEnabled />);
+    renderTabs(true);
     fireEvent.click(screen.getByRole("tab", { name: pl.tabs[tab] }));
     expect(screen.getByRole("heading").textContent).toBe(pl.screens[tab].title);
   },
 );
+
+it("shows the pairing section in the settings tab", async () => {
+  vi.stubGlobal("fetch", () => Promise.reject(new Error("offline")));
+  renderTabs(true);
+  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.settings }));
+  expect(screen.getByText(pl.pairing.title)).toBeTruthy();
+  expect(await screen.findByText(pl.pairing.unavailable)).toBeTruthy();
+});
