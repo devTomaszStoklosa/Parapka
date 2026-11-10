@@ -21,7 +21,7 @@ import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
 import type { Pair, PairRepository } from "../pairing/pair-repository";
 import { base64Decode, base64Encode } from "./base64";
-import type { HandlerRegistry } from "./handler-registry";
+import type { HandlerRegistry, SyncHandler } from "./handler-registry";
 import type { SyncTransport } from "./transport";
 
 const OUTBOX = "sync-outbox";
@@ -64,9 +64,9 @@ export interface SyncEngineOptions {
   transport: SyncTransport;
   registry: HandlerRegistry;
   /** Extension point for the consent (#139); synchronization runs when true. */
-  canSync?: () => boolean;
+  canSync?: () => boolean | Promise<boolean>;
   /** Extension point for the consent (#139); data of a category moves when true. */
-  isShared?: (category: ConsentCategory) => boolean;
+  isShared?: (category: ConsentCategory) => boolean | Promise<boolean>;
 }
 
 export interface SyncEngine {
@@ -156,7 +156,7 @@ class Engine implements SyncEngine {
 
   /** Nothing moves without a confirmed pair, its keys, a device id and the consent. */
   private async session(): Promise<Session | null> {
-    if (!(this.o.canSync?.() ?? true)) return null;
+    if (!(await (this.o.canSync?.() ?? true))) return null;
     const pair = await this.o.pairs.activePair();
     const keys = await this.o.pairs.keys();
     const deviceId = await this.o.identity.deviceId();
@@ -180,17 +180,19 @@ class Engine implements SyncEngine {
     await this.o.database.put(STATE, CLOCK, { last: formatHlc(hlc.now()) });
   }
 
-  private shared(category: ConsentCategory | null): boolean {
-    return category === null || (this.o.isShared?.(category) ?? true);
+  private async shared(category: ConsentCategory | null): Promise<boolean> {
+    return category === null || ((await this.o.isShared?.(category)) ?? true);
   }
 
   /** Collects the local changes into one encrypted envelope in the outbox. */
   private async enqueue(session: Session): Promise<void> {
     const hlc = await this.clockFor(session.deviceId);
     const changes: ContentChange[] = [];
+    const collected: SyncHandler[] = [];
     for (const handler of this.o.registry.all()) {
-      if (!this.shared(handler.category)) continue;
+      if (!(await this.shared(handler.category))) continue;
       changes.push(...(await handler.collect(() => formatHlc(hlc.now()))));
+      collected.push(handler);
     }
     if (changes.length === 0) return;
     await this.saveClock(hlc);
@@ -216,6 +218,7 @@ class Engine implements SyncEngine {
       ciphertext: base64Encode(encrypted.ciphertext),
     };
     await this.o.database.put(OUTBOX, fields.envelopeId, asJson(envelope));
+    for (const handler of collected) await handler.committed?.();
   }
 
   private async receive(session: Session, raw: Envelope): Promise<void> {
@@ -290,7 +293,7 @@ class Engine implements SyncEngine {
           "unknown-entity",
           change,
         );
-      } else if (this.shared(handler.category)) {
+      } else if (await this.shared(handler.category)) {
         await handler.apply(change);
       }
     }

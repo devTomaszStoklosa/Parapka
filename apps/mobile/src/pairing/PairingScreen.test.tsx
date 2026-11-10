@@ -54,9 +54,8 @@ function fakeInviter(
   };
 }
 
-function fakeAcceptor(result: AcceptResult): Mock<Acceptor["accept"]> {
-  return vi.fn(() => Promise.resolve(result));
-}
+const fakeAcceptor = (r: AcceptResult): Mock<Acceptor["accept"]> =>
+  vi.fn(() => Promise.resolve(r));
 
 function pair(state: Pair["state"]): Pair {
   return {
@@ -82,6 +81,7 @@ async function open(
       pairs={{ current: () => Promise.resolve(stored) }}
       consent={{ canSync: () => Promise.resolve(true), save }}
       profiles={{ get: () => Promise.resolve(null) }}
+      partner={{ get: () => Promise.resolve(null), subscribe: () => vi.fn() }}
       loadSafetyCode={loadSafetyCode}
     />,
   );

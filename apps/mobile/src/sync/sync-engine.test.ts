@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { JsonValue } from "../data/local-database";
 import { createHandlerRegistry } from "./handler-registry";
 import {
   ChoreHandler,
@@ -172,5 +173,49 @@ describe("SyncEngine gates", () => {
     await b.restart({ registry, isShared: () => false }).pull();
     expect(hints.applied).toBe(0);
     expect(hints.snapshot()).toEqual({ c1: { title: "Dishes" } });
+  });
+
+  it("waits for asynchronous consent gates", async () => {
+    const { a, b } = await createPairedDevices();
+    a.handler.edit("c1", "title", "Dishes");
+    await a.restart({ canSync: () => Promise.resolve(false) }).push();
+    expect(await received(b)).toBe(0);
+    await a.restart({ canSync: () => Promise.resolve(true) }).push();
+    expect(await received(b)).toBe(1);
+
+    const hints = new ChoreHandler("CYCLE_HINTS");
+    const registry = createHandlerRegistry();
+    registry.register(hints);
+    hints.edit("c1", "title", "Dishes");
+    await a
+      .restart({ registry, isShared: () => Promise.resolve(false) })
+      .push();
+    expect(await received(b)).toBe(1);
+    expect(hints.committedCount).toBe(0);
+    await a.restart({ registry, isShared: () => Promise.resolve(true) }).push();
+    expect(await received(b)).toBe(2);
+    await b
+      .restart({ registry, isShared: () => Promise.resolve(false) })
+      .pull();
+    expect(hints.applied).toBe(0);
+  });
+
+  it("tells a handler its changes are queued only after the envelope is saved", async () => {
+    const { a } = await createPairedDevices();
+    a.handler.edit("c1", "title", "Dishes");
+    const put = a.database.put.bind(a.database);
+    let failing = true;
+    Object.assign(a.database, {
+      put: (collection: string, id: string, value: JsonValue) =>
+        failing && collection === "sync-outbox"
+          ? Promise.reject(new Error("disk"))
+          : put(collection, id, value),
+    });
+    await expect(a.engine.push()).rejects.toThrow("disk");
+    expect(a.handler.committedCount).toBe(0);
+    failing = false;
+    a.handler.edit("c2", "title", "Trash");
+    await a.engine.push();
+    expect(a.handler.committedCount).toBe(1);
   });
 });

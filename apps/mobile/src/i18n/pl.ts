@@ -37,6 +37,7 @@ export const pl = {
     },
     newInvite: "Nowe zaproszenie",
     paired: "Jesteście w parze.",
+    pairedWith: "Jesteście w parze z {name}.",
     unavailable:
       "Nie można teraz połączyć się z serwerem. Sprawdź internet i spróbuj później.",
     invitation: {
