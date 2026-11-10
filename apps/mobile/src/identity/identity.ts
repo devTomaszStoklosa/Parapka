@@ -3,6 +3,7 @@ import {
   encodeDevicePublicKeys,
   generateDeviceKeys,
   type DevicePublicKeys,
+  type KeyPair,
   type Sodium,
 } from "@parapka/crypto";
 
@@ -34,6 +35,8 @@ export interface Identity {
   /** The id given by the relay, or null before the registration. */
   deviceId(): Promise<string | null>;
   publicKeys(): Promise<DevicePublicKeys | null>;
+  /** The key agreement pair for `derivePairKeys`; null before the keys exist. */
+  agreementKeyPair(): Promise<KeyPair | null>;
   /** For `createRelayClient`; null before the registration. */
   credentials(): Promise<DeviceCredentials | null>;
   /** Removes the keys and the device id (FR-SEC-04). */
@@ -107,6 +110,15 @@ export function createIdentity(deps: IdentityDeps): Identity {
       return {
         signing: base64urlDecode(record.signingPublicKey),
         agreement: base64urlDecode(record.agreementPublicKey),
+      };
+    },
+    agreementKeyPair: async () => {
+      const record = await loadRecord(database);
+      const privateKey = await keyStore.get(AGREEMENT_KEY);
+      if (!record || !privateKey) return null;
+      return {
+        publicKey: base64urlDecode(record.agreementPublicKey),
+        privateKey,
       };
     },
     credentials: async () => {
