@@ -13,8 +13,8 @@ export type PairState = "pending-confirmation" | "confirmed";
 /** What the database holds about the pair: no key material of the pair. */
 export interface Pair {
   readonly pairMailboxId: string;
-  /** The device id of the partner. */
-  readonly deviceId: string;
+  /** The device id of the partner; null on B's side until sync (#110) learns it. */
+  readonly deviceId: string | null;
   /** Base64url public keys of the partner. */
   readonly signingPublicKey: string;
   readonly agreementPublicKey: string;

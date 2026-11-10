@@ -48,6 +48,12 @@ describe("PairRepository", () => {
     );
   });
 
+  it("keeps a null partner device id", async () => {
+    const { repository } = setup();
+    await repository.savePending({ ...pair, deviceId: null }, keys);
+    expect((await repository.current())?.deviceId).toBeNull();
+  });
+
   it("returns a confirmed pair as the active one", async () => {
     const { repository } = setup();
     await repository.savePending(pair, keys);
