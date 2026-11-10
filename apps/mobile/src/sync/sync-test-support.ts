@@ -52,6 +52,8 @@ type Draft = (nextHlc: NextHlc) => ContentChange;
 export class ChoreHandler implements SyncHandler {
   readonly entity = "Chore";
   applied = 0;
+  /** Times the engine reported the collected changes as saved in the queue. */
+  committedCount = 0;
   private readonly states = new Map<string, EntityState>();
   private drafts: Draft[] = [];
 
@@ -81,6 +83,11 @@ export class ChoreHandler implements SyncHandler {
     this.drafts = [];
     for (const change of changes) this.merge(change);
     return Promise.resolve(changes);
+  }
+
+  committed(): Promise<void> {
+    this.committedCount += 1;
+    return Promise.resolve();
   }
 
   apply(change: ContentChange): Promise<void> {

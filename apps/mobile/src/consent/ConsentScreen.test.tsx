@@ -118,6 +118,7 @@ it("is asked of a confirmed pair that has no consent yet", async () => {
         pairs={{ current: () => Promise.resolve(pair) }}
         consent={consent}
         profiles={{ get: () => Promise.resolve(null) }}
+        partner={{ get: () => Promise.resolve(null) }}
         loadSafetyCode={() => Promise.resolve("")}
       />,
     );
@@ -130,6 +131,41 @@ it("is asked of a confirmed pair that has no consent yet", async () => {
     fireEvent.click(screen.getByRole("button", { name: c.save }));
     await Promise.resolve();
   });
+  expect(screen.getByText(pl.pairing.paired)).toBeTruthy();
+});
+
+async function openPaired(partner: { get: () => Promise<unknown> }) {
+  const unused = {} as never;
+  await act(async () => {
+    render(
+      <PairingScreen
+        inviter={unused}
+        acceptor={unused}
+        pairs={{ current: () => Promise.resolve({ state: "confirmed" } as never) }}
+        consent={{ canSync: () => Promise.resolve(true), save: vi.fn() }}
+        profiles={{ get: () => Promise.resolve(null) }}
+        partner={partner as never}
+        loadSafetyCode={() => Promise.resolve("")}
+      />,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+it("names the partner on the Pair screen once the profile arrived", async () => {
+  await openPaired({
+    get: () => Promise.resolve({ name: "Ola", form: "feminine", goals: null }),
+  });
+  expect(screen.getByText("Jesteście w parze z Ola.")).toBeTruthy();
+});
+
+it("shows the plain text while the partner profile is missing or unreadable", async () => {
+  await openPaired({ get: () => Promise.resolve(null) });
+  expect(screen.getByText(pl.pairing.paired)).toBeTruthy();
+  cleanup();
+  await openPaired({ get: () => Promise.reject(new Error("disk")) });
   expect(screen.getByText(pl.pairing.paired)).toBeTruthy();
 });
 

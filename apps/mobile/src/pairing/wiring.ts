@@ -4,13 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import type { ProfileRepository } from "../data/profile-repository";
 import { wireConsent } from "../consent/wiring";
 import type { ConsentRepository } from "../consent/consent-repository";
-import { createIdentity } from "../identity/identity";
+import { createIdentity, type Identity } from "../identity/identity";
 import {
   createRelayClient,
   type DeviceCredentials,
   type RelayFetch,
 } from "../net/relay-client";
 import type { Platform } from "../platform/context";
+import {
+  createPartnerProfileRepository,
+  type PartnerProfileRepository,
+} from "../sync/partner-profile-repository";
 import { createAcceptor, type Acceptor } from "./acceptor";
 import { createInviter, type Inviter } from "./inviter";
 import { createPairRepository, type PairRepository } from "./pair-repository";
@@ -21,7 +25,26 @@ export interface Wiring {
   pairs: PairRepository;
   consent: ConsentRepository;
   profiles: ProfileRepository;
+  partner: PartnerProfileRepository;
   loadSafetyCode: () => Promise<string>;
+}
+
+function safetyCodeLoader(deps: {
+  sodium: Platform["sodium"];
+  pairs: PairRepository;
+  identity: Pick<Identity, "publicKeys">;
+}) {
+  const { sodium, pairs, identity } = deps;
+  return async () => {
+    const pair = await pairs.current();
+    const own = await identity.publicKeys();
+    if (!pair || !own) throw new Error("There is no pair to compare");
+    const peer = decodeDevicePublicKeys({
+      signing: pair.signingPublicKey,
+      agreement: pair.agreementPublicKey,
+    });
+    return computeSafetyCode(sodium, own, peer);
+  };
 }
 
 /** Builds the real dependencies; null when the device is not registered with the relay. */
@@ -60,17 +83,16 @@ export async function wire(platform: Platform): Promise<Wiring | null> {
     identity,
     pairs,
   });
-  const loadSafetyCode = async () => {
-    const pair = await pairs.current();
-    const own = await identity.publicKeys();
-    if (!pair || !own) throw new Error("There is no pair to compare");
-    const peer = decodeDevicePublicKeys({
-      signing: pair.signingPublicKey,
-      agreement: pair.agreementPublicKey,
-    });
-    return computeSafetyCode(sodium, own, peer);
+  const loadSafetyCode = safetyCodeLoader({ sodium, pairs, identity });
+  const partner = createPartnerProfileRepository(database);
+  return {
+    inviter,
+    acceptor,
+    pairs,
+    loadSafetyCode,
+    partner,
+    ...wireConsent(platform),
   };
-  return { inviter, acceptor, pairs, loadSafetyCode, ...wireConsent(platform) };
 }
 
 /**

@@ -15,6 +15,11 @@ export interface SyncHandler {
   apply(change: ContentChange): Promise<void>;
   /** Takes the local changes not sent yet, stamped with `nextHlc`. */
   collect(nextHlc: NextHlc): Promise<readonly ContentChange[]>;
+  /**
+   * Called after the envelope with the collected changes is saved in the
+   * queue; a handler marks its changes as sent here, not in `collect`.
+   */
+  committed?(): Promise<void>;
 }
 
 export interface HandlerRegistry {

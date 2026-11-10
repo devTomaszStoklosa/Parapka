@@ -6,6 +6,7 @@ import type { ConsentRepository } from "../consent/consent-repository";
 import type { ProfileRepository } from "../data/profile-repository";
 import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
+import type { PartnerProfileRepository } from "../sync/partner-profile-repository";
 import { AppText } from "../ui/AppText";
 import { InviteScreen } from "./InviteScreen";
 import type { Acceptor } from "./acceptor";
@@ -75,13 +76,35 @@ function IdleView({
   );
 }
 
-function Status({ kind }: { kind: "loading" | "unavailable" | "paired" }) {
-  if (kind === "loading") return null;
-  return kind === "paired" ? (
-    <AppText>{t("pairing.paired")}</AppText>
-  ) : (
-    <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>
+/** The name of the partner once the first exchange brought it; none before. */
+function PairedStatus({
+  partner,
+}: {
+  partner: Pick<PartnerProfileRepository, "get">;
+}) {
+  const [name, setName] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void partner
+      .get()
+      .then((profile) => {
+        if (active && profile) setName(profile.name);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [partner]);
+  return (
+    <AppText>
+      {name === null ? t("pairing.paired") : t("pairing.pairedWith", { name })}
+    </AppText>
   );
+}
+
+function Status({ kind }: { kind: "loading" | "unavailable" }) {
+  if (kind === "loading") return null;
+  return <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>;
 }
 
 function SafetyStep({
@@ -121,6 +144,17 @@ function ConsentStep({
   );
 }
 
+interface PairingScreenProps {
+  inviter: Inviter;
+  acceptor: Pick<Acceptor, "accept">;
+  pairs: Pick<PairRepository, "current">;
+  consent: Pick<ConsentRepository, "canSync" | "save">;
+  profiles: Pick<ProfileRepository, "get">;
+  partner: Pick<PartnerProfileRepository, "get">;
+  /** The code of a stored `pending-confirmation` pair. */
+  loadSafetyCode: () => Promise<string>;
+}
+
 /** The Pair section of Settings: invite, compare the safety code, or the state of the pair. */
 export function PairingScreen({
   inviter,
@@ -128,16 +162,9 @@ export function PairingScreen({
   pairs,
   consent,
   profiles,
+  partner,
   loadSafetyCode,
-}: {
-  inviter: Inviter;
-  acceptor: Pick<Acceptor, "accept">;
-  pairs: Pick<PairRepository, "current">;
-  consent: Pick<ConsentRepository, "canSync" | "save">;
-  profiles: Pick<ProfileRepository, "get">;
-  /** The code of a stored `pending-confirmation` pair. */
-  loadSafetyCode: () => Promise<string>;
-}) {
+}: PairingScreenProps) {
   const [view, setView] = useInitialView(pairs, consent, loadSafetyCode);
   const go = (next: PairingView) => () => {
     setView(next);
@@ -158,9 +185,10 @@ export function PairingScreen({
       return <SafetyStep code={view.code} inviter={inviter} go={go} />;
     case "consent":
       return <ConsentStep consent={consent} profiles={profiles} go={go} />;
+    case "paired":
+      return <PairedStatus partner={partner} />;
     case "loading":
     case "unavailable":
-    case "paired":
       return <Status kind={view.kind} />;
     case "idle":
       return (

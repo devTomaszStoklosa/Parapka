@@ -62,9 +62,7 @@ function pair(state: Pair["state"]): Pair {
   return {
     pairMailboxId: "mailbox",
     deviceId: "device",
-    signingPublicKey: "s",
-    agreementPublicKey: "a",
-    state,
+    ...{ signingPublicKey: "s", agreementPublicKey: "a", state },
   };
 }
 
@@ -82,6 +80,7 @@ async function open(
       pairs={{ current: () => Promise.resolve(stored) }}
       consent={{ canSync: () => Promise.resolve(true), save }}
       profiles={{ get: () => Promise.resolve(null) }}
+      partner={{ get: () => Promise.resolve(null) }}
       loadSafetyCode={loadSafetyCode}
     />,
   );
