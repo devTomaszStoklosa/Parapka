@@ -73,3 +73,54 @@ it("saves a change and tells the listeners", async () => {
   expect(record?.states.CHECKIN).toBe(true);
   expect(record?.savedAtMs).toBe(99);
 });
+
+it("shows an error when the saved consent cannot be read", async () => {
+  const database = createMemoryDatabase();
+  const profiles = createProfileRepository(database);
+  const consent = {
+    current: () => Promise.reject(new Error()),
+    setCategory: vi.fn(),
+  };
+  await act(async () => {
+    render(<PrivacySettings consent={consent} profiles={profiles} />);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(screen.getByRole("alert").textContent).toBe(c.saveFailed);
+});
+
+it("shows an error when a change cannot be saved", async () => {
+  const database = createMemoryDatabase();
+  const profiles = createProfileRepository(database);
+  const profile = { cycle: "yes", shareGoalsWithPartner: false } as const;
+  await profiles.save(profile as Profile);
+  const consent = {
+    current: () =>
+      Promise.resolve({
+        states: defaultConsent(profile),
+        savedAtMs: 1,
+        textVersion: 1,
+      }),
+    setCategory: () => Promise.reject(new Error()),
+  };
+  await act(async () => {
+    render(
+      <PrivacySettings
+        consent={
+          consent as unknown as Parameters<typeof PrivacySettings>[0]["consent"]
+        }
+        profiles={profiles}
+      />,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  await act(async () => {
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: c.categories.CHECKIN.title }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(screen.getByRole("alert").textContent).toBe(c.saveFailed);
+});

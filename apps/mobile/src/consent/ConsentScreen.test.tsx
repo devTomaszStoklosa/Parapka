@@ -132,3 +132,18 @@ it("is asked of a confirmed pair that has no consent yet", async () => {
   });
   expect(screen.getByText(pl.pairing.paired)).toBeTruthy();
 });
+
+it("says so when the profile cannot be read", async () => {
+  await act(async () => {
+    render(
+      <ConsentScreen
+        consent={{ save: vi.fn() }}
+        profiles={{ get: () => Promise.reject(new Error("disk")) }}
+        onSaved={vi.fn()}
+      />,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(screen.getByRole("alert").textContent).toBe(c.saveFailed);
+});
