@@ -32,6 +32,24 @@ it("creates a complete web platform", async () => {
   expect(await platform.database.get("test", "a")).toEqual({ n: 1 });
 });
 
+it("creates sockets with the browser WebSocket", async () => {
+  const created: string[] = [];
+  vi.stubGlobal(
+    "WebSocket",
+    class {
+      readonly url: string;
+      constructor(url: string) {
+        this.url = url;
+        created.push(url);
+      }
+    },
+  );
+  const platform = await createWebPlatform();
+  expect(platform.createSocket?.("wss://relay")).toBeDefined();
+  expect(created).toEqual(["wss://relay"]);
+  vi.unstubAllGlobals();
+});
+
 it("throws outside a provider", () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   expect(() => render(<Probe />)).toThrow(/PlatformProvider/);

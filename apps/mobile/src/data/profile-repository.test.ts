@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "fake-indexeddb/auto";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { Sodium } from "@parapka/crypto";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
 import { createWebSodium } from "../platform/web-sodium";
@@ -51,6 +51,19 @@ function suite(name: string, create: () => Promise<LocalDatabase>): void {
     });
   });
 }
+
+describe("ProfileRepository.subscribe", () => {
+  it("notifies after a save, also from another instance on the same database", async () => {
+    const db = createMemoryDatabase();
+    const listener = vi.fn();
+    const unsubscribe = createProfileRepository(db).subscribe(listener);
+    await createProfileRepository(db).save(profile);
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+    await createProfileRepository(db).save(profile);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+});
 
 suite("memory", () => Promise.resolve(createMemoryDatabase()));
 suite("IndexedDB", async () => {

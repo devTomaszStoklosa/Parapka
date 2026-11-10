@@ -2,6 +2,7 @@ import type { Sodium } from "@parapka/crypto";
 import type { Clock } from "@parapka/domain";
 import type { LocalDatabase } from "../data/local-database";
 import { createContext, useContext, type ReactNode } from "react";
+import type { SocketLike } from "../net/relay-socket";
 import type { KeyStore } from "./key-store";
 import type { Sha256 } from "./sha256";
 
@@ -18,6 +19,8 @@ export interface Platform {
   /** Address the app is served from, the base of invitation links. */
   appUrl: string;
   /** The invitation text the app was opened with (`/pair#<text>`), read once; web only. */
+  /** Opens a WebSocket to the relay. */
+  createSocket?: (url: string) => SocketLike;
   launchInvitation?: () => string | null;
 }
 

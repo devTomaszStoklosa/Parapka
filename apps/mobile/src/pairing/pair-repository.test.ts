@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createMemoryDatabase } from "../data/memory-database";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
@@ -26,6 +26,20 @@ function setup() {
 }
 
 describe("PairRepository", () => {
+  it("notifies after saving, confirming and removing, not after an empty confirm", async () => {
+    const { repository, database, keyStore } = setup();
+    const listener = vi.fn();
+    repository.subscribe(listener);
+    await repository.confirm();
+    expect(listener).not.toHaveBeenCalled();
+    await repository.savePending(pair, keys);
+    expect(listener).toHaveBeenCalledTimes(1);
+    await createPairRepository(database, keyStore).confirm();
+    expect(listener).toHaveBeenCalledTimes(2);
+    await repository.remove();
+    expect(listener).toHaveBeenCalledTimes(3);
+  });
+
   it("is empty at first", async () => {
     const { repository } = setup();
     expect(await repository.current()).toBeNull();

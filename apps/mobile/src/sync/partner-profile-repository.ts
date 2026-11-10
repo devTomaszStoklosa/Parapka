@@ -1,5 +1,6 @@
 import { compareHlc, parseHlc } from "@parapka/sync";
 
+import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import {
   GOAL_IDS,
@@ -71,14 +72,9 @@ export function createPartnerProfileRepository(
     ((await db.get(COLLECTION, ID)) as unknown as Stored | null) ?? {
       fields: {},
     };
-  const listeners = new Set<() => void>();
+  const changes = changeChannel(db, COLLECTION);
   return {
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: changes.subscribe,
     get: async () => {
       const { name, form, goals } = (await read()).fields;
       if (!name || !form) return null;
@@ -102,7 +98,7 @@ export function createPartnerProfileRepository(
         fields[name] = field;
       }
       await db.put(COLLECTION, ID, { fields } as unknown as JsonValue);
-      for (const listener of [...listeners]) listener();
+      changes.notify();
     },
   };
 }
