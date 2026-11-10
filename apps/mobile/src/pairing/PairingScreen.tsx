@@ -5,8 +5,10 @@ import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
 import { InviteScreen } from "./InviteScreen";
+import type { Acceptor } from "./acceptor";
 import type { Inviter } from "./inviter";
 import type { PairRepository } from "./pair-repository";
+import { PasteInvitation } from "./PasteInvitation";
 import { SafetyCodeScreen } from "./SafetyCodeScreen";
 
 type PairingView =
@@ -21,8 +23,8 @@ type PairingView =
 function useInitialView(
   pairs: Pick<PairRepository, "current">,
   loadSafetyCode: () => Promise<string>,
-  setView: (view: PairingView) => void,
-) {
+): [PairingView, (view: PairingView) => void] {
+  const [view, setView] = useState<PairingView>({ kind: "loading" });
   useEffect(() => {
     let active = true;
     const show = (view: PairingView) => {
@@ -41,15 +43,20 @@ function useInitialView(
     return () => {
       active = false;
     };
-  }, [pairs, loadSafetyCode, setView]);
+  }, [pairs, loadSafetyCode]);
+  return [view, setView];
 }
 
 function IdleView({
   rejected,
+  acceptor,
   onInvite,
+  onAccepted,
 }: {
   rejected: boolean;
+  acceptor: Pick<Acceptor, "accept">;
   onInvite: () => void;
+  onAccepted: (safetyCode: string) => void;
 }) {
   return (
     <View>
@@ -57,59 +64,82 @@ function IdleView({
         <AppText accessibilityRole="alert">{t("pairing.rejected")}</AppText>
       )}
       <Button primary label={t("pairing.invite")} onPress={onInvite} />
+      <PasteInvitation acceptor={acceptor} onAccepted={onAccepted} />
     </View>
+  );
+}
+
+function Status({ kind }: { kind: "loading" | "unavailable" | "paired" }) {
+  if (kind === "loading") return null;
+  return kind === "paired" ? (
+    <AppText>{t("pairing.paired")}</AppText>
+  ) : (
+    <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>
+  );
+}
+
+function SafetyStep({
+  code,
+  inviter,
+  go,
+}: {
+  code: string;
+  inviter: Inviter;
+  go: (next: PairingView) => () => void;
+}) {
+  return (
+    <SafetyCodeScreen
+      code={code}
+      inviter={inviter}
+      onConfirmed={go({ kind: "paired" })}
+      onRejected={go({ kind: "idle", rejected: true })}
+    />
   );
 }
 
 /** The Pair section of Settings: invite, compare the safety code, or the state of the pair. */
 export function PairingScreen({
   inviter,
+  acceptor,
   pairs,
   loadSafetyCode,
 }: {
   inviter: Inviter;
+  acceptor: Pick<Acceptor, "accept">;
   pairs: Pick<PairRepository, "current">;
   /** The code of a stored `pending-confirmation` pair. */
   loadSafetyCode: () => Promise<string>;
 }) {
-  const [view, setView] = useState<PairingView>({ kind: "loading" });
-  useInitialView(pairs, loadSafetyCode, setView);
-
+  const [view, setView] = useInitialView(pairs, loadSafetyCode);
   const go = (next: PairingView) => () => {
     setView(next);
   };
-
+  const showCode = (code: string) => {
+    go({ kind: "safety", code })();
+  };
   switch (view.kind) {
-    case "loading":
-      return null;
     case "invite":
       return (
         <InviteScreen
           inviter={inviter}
-          onAccepted={(code) => {
-            setView({ kind: "safety", code });
-          }}
+          onAccepted={showCode}
           onCancel={go({ kind: "idle", rejected: false })}
         />
       );
     case "safety":
-      return (
-        <SafetyCodeScreen
-          code={view.code}
-          inviter={inviter}
-          onConfirmed={go({ kind: "paired" })}
-          onRejected={go({ kind: "idle", rejected: true })}
-        />
-      );
+      return <SafetyStep code={view.code} inviter={inviter} go={go} />;
+    case "loading":
     case "unavailable":
-      return (
-        <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>
-      );
     case "paired":
-      return <AppText>{t("pairing.paired")}</AppText>;
+      return <Status kind={view.kind} />;
     case "idle":
       return (
-        <IdleView rejected={view.rejected} onInvite={go({ kind: "invite" })} />
+        <IdleView
+          rejected={view.rejected}
+          acceptor={acceptor}
+          onInvite={go({ kind: "invite" })}
+          onAccepted={showCode}
+        />
       );
   }
 }

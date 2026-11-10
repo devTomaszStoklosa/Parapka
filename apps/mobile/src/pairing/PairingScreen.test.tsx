@@ -10,6 +10,7 @@ import { afterEach, beforeEach, expect, it, vi, type Mock } from "vitest";
 
 import { pl } from "../i18n/pl";
 import { InviteScreen, POLL_INTERVAL_MS } from "./InviteScreen";
+import type { Acceptor, AcceptResult } from "./acceptor";
 import type { CreateResult, Inviter, PollResult } from "./inviter";
 import type { Pair } from "./pair-repository";
 import { PairingScreen } from "./PairingScreen";
@@ -53,6 +54,10 @@ function fakeInviter(
   };
 }
 
+function fakeAcceptor(result: AcceptResult): Mock<Acceptor["accept"]> {
+  return vi.fn(() => Promise.resolve(result));
+}
+
 function pair(state: Pair["state"]): Pair {
   return {
     pairMailboxId: "mailbox",
@@ -67,10 +72,12 @@ async function open(
   inviter: FakeInviter,
   stored: Pair | null = null,
   loadSafetyCode = () => Promise.resolve("123456"),
+  accept = fakeAcceptor({ status: "accepted", safetyCode: "042042" }),
 ) {
   render(
     <PairingScreen
       inviter={inviter}
+      acceptor={{ accept }}
       pairs={{ current: () => Promise.resolve(stored) }}
       loadSafetyCode={loadSafetyCode}
     />,
@@ -283,5 +290,53 @@ it("says so when confirming or rejecting the pair fails", async () => {
   await click(p.safety.same);
   expect(screen.getByRole("alert").textContent).toBe(p.unavailable);
   await click(p.safety.different);
+  expect(screen.getByRole("alert").textContent).toBe(p.unavailable);
+});
+
+const paste = async (text: string) => {
+  fireEvent.change(screen.getByLabelText(p.paste.label), {
+    target: { value: text },
+  });
+  await click(p.paste.connect);
+};
+
+it("accepts a pasted link and shows the safety code", async () => {
+  const accept = fakeAcceptor({ status: "accepted", safetyCode: "042042" });
+  const inviter = fakeInviter();
+  await open(inviter, null, undefined, accept);
+  await paste("  /pair#abc ");
+  expect(accept).toHaveBeenCalledWith("/pair#abc");
+  expect(screen.getByText("042042")).toBeTruthy();
+  await click(p.safety.same);
+  expect(inviter.confirm).toHaveBeenCalledOnce();
+  expect(screen.getByText(p.paired)).toBeTruthy();
+});
+
+it("keeps Connect disabled while the field is empty", async () => {
+  await open(fakeInviter());
+  const connect = screen.getByRole("button", { name: p.paste.connect });
+  expect(connect.getAttribute("aria-disabled")).toBe("true");
+});
+
+it.each([
+  [{ status: "invalid" }, p.errors.invalidInvitation],
+  [{ status: "already-paired" }, p.errors.alreadyPaired],
+  [{ status: "expired" }, p.errors.expired],
+  [{ status: "inviter-paired" }, p.errors.inviterPaired],
+  [{ status: "offline" }, p.errors.offline],
+] as const)(
+  "shows a message for the pasted link result %j",
+  async (result, message) => {
+    await open(fakeInviter(), null, undefined, fakeAcceptor(result));
+    await paste("abc");
+    expect(screen.getByRole("alert").textContent).toBe(message);
+    expect(screen.queryByText("042042")).toBeNull();
+  },
+);
+
+it("says the pairing is unavailable when accepting throws", async () => {
+  const accept = vi.fn(() => Promise.reject(new Error("bug")));
+  await open(fakeInviter(), null, undefined, accept);
+  await paste("abc");
   expect(screen.getByRole("alert").textContent).toBe(p.unavailable);
 });

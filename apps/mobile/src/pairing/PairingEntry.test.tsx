@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { encodeDevicePublicKeys, generateDeviceKeys } from "@parapka/crypto";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -107,4 +113,28 @@ it("says the pairing is unavailable when the relay answers 500", async () => {
   openEntry(memoryPlatform());
   await flush();
   expect(screen.getByRole("alert").textContent).toBe(p.unavailable);
+});
+
+it("retries the wiring and works without a reload once the relay answers", async () => {
+  let up = false;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      up
+        ? Promise.resolve({
+            status: 201,
+            text: () => Promise.resolve('{"deviceId":"device-1"}'),
+          })
+        : Promise.reject(new Error("offline")),
+    ),
+  );
+  openEntry(memoryPlatform());
+  await flush();
+  expect(screen.getByRole("alert").textContent).toBe(p.unavailable);
+
+  up = true;
+  fireEvent.click(screen.getByRole("button", { name: p.retry }));
+  await flush();
+  expect(screen.getByRole("button", { name: p.invite })).toBeTruthy();
+  expect(screen.queryByRole("alert")).toBeNull();
 });

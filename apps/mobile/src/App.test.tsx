@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { Sodium } from "@parapka/crypto";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeAll, expect, it } from "vitest";
+import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 import { createMemoryDatabase } from "./data/memory-database";
@@ -94,6 +94,38 @@ it("asks for the PIN before the content when a PIN is set", async () => {
   render(<App createPlatform={() => Promise.resolve(platform)} />);
   expect(await screen.findByText(pl.lock.pin.unlockTitle)).toBeTruthy();
   expect(screen.queryAllByRole("tab")).toHaveLength(0);
+});
+
+const withLaunch = (platform: Platform, text: string | null): Platform => ({
+  ...platform,
+  launchInvitation: () => text,
+});
+
+it("opens the accept screen for a launch link when a profile exists", async () => {
+  const platform = withLaunch(memoryPlatform(), "abc");
+  await createProfileRepository(platform.database).save(profile);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.reject(new Error("offline"))),
+  );
+  render(<App createPlatform={() => Promise.resolve(platform)} />);
+  expect(await screen.findByText(pl.pairing.unavailable)).toBeTruthy();
+  expect(screen.queryAllByRole("tab")).toHaveLength(0);
+  fireEvent.click(screen.getByRole("button", { name: pl.pairing.close }));
+  expect(await screen.findAllByRole("tab")).toHaveLength(4);
+  vi.unstubAllGlobals();
+});
+
+it("keeps the launch link until onboarding is done", async () => {
+  const platform = withLaunch(memoryPlatform(), "abc");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.reject(new Error("offline"))),
+  );
+  render(<App createPlatform={() => Promise.resolve(platform)} />);
+  expect(await screen.findByText(pl.onboarding.name.title)).toBeTruthy();
+  expect(screen.queryByText(pl.pairing.unavailable)).toBeNull();
+  vi.unstubAllGlobals();
 });
 
 it("shows an error when the database cannot be opened", async () => {

@@ -29,6 +29,12 @@ export const pl = {
     title: "Para",
     invite: "Zaproś partnera",
     cancel: "Anuluj",
+    retry: "Spróbuj ponownie",
+    close: "Zamknij",
+    paste: {
+      label: "Wklej link zaproszenia",
+      connect: "Połącz",
+    },
     newInvite: "Nowe zaproszenie",
     paired: "Jesteście w parze.",
     unavailable:
@@ -57,6 +63,9 @@ export const pl = {
       alreadyPaired: "Najpierw rozłącz obecną parę.",
       expired: "Zaproszenie wygasło.",
       offline: "Brak połączenia z serwerem. Spróbuj ponownie za chwilę.",
+      invalidInvitation:
+        "To nie jest poprawne zaproszenie. Poproś partnera o nowe.",
+      inviterPaired: "Ta osoba jest już w parze z kimś innym.",
       invalid:
         "Odpowiedź partnera jest nieprawidłowa. Utwórz nowe zaproszenie.",
     },
