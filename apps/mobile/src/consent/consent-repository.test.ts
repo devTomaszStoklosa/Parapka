@@ -99,3 +99,14 @@ it("reports a saved consent as allowing the sync", async () => {
   await consent.save(defaults);
   expect(await consent.canSync()).toBe(true);
 });
+
+it("keeps the other categories and the text version when one changes", async () => {
+  const { consent, time } = await setup();
+  await consent.save(defaults);
+  time.now = 7_000;
+  await consent.setCategory("CHECKIN", true);
+
+  const record = await consent.current();
+  expect(record?.states).toEqual({ ...defaults, CHECKIN: true });
+  expect(record?.textVersion).toBe(CONSENT_TEXT_VERSION);
+});
