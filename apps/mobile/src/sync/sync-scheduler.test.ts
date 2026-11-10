@@ -203,6 +203,25 @@ describe("createSyncScheduler", () => {
     expect(run).toHaveBeenCalledTimes(5);
   });
 
+  it.each([
+    ["network", 2_000],
+    ["rateLimited", 30_000],
+  ] as const)(
+    "does not shorten the wait after %s on a request",
+    async (kind, delay) => {
+      const { clock, run, scheduler, notify } = setup();
+      run.mockImplementation(fail(kind));
+      scheduler.start();
+      await settle();
+      scheduler.requestSync();
+      notify();
+      await clock.advance(delay - 1);
+      expect(run).toHaveBeenCalledTimes(1);
+      await clock.advance(1);
+      expect(run).toHaveBeenCalledTimes(2);
+    },
+  );
+
   it("waits longer when the rate is limited", async () => {
     const { clock, run, scheduler } = setup();
     run.mockImplementation(fail("rateLimited"));

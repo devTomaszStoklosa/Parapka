@@ -73,7 +73,8 @@ class Scheduler implements SyncScheduler {
       this.again = true;
       return;
     }
-    if (this.debounceTimer !== null) return;
+    // After a failure the retry timer decides when the next run happens.
+    if (this.failures > 0 || this.debounceTimer !== null) return;
     this.debounceTimer = this.setTimer(() => {
       this.debounceTimer = null;
       void this.cycle();
