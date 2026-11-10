@@ -124,3 +124,10 @@ it("does not allow the sync before any consent is saved", async () => {
   const { consent } = await setup();
   expect(await consent.canSync()).toBe(false);
 });
+
+it("keeps the sync allowed after a category is switched", async () => {
+  const { consent } = await setup();
+  await consent.save(defaults);
+  await consent.setCategory("CHECKIN", true);
+  expect(await consent.canSync()).toBe(true);
+});
