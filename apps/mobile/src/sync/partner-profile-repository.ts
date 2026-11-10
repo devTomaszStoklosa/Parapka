@@ -37,6 +37,8 @@ export interface PartnerProfileRepository {
   get(): Promise<PartnerProfile | null>;
   /** Keeps the newer value of every field; a repeat or an older change is harmless. */
   merge(fields: Readonly<Record<string, StampedField>>): Promise<void>;
+  /** Calls the listener after every write of the profile; returns the unsubscribe. */
+  subscribe(listener: () => void): () => void;
 }
 
 const isGoals = (value: unknown): value is GoalId[] =>
@@ -69,7 +71,14 @@ export function createPartnerProfileRepository(
     ((await db.get(COLLECTION, ID)) as unknown as Stored | null) ?? {
       fields: {},
     };
+  const listeners = new Set<() => void>();
   return {
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
     get: async () => {
       const { name, form, goals } = (await read()).fields;
       if (!name || !form) return null;
@@ -93,6 +102,7 @@ export function createPartnerProfileRepository(
         fields[name] = field;
       }
       await db.put(COLLECTION, ID, { fields } as unknown as JsonValue);
+      for (const listener of [...listeners]) listener();
     },
   };
 }

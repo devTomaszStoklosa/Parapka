@@ -81,7 +81,7 @@ async function open(
       pairs={{ current: () => Promise.resolve(stored) }}
       consent={{ canSync: () => Promise.resolve(true), save }}
       profiles={{ get: () => Promise.resolve(null) }}
-      partner={{ get: () => Promise.resolve(null) }}
+      partner={{ get: () => Promise.resolve(null), subscribe: () => vi.fn() }}
       loadSafetyCode={loadSafetyCode}
     />,
   );

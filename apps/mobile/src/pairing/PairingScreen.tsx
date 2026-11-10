@@ -80,19 +80,24 @@ function IdleView({
 function PairedStatus({
   partner,
 }: {
-  partner: Pick<PartnerProfileRepository, "get">;
+  partner: Pick<PartnerProfileRepository, "get" | "subscribe">;
 }) {
   const [name, setName] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    void partner
-      .get()
-      .then((profile) => {
-        if (active && profile) setName(profile.name);
-      })
-      .catch(() => undefined);
+    const refresh = () => {
+      void partner
+        .get()
+        .then((profile) => {
+          if (active && profile) setName(profile.name);
+        })
+        .catch(() => undefined);
+    };
+    refresh();
+    const unsubscribe = partner.subscribe(refresh);
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [partner]);
   return (
@@ -152,7 +157,7 @@ interface PairingScreenProps {
   pairs: Pick<PairRepository, "current">;
   consent: Pick<ConsentRepository, "canSync" | "save">;
   profiles: Pick<ProfileRepository, "get">;
-  partner: Pick<PartnerProfileRepository, "get">;
+  partner: Pick<PartnerProfileRepository, "get" | "subscribe">;
   /** The code of a stored `pending-confirmation` pair. */
   loadSafetyCode: () => Promise<string>;
 }

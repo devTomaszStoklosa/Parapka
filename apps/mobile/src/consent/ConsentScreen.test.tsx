@@ -118,7 +118,10 @@ it("is asked of a confirmed pair that has no consent yet", async () => {
         pairs={{ current: () => Promise.resolve(pair) }}
         consent={consent}
         profiles={{ get: () => Promise.resolve(null) }}
-        partner={{ get: () => Promise.resolve(null) }}
+        partner={{
+          get: () => Promise.resolve(null),
+          subscribe: () => () => undefined,
+        }}
         loadSafetyCode={() => Promise.resolve("")}
       />,
     );
@@ -146,7 +149,7 @@ async function openPaired(partner: { get: () => Promise<unknown> }) {
         }}
         consent={{ canSync: () => Promise.resolve(true), save: vi.fn() }}
         profiles={{ get: () => Promise.resolve(null) }}
-        partner={partner as never}
+        partner={{ subscribe: () => () => undefined, ...partner } as never}
         loadSafetyCode={() => Promise.resolve("")}
       />,
     );

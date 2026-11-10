@@ -1,5 +1,5 @@
 import { formatHlc } from "@parapka/sync";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import { createMemoryDatabase } from "../data/memory-database";
 import { createPartnerProfileRepository } from "./partner-profile-repository";
@@ -42,4 +42,15 @@ it("needs both the name and the form", async () => {
   const repo = createPartnerProfileRepository(createMemoryDatabase());
   await repo.merge({ name: { value: "Ola", hlc: h(1) } });
   expect(await repo.get()).toBeNull();
+});
+
+it("notifies the listeners after a write until they unsubscribe", async () => {
+  const repo = createPartnerProfileRepository(createMemoryDatabase());
+  const listener = vi.fn();
+  const unsubscribe = repo.subscribe(listener);
+  await repo.merge({ name: { value: "Ola", hlc: h(1) } });
+  expect(listener).toHaveBeenCalledTimes(1);
+  unsubscribe();
+  await repo.merge({ name: { value: "Ola K", hlc: h(2) } });
+  expect(listener).toHaveBeenCalledTimes(1);
 });
