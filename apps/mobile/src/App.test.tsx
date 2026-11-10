@@ -125,6 +125,37 @@ it("keeps the launch link until onboarding is done", async () => {
   render(<App createPlatform={() => Promise.resolve(platform)} />);
   expect(await screen.findByText(pl.onboarding.name.title)).toBeTruthy();
   expect(screen.queryByText(pl.pairing.unavailable)).toBeNull();
+
+  const o = pl.onboarding;
+  const next = () => {
+    fireEvent.click(screen.getByRole("button", { name: o.next }));
+  };
+  fireEvent.change(screen.getByLabelText(o.name.label), {
+    target: { value: "Ola" },
+  });
+  next();
+  fireEvent.click(screen.getByRole("radio", { name: o.formFeminine }));
+  next();
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: o.adult.confirm.feminine }),
+  );
+  next();
+  fireEvent.click(screen.getByRole("radio", { name: o.tenure["3-7"] }));
+  next();
+  fireEvent.click(screen.getByRole("radio", { name: o.children.no }));
+  next();
+  fireEvent.click(screen.getByRole("checkbox", { name: o.goals.closeness }));
+  next();
+  fireEvent.click(screen.getByRole("radio", { name: o.cycle.no }));
+  next();
+  fireEvent.click(screen.getByRole("button", { name: o.pin.skip }));
+  next();
+  fireEvent.click(screen.getByRole("button", { name: o.finish }));
+
+  expect(await screen.findByText(pl.pairing.unavailable)).toBeTruthy();
+  expect(screen.queryAllByRole("tab")).toHaveLength(0);
+  fireEvent.click(screen.getByRole("button", { name: pl.pairing.close }));
+  expect(await screen.findAllByRole("tab")).toHaveLength(4);
   vi.unstubAllGlobals();
 });
 
