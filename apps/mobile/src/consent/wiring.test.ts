@@ -13,3 +13,11 @@ it("builds repositories over the platform database and clock", async () => {
   expect(await consent.current()).toBeNull();
   expect(await profiles.get()).toBeNull();
 });
+
+it("gives the same repositories for the same platform", () => {
+  const platform = {
+    database: createMemoryDatabase(),
+    clock: { nowMs: () => 5 },
+  } as unknown as Platform;
+  expect(wireConsent(platform).consent).toBe(wireConsent(platform).consent);
+});

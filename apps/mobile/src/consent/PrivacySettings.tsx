@@ -41,8 +41,11 @@ async function load(
   }
 }
 
+type PrivacyConsent = Pick<ConsentRepository, "current" | "setCategory"> &
+  Partial<Pick<ConsentRepository, "onSaved">>;
+
 function usePrivacy(
-  consent: Pick<ConsentRepository, "current" | "setCategory">,
+  consent: PrivacyConsent,
   profiles: Pick<ProfileRepository, "get">,
 ) {
   const [view, setView] = useState<Loaded>({ kind: "loading" });
@@ -52,9 +55,14 @@ function usePrivacy(
     const show = (next: Loaded) => {
       if (active) setView(next);
     };
-    void load(consent, profiles).then(show);
+    const reload = () => {
+      void load(consent, profiles).then(show);
+    };
+    reload();
+    const stop = consent.onSaved?.(reload);
     return () => {
       active = false;
+      stop?.();
     };
   }, [consent, profiles]);
 
@@ -84,7 +92,7 @@ export function PrivacySettings({
   consent,
   profiles,
 }: {
-  consent: Pick<ConsentRepository, "current" | "setCategory">;
+  consent: PrivacyConsent;
   profiles: Pick<ProfileRepository, "get">;
 }) {
   const { view, failed, change } = usePrivacy(consent, profiles);

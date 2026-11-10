@@ -34,6 +34,8 @@ export interface ConsentRepository {
   isShared(category: ConsentCategory): Promise<boolean>;
   /** Synchronization starts only after the consent is saved. */
   canSync(): Promise<boolean>;
+  /** Listens to the first consent being saved; returns the function that stops it. */
+  onSaved(listener: () => void): () => void;
   /** Listens to changes of a category; returns the function that stops it. */
   onChange(listener: (change: ConsentChange) => void): () => void;
 }
@@ -45,6 +47,13 @@ export function createConsentRepository(deps: {
 }): ConsentRepository {
   const { database, clock, profiles } = deps;
   const listeners = new Set<(change: ConsentChange) => void>();
+  const savedListeners = new Set<() => void>();
+  const subscribe = <L>(set: Set<L>, listener: L) => {
+    set.add(listener);
+    return () => {
+      set.delete(listener);
+    };
+  };
   const current = async () =>
     (await database.get(COLLECTION, ID)) as ConsentRecord | null;
   const write = (states: ConsentStates) => {
@@ -57,7 +66,10 @@ export function createConsentRepository(deps: {
   };
   return {
     current,
-    save: (states) => write(states),
+    save: async (states) => {
+      await write(states);
+      for (const listener of [...savedListeners]) listener();
+    },
     setCategory: async (category, enabled) => {
       const record = await current();
       if (!record) throw new Error("There is no consent to change");
@@ -72,11 +84,7 @@ export function createConsentRepository(deps: {
       return (await profiles.get())?.cycle === "yes";
     },
     canSync: async () => (await current()) !== null,
-    onChange: (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    onSaved: (listener) => subscribe(savedListeners, listener),
+    onChange: (listener) => subscribe(listeners, listener),
   };
 }

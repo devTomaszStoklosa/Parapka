@@ -124,3 +124,17 @@ it("shows an error when a change cannot be saved", async () => {
   });
   expect(screen.getByRole("alert").textContent).toBe(c.saveFailed);
 });
+
+it("shows the switches when the consent is saved after the screen opened", async () => {
+  const consent = await open(false);
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  await act(async () => {
+    await consent.save(
+      defaultConsent({ cycle: "yes", shareGoalsWithPartner: false }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
+  expect(screen.queryByText(c.settings.none)).toBeNull();
+});

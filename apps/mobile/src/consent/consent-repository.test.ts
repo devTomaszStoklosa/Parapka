@@ -131,3 +131,14 @@ it("keeps the sync allowed after a category is switched", async () => {
   await consent.setCategory("CHECKIN", true);
   expect(await consent.canSync()).toBe(true);
 });
+
+it("tells the listeners when the first consent is saved, until they stop", async () => {
+  const { consent } = await setup();
+  const listener = vi.fn();
+  const stop = consent.onSaved(listener);
+  await consent.save(defaults);
+  expect(listener).toHaveBeenCalledOnce();
+  stop();
+  await consent.save(defaults);
+  expect(listener).toHaveBeenCalledOnce();
+});
