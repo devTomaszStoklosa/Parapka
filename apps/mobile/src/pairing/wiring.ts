@@ -1,6 +1,9 @@
 import { computeSafetyCode, decodeDevicePublicKeys } from "@parapka/crypto";
 import { useCallback, useEffect, useState } from "react";
 
+import type { ProfileRepository } from "../data/profile-repository";
+import { wireConsent } from "../consent/wiring";
+import type { ConsentRepository } from "../consent/consent-repository";
 import { createIdentity } from "../identity/identity";
 import {
   createRelayClient,
@@ -16,6 +19,8 @@ export interface Wiring {
   inviter: Inviter;
   acceptor: Acceptor;
   pairs: PairRepository;
+  consent: ConsentRepository;
+  profiles: ProfileRepository;
   loadSafetyCode: () => Promise<string>;
 }
 
@@ -65,7 +70,7 @@ export async function wire(platform: Platform): Promise<Wiring | null> {
     });
     return computeSafetyCode(sodium, own, peer);
   };
-  return { inviter, acceptor, pairs, loadSafetyCode };
+  return { inviter, acceptor, pairs, loadSafetyCode, ...wireConsent(platform) };
 }
 
 /**

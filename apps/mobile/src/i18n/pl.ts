@@ -70,6 +70,49 @@ export const pl = {
         "Odpowiedź partnera jest nieprawidłowa. Utwórz nowe zaproszenie.",
     },
   },
+  consent: {
+    title: "Co widzi partner",
+    intro:
+      "Zdecyduj osobno, co z tego, co wpisujesz, zobaczy partner. Nic nie jest wysyłane, dopóki nie zapiszesz wyboru.",
+    always:
+      "Twoje imię i forma gramatyczna są zawsze udostępniane partnerowi, bo bez nich aplikacja nie może zwracać się do Was poprawnie.",
+    deletion:
+      "Gdy wyłączysz kategorię albo się rozłączycie, poprosimy urządzenie partnera o usunięcie tych danych. Jest to możliwe tylko w miarę możliwości technicznych, więc nie możemy tego zagwarantować.",
+    changeLater: "Zgody zmienisz w każdej chwili w Ustawienia → Prywatność.",
+    save: "Zapisz wybór",
+    saveFailed: "Nie udało się zapisać wyboru. Spróbuj jeszcze raz.",
+    settings: {
+      title: "Prywatność",
+      none: "Zgody ustalisz po połączeniu w parę.",
+    },
+    categories: {
+      CYCLE_HINTS: {
+        title: "Wskazówki dotyczące cyklu",
+        description:
+          "Partner zobaczy tylko tekst wskazówki na dziś i historię 14 dni, bez dat i danych cyklu.",
+      },
+      CHECKIN: {
+        title: "Wspólne sprawdzenie samopoczucia",
+        description:
+          "Partner zobaczy Twoje odpowiedzi dopiero, gdy oboje je wypełnicie.",
+      },
+      SHARED_CHORES: {
+        title: "Wspólne obowiązki",
+        description:
+          "Partner zobaczy obowiązki, które dzielicie, wraz z tym, kto je wykonuje.",
+      },
+      SHARED_MENTAL_LOAD: {
+        title: "Wspólne obciążenie mentalne",
+        description:
+          "Partner zobaczy sprawy, które dzielicie, i to, kto się nimi zajmuje.",
+      },
+      ONBOARDING_GOALS: {
+        title: "Cele ze startu",
+        description:
+          "Partner zobaczy cele wybrane na początku, w tej samej formie, w jakiej je wpisano.",
+      },
+    },
+  },
   lock: {
     veil: "Parapka jest zablokowana, gdy nie jest na pierwszym planie.",
     pin: {

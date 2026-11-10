@@ -29,7 +29,13 @@ export function AcceptEntry({
     );
   } else if (wiring !== "loading") {
     content = (
-      <AcceptScreen acceptor={wiring.acceptor} text={text} onDone={onDone} />
+      <AcceptScreen
+        acceptor={wiring.acceptor}
+        consent={wiring.consent}
+        profiles={wiring.profiles}
+        text={text}
+        onDone={onDone}
+      />
     );
   }
   return (

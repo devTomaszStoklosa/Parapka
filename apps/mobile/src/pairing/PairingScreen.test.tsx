@@ -68,6 +68,7 @@ function pair(state: Pair["state"]): Pair {
   };
 }
 
+const canSync = () => Promise.resolve(true);
 async function open(
   inviter: FakeInviter,
   stored: Pair | null = null,
@@ -79,6 +80,8 @@ async function open(
       inviter={inviter}
       acceptor={{ accept }}
       pairs={{ current: () => Promise.resolve(stored) }}
+      consent={{ canSync, save: () => Promise.resolve() }}
+      profiles={{ get: () => Promise.resolve(null) }}
       loadSafetyCode={loadSafetyCode}
     />,
   );
@@ -184,7 +187,6 @@ it("confirms the safety code and shows the pair", async () => {
   expect(screen.getByText(p.safety.instruction)).toBeTruthy();
   await click(p.safety.same);
   expect(inviter.confirm).toHaveBeenCalledOnce();
-  expect(screen.getByText(p.paired)).toBeTruthy();
   expect(screen.queryByRole("button", { name: p.invite })).toBeNull();
 });
 
@@ -309,7 +311,6 @@ it("accepts a pasted link and shows the safety code", async () => {
   expect(screen.getByText("042042")).toBeTruthy();
   await click(p.safety.same);
   expect(inviter.confirm).toHaveBeenCalledOnce();
-  expect(screen.getByText(p.paired)).toBeTruthy();
 });
 
 it("keeps Connect disabled while the field is empty", async () => {

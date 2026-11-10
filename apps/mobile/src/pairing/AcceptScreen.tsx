@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 
+import { ConsentScreen } from "../consent/ConsentScreen";
+import type { ConsentRepository } from "../consent/consent-repository";
+import type { ProfileRepository } from "../data/profile-repository";
 import { t, type TranslationKey } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
@@ -12,9 +15,13 @@ import { SafetyCodeScreen } from "./SafetyCodeScreen";
 type AcceptView =
   | { kind: "loading" }
   | { kind: "safety"; code: string }
+  | { kind: "consent" }
   | { kind: "failed"; message: TranslationKey };
 
-function useAccept(acceptor: Acceptor, text: string): AcceptView {
+function useAccept(
+  acceptor: Acceptor,
+  text: string,
+): [AcceptView, (next: AcceptView) => void] {
   const [view, setView] = useState<AcceptView>({ kind: "loading" });
 
   useEffect(() => {
@@ -38,7 +45,7 @@ function useAccept(acceptor: Acceptor, text: string): AcceptView {
       active = false;
     };
   }, [acceptor, text]);
-  return view;
+  return [view, setView];
 }
 
 /**
@@ -47,14 +54,18 @@ function useAccept(acceptor: Acceptor, text: string): AcceptView {
  */
 export function AcceptScreen({
   acceptor,
+  consent,
+  profiles,
   text,
   onDone,
 }: {
   acceptor: Acceptor;
+  consent: Pick<ConsentRepository, "save">;
+  profiles: Pick<ProfileRepository, "get">;
   text: string;
   onDone: () => void;
 }) {
-  const view = useAccept(acceptor, text);
+  const [view, setView] = useAccept(acceptor, text);
 
   switch (view.kind) {
     case "loading":
@@ -64,9 +75,15 @@ export function AcceptScreen({
         <SafetyCodeScreen
           code={view.code}
           inviter={acceptor}
-          onConfirmed={onDone}
+          onConfirmed={() => {
+            setView({ kind: "consent" });
+          }}
           onRejected={onDone}
         />
+      );
+    case "consent":
+      return (
+        <ConsentScreen consent={consent} profiles={profiles} onSaved={onDone} />
       );
     case "failed":
       return (
