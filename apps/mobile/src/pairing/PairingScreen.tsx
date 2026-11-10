@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
 import { t } from "../i18n";
+import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
-import { colors, MIN_TOUCH_TARGET, spacing } from "../ui/theme";
 import { InviteScreen } from "./InviteScreen";
 import type { Inviter } from "./inviter";
 import type { PairRepository } from "./pair-repository";
@@ -56,21 +56,7 @@ function IdleView({
       {rejected && (
         <AppText accessibilityRole="alert">{t("pairing.rejected")}</AppText>
       )}
-      <Pressable
-        accessibilityRole="button"
-        onPress={onInvite}
-        style={{
-          minHeight: MIN_TOUCH_TARGET,
-          minWidth: MIN_TOUCH_TARGET,
-          justifyContent: "center",
-          paddingHorizontal: spacing.md,
-          backgroundColor: colors.accent,
-        }}
-      >
-        <AppText style={{ color: colors.onAccent }}>
-          {t("pairing.invite")}
-        </AppText>
-      </Pressable>
+      <Button primary label={t("pairing.invite")} onPress={onInvite} />
     </View>
   );
 }

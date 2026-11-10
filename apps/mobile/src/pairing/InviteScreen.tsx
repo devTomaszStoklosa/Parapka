@@ -5,11 +5,12 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
-import { t, type TranslationKey } from "../i18n";
+import { t } from "../i18n";
+import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
-import { colors, MIN_TOUCH_TARGET, spacing } from "../ui/theme";
+import { spacing } from "../ui/theme";
 import type { Inviter } from "./inviter";
 import { QrCode } from "./QrCode";
 
@@ -31,15 +32,6 @@ type InviteView =
 
 type SetView = Dispatch<SetStateAction<InviteView>>;
 
-const button = {
-  minHeight: MIN_TOUCH_TARGET,
-  minWidth: MIN_TOUCH_TARGET,
-  justifyContent: "center",
-  paddingHorizontal: spacing.md,
-  marginTop: spacing.sm,
-  backgroundColor: colors.accent,
-} as const;
-
 function copyToClipboard(text: string): Promise<void> {
   // `navigator.clipboard` is missing outside secure contexts.
   const clipboard = globalThis.navigator.clipboard as Clipboard | undefined;
@@ -57,20 +49,6 @@ function formatTime(ms: number): string {
 
 function patchWaiting(setView: SetView, patch: Partial<Waiting>) {
   setView((v) => (v.kind === "waiting" ? { ...v, ...patch } : v));
-}
-
-function Button({
-  label,
-  onPress,
-}: {
-  label: TranslationKey;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={button}>
-      <AppText style={{ color: colors.onAccent }}>{t(label)}</AppText>
-    </Pressable>
-  );
 }
 
 /** Creates an invitation again each time `attempt` changes. */
@@ -145,11 +123,11 @@ function usePoll(
 function WaitingView({ view, onCopy }: { view: Waiting; onCopy: () => void }) {
   const time = formatTime(view.expiresAt);
   return (
-    <View>
+    <View style={{ gap: spacing.sm }}>
       <AppText>{t("pairing.invitation.instruction")}</AppText>
       <QrCode link={view.link} />
       <AppText>{t("pairing.invitation.expires", { time })}</AppText>
-      <Button label="pairing.invitation.copy" onPress={onCopy} />
+      <Button primary label={t("pairing.invitation.copy")} onPress={onCopy} />
       {view.copy === "copied" && (
         <AppText accessibilityRole="alert">
           {t("pairing.invitation.copied")}
@@ -183,7 +161,7 @@ function FailedView({
         {t(`pairing.errors.${failure}`)}
       </AppText>
       {failure !== "alreadyPaired" && (
-        <Button label="pairing.newInvite" onPress={onRetry} />
+        <Button primary label={t("pairing.newInvite")} onPress={onRetry} />
       )}
     </View>
   );
@@ -240,7 +218,7 @@ export function InviteScreen({
           }}
         />
       )}
-      <Button label="pairing.cancel" onPress={onCancel} />
+      <Button primary label={t("pairing.cancel")} onPress={onCancel} />
     </View>
   );
 }
