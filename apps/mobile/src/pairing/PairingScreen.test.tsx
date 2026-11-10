@@ -6,9 +6,17 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+import { encodeDevicePublicKeys, generateDeviceKeys } from "@parapka/crypto";
 import { afterEach, beforeEach, expect, it, vi, type Mock } from "vitest";
 
+import { createMemoryDatabase } from "../data/memory-database";
 import { pl } from "../i18n/pl";
+import { PlatformProvider, type Platform } from "../platform/context";
+import { createMemoryKeyStore } from "../platform/memory-key-store";
+import { webSha256 } from "../platform/sha256";
+import { createWebSodium } from "../platform/web-sodium";
+import { PairingEntry } from "./PairingEntry";
+import { createPairRepository } from "./pair-repository";
 import { InviteScreen, POLL_INTERVAL_MS } from "./InviteScreen";
 import type { CreateResult, Inviter, PollResult } from "./inviter";
 import type { Pair } from "./pair-repository";
@@ -18,6 +26,8 @@ import { qrMatrix } from "./invitation-link";
 const p = pl.pairing;
 const LINK = "https://parapka.example/pair#abc";
 const EXPIRES_AT = Date.UTC(2026, 10, 9, 12, 30);
+
+const sodium = await createWebSodium();
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -36,12 +46,7 @@ const created: CreateResult = {
   expiresAt: EXPIRES_AT,
 };
 
-interface FakeInviter {
-  create: Mock<Inviter["create"]>;
-  poll: Mock<Inviter["poll"]>;
-  confirm: Mock<Inviter["confirm"]>;
-  reject: Mock<Inviter["reject"]>;
-}
+type FakeInviter = { [K in keyof Inviter]: Mock<Inviter[K]> };
 
 function fakeInviter(
   create: CreateResult = created,
@@ -259,4 +264,69 @@ it("keeps waiting after a lost connection and clears the note", async () => {
   expect(screen.getByText(p.invitation.waiting)).toBeTruthy();
   await flush(POLL_INTERVAL_MS);
   expect(screen.queryByText(p.errors.offline)).toBeNull();
+});
+
+function memoryPlatform(): Platform {
+  return {
+    sodium,
+    keyStore: createMemoryKeyStore(),
+    clock: { nowMs: () => 1_000 },
+    database: createMemoryDatabase(),
+    sha256: webSha256,
+    relayUrl: "unused",
+    appUrl: "unused",
+  };
+}
+
+function openEntry(platform: Platform) {
+  return render(
+    <PlatformProvider platform={platform}>
+      <PairingEntry />
+    </PlatformProvider>,
+  );
+}
+
+it("says the pairing is unavailable while the device is not registered", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.reject(new Error("offline"))),
+  );
+  openEntry(memoryPlatform());
+  await flush();
+  expect(screen.getByRole("alert").textContent).toBe(p.unavailable);
+});
+
+it("builds the real dependencies and returns to the safety code", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve({
+        status: 201,
+        text: () => Promise.resolve('{"deviceId":"device-1"}'),
+      }),
+    ),
+  );
+  const platform = memoryPlatform();
+  const first = openEntry(platform);
+  await flush();
+  expect(screen.getByRole("button", { name: p.invite })).toBeTruthy();
+  first.unmount();
+
+  const peerKeys = generateDeviceKeys(sodium);
+  const peer = encodeDevicePublicKeys({
+    signing: peerKeys.signing.publicKey,
+    agreement: peerKeys.agreement.publicKey,
+  });
+  await createPairRepository(platform.database, platform.keyStore).savePending(
+    {
+      pairMailboxId: "mailbox",
+      deviceId: "device-2",
+      signingPublicKey: peer.signing,
+      agreementPublicKey: peer.agreement,
+    },
+    { sendKey: new Uint8Array(32), receiveKey: new Uint8Array(32) },
+  );
+  openEntry(platform);
+  await flush();
+  expect(screen.getByText(/^\d{6}$/)).toBeTruthy();
 });
