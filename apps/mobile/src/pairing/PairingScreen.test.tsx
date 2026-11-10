@@ -54,15 +54,16 @@ function fakeInviter(
   };
 }
 
-function fakeAcceptor(result: AcceptResult): Mock<Acceptor["accept"]> {
-  return vi.fn(() => Promise.resolve(result));
-}
+const fakeAcceptor = (r: AcceptResult): Mock<Acceptor["accept"]> =>
+  vi.fn(() => Promise.resolve(r));
 
 function pair(state: Pair["state"]): Pair {
   return {
     pairMailboxId: "mailbox",
     deviceId: "device",
-    ...{ signingPublicKey: "s", agreementPublicKey: "a", state },
+    signingPublicKey: "s",
+    agreementPublicKey: "a",
+    state,
   };
 }
 

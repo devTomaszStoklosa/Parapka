@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { defaultConsent } from "../consent/consent-model";
 import { createConsentRepository } from "../consent/consent-repository";
@@ -96,6 +96,62 @@ describe("profile sync", () => {
       name: "Ola",
       form: "feminine",
       goals: null,
+    });
+  });
+
+  it("gives the held goals once the category is turned on", async () => {
+    const { a, b, ua, ub } = await setup();
+    await ua.give(true);
+    await ub.give(false);
+    await a.engine.sync();
+    await b.engine.sync();
+    await ub.consent.setCategory("ONBOARDING_GOALS", false);
+    await ub.consent.setCategory("ONBOARDING_GOALS", true);
+    await vi.waitFor(async () => {
+      expect((await ub.partner.get())?.goals).toEqual(["chores", "closeness"]);
+    });
+    await ub.consent.setCategory("ONBOARDING_GOALS", false);
+    await ub.consent.setCategory("ONBOARDING_GOALS", true);
+    await a.engine.sync();
+    await b.engine.sync();
+    expect((await ub.partner.get())?.goals).toEqual(["chores", "closeness"]);
+  });
+
+  it("keeps the newest of the held goals", async () => {
+    const { a, b, ua, ub } = await setup();
+    await ua.give(true);
+    await ub.give(false);
+    await a.engine.sync();
+    await b.engine.sync();
+    await ua.setOwn({ ...OLA, goals: ["closeness"] });
+    await a.engine.sync();
+    await b.engine.sync();
+    await ub.consent.setCategory("ONBOARDING_GOALS", true);
+    await vi.waitFor(async () => {
+      expect((await ub.partner.get())?.goals).toEqual(["closeness"]);
+    });
+  });
+
+  it("ignores a stale change of the held goals", async () => {
+    const { ub } = await setup();
+    await ub.give(false);
+    const handler = ub.gates.registry.get("Profile");
+    const send = (hlc: string, goals: string[]) =>
+      handler?.apply({
+        entity: "Profile",
+        id: "profile",
+        op: "upsert",
+        fields: {
+          name: { value: "Ola", hlc: "000000000000000-00000-aaaa" },
+          form: { value: "feminine", hlc: "000000000000000-00000-aaaa" },
+          goals: { value: goals, hlc },
+        },
+      });
+    await send("000000000000002-00000-aaaa", ["closeness"]);
+    await send("000000000000001-00000-aaaa", ["chores"]);
+    await ub.consent.setCategory("ONBOARDING_GOALS", true);
+    await vi.waitFor(async () => {
+      expect((await ub.partner.get())?.goals).toEqual(["closeness"]);
     });
   });
 
