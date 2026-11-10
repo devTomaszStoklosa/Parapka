@@ -30,6 +30,7 @@ const ERRORS = "sync-errors";
 const HELD = "sync-held";
 const STATE = "sync-state";
 const CURSOR = "cursor";
+const CLOCK = "hlc";
 // The pair repository owns this record; the engine only fills in `deviceId`.
 const PAIR = { collection: "pair", id: "current" };
 
@@ -163,9 +164,20 @@ class Engine implements SyncEngine {
     return { pair, keys, deviceId };
   }
 
-  private clockFor(deviceId: string): HybridLogicalClock {
-    this.hlc ??= new HybridLogicalClock(this.o.clock, deviceId);
-    return this.hlc;
+  /** The clock is fed with the last saved stamp, so a restart keeps causality. */
+  private async clockFor(deviceId: string): Promise<HybridLogicalClock> {
+    if (this.hlc !== null) return this.hlc;
+    const hlc = new HybridLogicalClock(this.o.clock, deviceId);
+    const saved = (await this.o.database.get(STATE, CLOCK)) as {
+      last: string;
+    } | null;
+    if (saved !== null) hlc.receive(parseHlc(saved.last));
+    this.hlc = hlc;
+    return hlc;
+  }
+
+  private async saveClock(hlc: HybridLogicalClock): Promise<void> {
+    await this.o.database.put(STATE, CLOCK, { last: formatHlc(hlc.now()) });
   }
 
   private shared(category: ConsentCategory | null): boolean {
@@ -174,13 +186,14 @@ class Engine implements SyncEngine {
 
   /** Collects the local changes into one encrypted envelope in the outbox. */
   private async enqueue(session: Session): Promise<void> {
-    const hlc = this.clockFor(session.deviceId);
+    const hlc = await this.clockFor(session.deviceId);
     const changes: ContentChange[] = [];
     for (const handler of this.o.registry.all()) {
       if (!this.shared(handler.category)) continue;
       changes.push(...(await handler.collect(() => formatHlc(hlc.now()))));
     }
     if (changes.length === 0) return;
+    await this.saveClock(hlc);
     const content: EnvelopeContent = {
       schemaVersion: SUPPORTED_SCHEMA_VERSION,
       changes,
@@ -265,8 +278,9 @@ class Engine implements SyncEngine {
       await this.reject("invalid-content", envelopeId);
       return false;
     }
-    const hlc = this.clockFor(session.deviceId);
+    const hlc = await this.clockFor(session.deviceId);
     for (const stamp of stamps) hlc.receive(stamp);
+    await this.saveClock(hlc);
     for (const [index, change] of content.changes.entries()) {
       const handler = this.o.registry.get(change.entity);
       if (handler === undefined) {

@@ -101,4 +101,19 @@ describe("SyncEngine receive", () => {
       state: "confirmed",
     });
   });
+
+  it("stamps a local edit after a restart above a stamp received before it", async () => {
+    const devices = await createPairedDevices();
+    const ahead = "001900000000000-00000-device-a";
+    await sendRaw(devices, "e1", content({ ...choreDelete, hlc: ahead }));
+    await devices.b.engine.pull();
+
+    const engine = devices.b.restart();
+    devices.b.handler.edit("c2", "name", "x");
+    await engine.push();
+    const stamp = (await devices.b.database.get("sync-state", "hlc")) as {
+      last: string;
+    };
+    expect(stamp.last > ahead).toBe(true);
+  });
 });
