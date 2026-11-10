@@ -70,9 +70,11 @@ export function PairingEntry() {
 
   useEffect(() => {
     let active = true;
-    void wire(platform).then((result) => {
-      if (active) setWiring(result);
-    });
+    void wire(platform)
+      .catch(() => null)
+      .then((result) => {
+        if (active) setWiring(result);
+      });
     return () => {
       active = false;
     };

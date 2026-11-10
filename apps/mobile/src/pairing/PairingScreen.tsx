@@ -14,7 +14,8 @@ type PairingView =
   | { kind: "idle"; rejected: boolean }
   | { kind: "invite" }
   | { kind: "safety"; code: string }
-  | { kind: "paired" };
+  | { kind: "paired" }
+  | { kind: "unavailable" };
 
 /** Reads the stored pair: what the person sees when the screen opens. */
 function useInitialView(
@@ -27,11 +28,16 @@ function useInitialView(
     const show = (view: PairingView) => {
       if (active) setView(view);
     };
-    void pairs.current().then(async (pair) => {
-      if (pair?.state === "confirmed") show({ kind: "paired" });
-      else if (pair) show({ kind: "safety", code: await loadSafetyCode() });
-      else show({ kind: "idle", rejected: false });
-    });
+    void pairs
+      .current()
+      .then(async (pair) => {
+        if (pair?.state === "confirmed") show({ kind: "paired" });
+        else if (pair) show({ kind: "safety", code: await loadSafetyCode() });
+        else show({ kind: "idle", rejected: false });
+      })
+      .catch(() => {
+        show({ kind: "unavailable" });
+      });
     return () => {
       active = false;
     };
@@ -108,6 +114,10 @@ export function PairingScreen({
           onConfirmed={go({ kind: "paired" })}
           onRejected={go({ kind: "idle", rejected: true })}
         />
+      );
+    case "unavailable":
+      return (
+        <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>
       );
     case "paired":
       return <AppText>{t("pairing.paired")}</AppText>;

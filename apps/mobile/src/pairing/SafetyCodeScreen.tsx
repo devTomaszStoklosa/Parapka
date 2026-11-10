@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 
 import { t } from "../i18n";
@@ -14,6 +15,20 @@ const button = {
   backgroundColor: colors.accent,
 } as const;
 
+function ActionButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={button}>
+      <AppText style={{ color: colors.onAccent }}>{label}</AppText>
+    </Pressable>
+  );
+}
+
 /** The six digits both phones show; the person compares them with the partner. */
 export function SafetyCodeScreen({
   code,
@@ -26,6 +41,13 @@ export function SafetyCodeScreen({
   onConfirmed: () => void;
   onRejected: () => void;
 }) {
+  const [failed, setFailed] = useState(false);
+  const run = (action: () => Promise<void>, done: () => void) => () => {
+    setFailed(false);
+    action().then(done, () => {
+      setFailed(true);
+    });
+  };
   return (
     <View>
       <AppText variant="title">{t("pairing.safety.title")}</AppText>
@@ -37,28 +59,17 @@ export function SafetyCodeScreen({
       >
         {code}
       </AppText>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          void inviter.confirm().then(onConfirmed);
-        }}
-        style={button}
-      >
-        <AppText style={{ color: colors.onAccent }}>
-          {t("pairing.safety.same")}
-        </AppText>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          void inviter.reject().then(onRejected);
-        }}
-        style={button}
-      >
-        <AppText style={{ color: colors.onAccent }}>
-          {t("pairing.safety.different")}
-        </AppText>
-      </Pressable>
+      <ActionButton
+        label={t("pairing.safety.same")}
+        onPress={run(() => inviter.confirm(), onConfirmed)}
+      />
+      <ActionButton
+        label={t("pairing.safety.different")}
+        onPress={run(() => inviter.reject(), onRejected)}
+      />
+      {failed && (
+        <AppText accessibilityRole="alert">{t("pairing.unavailable")}</AppText>
+      )}
     </View>
   );
 }
