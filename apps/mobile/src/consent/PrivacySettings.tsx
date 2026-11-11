@@ -42,7 +42,7 @@ async function load(
 }
 
 type PrivacyConsent = Pick<ConsentRepository, "current" | "setCategory"> &
-  Partial<Pick<ConsentRepository, "onSaved">>;
+  Partial<Pick<ConsentRepository, "onSaved" | "onCleared">>;
 
 function usePrivacy(
   consent: PrivacyConsent,
@@ -59,10 +59,12 @@ function usePrivacy(
       void load(consent, profiles).then(show);
     };
     reload();
-    const stop = consent.onSaved?.(reload);
+    const stopSaved = consent.onSaved?.(reload);
+    const stopCleared = consent.onCleared?.(reload);
     return () => {
       active = false;
-      stop?.();
+      stopSaved?.();
+      stopCleared?.();
     };
   }, [consent, profiles]);
 

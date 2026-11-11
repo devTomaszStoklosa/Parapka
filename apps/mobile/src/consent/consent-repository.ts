@@ -1,5 +1,6 @@
 import type { Clock } from "@parapka/domain";
 
+import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { ProfileRepository } from "../data/profile-repository";
 import {
@@ -38,8 +39,17 @@ export interface ConsentRepository {
   canSync(): Promise<boolean>;
   /** Listens to the first consent being saved; returns the function that stops it. */
   onSaved(listener: () => void): () => void;
+  /** Listens to the consent being removed, also by another instance on the same database. */
+  onCleared(listener: () => void): () => void;
   /** Listens to changes of a category; returns the function that stops it. */
   onChange(listener: (change: ConsentChange) => void): () => void;
+}
+
+function subscribe<L>(set: Set<L>, listener: L) {
+  set.add(listener);
+  return () => {
+    set.delete(listener);
+  };
 }
 
 export function createConsentRepository(deps: {
@@ -50,12 +60,7 @@ export function createConsentRepository(deps: {
   const { database, clock, profiles } = deps;
   const listeners = new Set<(change: ConsentChange) => void>();
   const savedListeners = new Set<() => void>();
-  const subscribe = <L>(set: Set<L>, listener: L) => {
-    set.add(listener);
-    return () => {
-      set.delete(listener);
-    };
-  };
+  const cleared = changeChannel(database, "consent-cleared");
   const current = async () =>
     (await database.get(COLLECTION, ID)) as ConsentRecord | null;
   const write = (states: ConsentStates) => {
@@ -79,7 +84,10 @@ export function createConsentRepository(deps: {
       await write({ ...record.states, [category]: enabled });
       for (const listener of [...listeners]) listener({ category, enabled });
     },
-    clear: () => database.delete(COLLECTION, ID),
+    clear: async () => {
+      await database.delete(COLLECTION, ID);
+      cleared.notify();
+    },
     isShared: async (category) => {
       const record = await current();
       if (!record?.states[category]) return false;
@@ -88,6 +96,7 @@ export function createConsentRepository(deps: {
     },
     canSync: async () => (await current()) !== null,
     onSaved: (listener) => subscribe(savedListeners, listener),
+    onCleared: cleared.subscribe,
     onChange: (listener) => subscribe(listeners, listener),
   };
 }
