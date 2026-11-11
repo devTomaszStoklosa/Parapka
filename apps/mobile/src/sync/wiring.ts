@@ -272,6 +272,7 @@ function createClosing(
 /** Re-evaluates the conditions and asks for a run when the inputs change. */
 function subscribe(
   { consent, profiles, pairs, pause }: Dependencies,
+  registry: HandlerRegistry,
   reevaluate: () => void,
   requestSync: () => void,
 ) {
@@ -283,6 +284,7 @@ function subscribe(
   });
   profiles.subscribe(requestSync);
   pause.subscribe(requestSync);
+  for (const handler of registry.all()) handler.subscribe?.(requestSync);
 }
 
 function build(platform: Platform): SyncController {
@@ -316,7 +318,7 @@ function build(platform: Platform): SyncController {
     evaluate().catch(sessions.stop);
   };
 
-  subscribe(deps, reevaluate, sessions.requestSync);
+  subscribe(deps, registry, reevaluate, sessions.requestSync);
 
   const set = (change: Partial<Conditions>) => () => {
     Object.assign(state, change);

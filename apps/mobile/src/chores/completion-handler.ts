@@ -7,12 +7,12 @@ import type { CompletionRepository } from "./completion-repository";
  * SHARED_CHORES. It moves like the chores do, under its own entity name.
  */
 export function createChoreCompletionHandler(deps: {
-  completions: Pick<CompletionRepository, "sync">;
+  completions: Pick<CompletionRepository, "sync" | "subscribe">;
 }): SyncHandler {
-  const { sync } = deps.completions;
+  const { sync, subscribe } = deps.completions;
   return {
     ...createChoreHandler({
-      chores: { sync },
+      chores: { sync, subscribe },
     }),
     entity: "ChoreCompletion",
   };
