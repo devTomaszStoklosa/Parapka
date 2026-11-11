@@ -163,6 +163,7 @@ function Content({ data }: { data: PlannerData }) {
       )}
       {deleted === null ? null : (
         <UndoBar
+          key={deleted.id}
           title={deleted.title}
           onExpire={expire}
           onUndo={() => chores.restore(deleted.id)}

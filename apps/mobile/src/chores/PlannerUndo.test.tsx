@@ -50,6 +50,29 @@ describe("deleting a chore", () => {
     expect(await chores.list()).toEqual([]);
   });
 
+  it("gives every deletion its own ten seconds", async () => {
+    const { platform, chores } = await setup(false);
+    await chores.add(chore);
+    await chores.add({ ...chore, title: "Pranie" });
+    show(platform);
+    await deleteIt();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6_000);
+    });
+    const [row] = screen.getAllByRole("button", { name: /^Pranie, / });
+    fireEvent.click(row as HTMLElement);
+    click(form.delete);
+    await vi.waitFor(() => screen.getByText("Usunięto: Pranie"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6_000);
+    });
+    expect(screen.getByText("Usunięto: Pranie")).toBeTruthy();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4_000);
+    });
+    expect(screen.queryByText("Usunięto: Pranie")).toBeNull();
+  });
+
   it("restores the chore with Undo", async () => {
     const { platform, chores } = await setup(false);
     const { id } = await chores.add(chore);
