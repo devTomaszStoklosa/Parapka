@@ -218,4 +218,43 @@ describe("SyncEngine gates", () => {
     await a.engine.push();
     expect(a.handler.committedCount).toBe(1);
   });
+
+  it.each(["CHECKIN", "CYCLE_HINTS"] as const)(
+    "keeps the data of %s while paused and sends it after",
+    async (category) => {
+      const { a, b } = await createPairedDevices();
+      const handler = new ChoreHandler(category);
+      const registry = createHandlerRegistry();
+      registry.register(handler);
+      handler.edit("c1", "title", "Mood");
+
+      await a.restart({ registry, isPaused: () => true }).push();
+      expect(await received(b)).toBe(0);
+      expect(handler.committedCount).toBe(0);
+
+      await a
+        .restart({ registry, isPaused: () => Promise.resolve(false) })
+        .push();
+      expect(await received(b)).toBe(1);
+      expect(handler.committedCount).toBe(1);
+    },
+  );
+
+  it("does not pause the data of other categories", async () => {
+    const { a, b } = await createPairedDevices();
+    a.handler.edit("c1", "title", "Dishes");
+    await a.restart({ isPaused: () => true }).push();
+    expect(await received(b)).toBe(1);
+  });
+
+  it("queues the same for a day without new data, paused or not", async () => {
+    const queue = async (paused: boolean) => {
+      const { a } = await createPairedDevices();
+      const registry = createHandlerRegistry();
+      registry.register(new ChoreHandler("CHECKIN"));
+      await a.restart({ registry, isPaused: () => paused }).push();
+      return a.database.list("sync-outbox");
+    };
+    expect(await queue(true)).toEqual(await queue(false));
+  });
 });

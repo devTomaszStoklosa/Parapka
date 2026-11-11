@@ -155,6 +155,30 @@ describe("profile sync", () => {
     });
   });
 
+  it("withdraws the goals at the partner when the category is turned off", async () => {
+    const { a, b, ua, ub } = await setup();
+    await ua.give(true);
+    await ub.give(true);
+    await a.engine.sync();
+    await b.engine.sync();
+    expect((await ub.partner.get())?.goals).toEqual(["chores", "closeness"]);
+
+    await ua.consent.setCategory("ONBOARDING_GOALS", false);
+    await a.engine.sync();
+    await b.engine.sync();
+    expect((await ub.partner.get())?.goals).toBeNull();
+    const marker = await a.database.get("sync-profile", "collected");
+    expect(marker).not.toHaveProperty("goals");
+    expect(marker).not.toHaveProperty("otherGoalText");
+
+    await a.engine.push();
+    expect(await a.engine.pending()).toBe(0);
+    await ua.consent.setCategory("ONBOARDING_GOALS", true);
+    await a.engine.sync();
+    await b.engine.sync();
+    expect((await ub.partner.get())?.goals).toEqual(["chores", "closeness"]);
+  });
+
   it("queues a change of the own profile", async () => {
     const { a, b, ua, ub } = await setup();
     await ua.give(false);

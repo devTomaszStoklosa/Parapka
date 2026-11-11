@@ -34,6 +34,8 @@ const CLOCK = "hlc";
 // The pair repository owns this record; the engine only fills in `deviceId`.
 const PAIR = { collection: "pair", id: "current" };
 
+const PAUSED: unknown[] = ["CYCLE_HINTS", "CHECKIN"];
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -67,6 +69,8 @@ export interface SyncEngineOptions {
   canSync?: () => boolean | Promise<boolean>;
   /** Extension point for the consent (#139); data of a category moves when true. */
   isShared?: (category: ConsentCategory) => boolean | Promise<boolean>;
+  /** While true, the data of CYCLE_HINTS and CHECKIN stays unsent (FR-PAIR-06). */
+  isPaused?: () => boolean | Promise<boolean>;
 }
 
 export interface SyncEngine {
@@ -189,7 +193,9 @@ class Engine implements SyncEngine {
     const hlc = await this.clockFor(session.deviceId);
     const changes: ContentChange[] = [];
     const collected: SyncHandler[] = [];
+    const paused = (await this.o.isPaused?.()) ?? false;
     for (const handler of this.o.registry.all()) {
+      if (paused && PAUSED.includes(handler.category)) continue;
       if (!(await this.shared(handler.category))) continue;
       changes.push(...(await handler.collect(() => formatHlc(hlc.now()))));
       collected.push(handler);

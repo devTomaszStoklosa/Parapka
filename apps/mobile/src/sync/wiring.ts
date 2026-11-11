@@ -5,6 +5,7 @@ import { createPairRepository } from "../pairing/pair-repository";
 import type { Platform } from "../platform/context";
 import { createHandlerRegistry } from "./handler-registry";
 import { createPartnerProfileRepository } from "./partner-profile-repository";
+import { createPauseRepository } from "./pause-repository";
 import { createProfileHandler } from "./profile-handler";
 import { createRelayTransport } from "./relay-transport";
 import { createSyncEngine } from "./sync-engine";
@@ -46,6 +47,7 @@ function createDependencies(platform: Platform) {
     identity,
     pairs: createPairRepository(database, keyStore),
     partner: createPartnerProfileRepository(database),
+    pause: createPauseRepository(database),
     ...wireConsent(platform),
   };
 }
@@ -71,7 +73,7 @@ function delegating(current: () => SyncTransport): SyncTransport {
  */
 function createEngine(platform: Platform, deps: Dependencies) {
   const { database, sodium, clock } = platform;
-  const { consent, profiles, partner, pairs, identity } = deps;
+  const { consent, profiles, partner, pairs, identity, pause } = deps;
   const registry = createHandlerRegistry();
   registry.register(
     createProfileHandler({ database, profiles, partner, consent }),
@@ -90,6 +92,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
     registry,
     canSync: consent.canSync.bind(consent),
     isShared: consent.isShared.bind(consent),
+    isPaused: () => pause.isPaused(),
     transport: delegating(current),
   });
   return {
@@ -162,7 +165,7 @@ async function wantedMailbox(state: Conditions, deps: Dependencies) {
 
 function build(platform: Platform): SyncController {
   const deps = createDependencies(platform);
-  const { consent, profiles, pairs } = deps;
+  const { consent, profiles, pairs, pause } = deps;
   const sessions = createSessions(platform, deps, createEngine(platform, deps));
   const state: Conditions = { active: false, mounted: false, version: 0 };
 
@@ -187,6 +190,7 @@ function build(platform: Platform): SyncController {
     sessions.requestSync();
   });
   profiles.subscribe(sessions.requestSync);
+  pause.subscribe(sessions.requestSync);
 
   const set = (change: Partial<Conditions>) => () => {
     Object.assign(state, change);

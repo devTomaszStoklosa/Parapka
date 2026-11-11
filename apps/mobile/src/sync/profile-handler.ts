@@ -18,6 +18,9 @@ const COLLECTION = "sync-profile";
 const MARKER = "collected";
 const HELD = "held-goals";
 
+// What the partner takes back when ONBOARDING_GOALS is turned off.
+const GOAL_FIELDS = ["goals", "otherGoalText"];
+
 type Fields = Record<string, unknown>;
 
 /** The fields that differ from what was last put in the queue, stamped. */
@@ -28,6 +31,22 @@ function stampChanged(current: Fields, sent: Fields, nextHlc: NextHlc) {
     fields[name] = { value, hlc: nextHlc() };
   }
   return fields;
+}
+
+/**
+ * What goes to the queue: the changed fields, plus a null for the goal fields
+ * that were sent earlier and are not sent now. The marker drops those, so
+ * turning the category on again sends them anew.
+ */
+function diffProfile(current: Fields, sent: Fields, nextHlc: NextHlc) {
+  const fields = stampChanged(current, sent, nextHlc);
+  const withdrawn = GOAL_FIELDS.some((n) => n in sent && !(n in current));
+  const marker = { ...sent, ...current };
+  for (const name of withdrawn ? GOAL_FIELDS : []) {
+    fields[name] = { value: null, hlc: nextHlc() };
+    Reflect.deleteProperty(marker, name);
+  }
+  return Object.keys(fields).length === 0 ? null : { fields, marker };
 }
 
 /** Goals that arrived while the category was off, kept unseen until it is on. */
@@ -86,10 +105,10 @@ export function createProfileHandler(deps: {
         await consent.isShared("ONBOARDING_GOALS"),
       );
       const sent = ((await database.get(COLLECTION, MARKER)) ?? {}) as Fields;
-      const fields = stampChanged(current, sent, nextHlc);
-      if (Object.keys(fields).length === 0) return [];
-      collected = { ...sent, ...current };
-      return [{ entity: ENTITY, id: ID, op: "upsert", fields }];
+      const diff = diffProfile(current, sent, nextHlc);
+      if (diff === null) return [];
+      collected = diff.marker;
+      return [{ entity: ENTITY, id: ID, op: "upsert", fields: diff.fields }];
     },
     committed: async () => {
       if (collected === null) return;
