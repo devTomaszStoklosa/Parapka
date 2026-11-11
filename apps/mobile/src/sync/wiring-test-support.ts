@@ -52,6 +52,7 @@ function socket() {
 export function disconnectEnvelope(
   sodium: Awaited<ReturnType<typeof createWebSodium>>,
   mailbox = "mailbox-1",
+  after: unknown[] = [],
 ): Envelope {
   const fields = {
     envelopeId: "e-disconnect",
@@ -73,6 +74,7 @@ export function disconnectEnvelope(
           },
         },
       },
+      ...after,
     ],
   };
   const encrypted = encryptEnvelope(
@@ -131,7 +133,11 @@ function pairing(pairs: PairRepository) {
  * A registered device on a platform whose relay answers `status` to every call
  * but challenges; with `command` the first fetch brings the disconnect command.
  */
-export async function setup(status = 200, command = false) {
+export async function setup(
+  status = 200,
+  command = false,
+  after: unknown[] = [],
+) {
   const sodium = await createWebSodium();
   const database = createMemoryDatabase();
   const keyStore = createMemoryKeyStore();
@@ -143,7 +149,10 @@ export async function setup(status = 200, command = false) {
       registerDevice: () => Promise.resolve({ deviceId: "me" }),
     }),
   }).init();
-  const calls = stubRelay(status, command ? [disconnectEnvelope(sodium)] : []);
+  const calls = stubRelay(
+    status,
+    command ? [disconnectEnvelope(sodium, "mailbox-1", after)] : [],
+  );
   const createSocket = vi.fn(socket);
   const platform = {
     sodium,
@@ -161,7 +170,6 @@ export async function setup(status = 200, command = false) {
   stoppers.push(() => {
     controller.unmount();
   });
-  const pair = pairing(pairs);
   const syncs = () => calls.filter((c) => c.includes("/envelopes")).length;
   return {
     sodium,
@@ -171,7 +179,7 @@ export async function setup(status = 200, command = false) {
     pairs,
     consent,
     profiles,
-    pair,
+    pair: pairing(pairs),
     syncs,
   };
 }

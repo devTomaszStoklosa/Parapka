@@ -39,7 +39,6 @@ import type { SyncTransport } from "./transport";
 const PAIR = { collection: "pair", id: "current" };
 
 const PAUSED: unknown[] = ["CYCLE_HINTS", "CHECKIN"];
-
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -300,10 +299,10 @@ class Engine implements SyncEngine {
         );
       } else if (await this.shared(handler.category)) {
         await handler.apply(change);
+        if (await pairEnded(this.o.pairs)) return false;
       }
     }
-    // A handler may have ended the pair; its state must not come back.
-    return !(await pairEnded(this.o.pairs));
+    return true;
   }
 
   private async hold(
@@ -312,8 +311,7 @@ class Engine implements SyncEngine {
     kind: HeldEntry["kind"],
     content: unknown,
   ): Promise<void> {
-    const entry: HeldEntry = { envelopeId, kind, content: asJson(content) };
-    await this.o.database.put(HELD, id, asJson(entry));
+    await this.o.database.put(HELD, id, asJson({ envelopeId, kind, content }));
   }
 
   private async reject(

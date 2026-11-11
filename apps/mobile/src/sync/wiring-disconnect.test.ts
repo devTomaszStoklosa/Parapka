@@ -14,8 +14,12 @@ afterEach(() => {
 const quiet = () =>
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
-async function started(status = 200, withCommand = false) {
-  const devices = await setup(status, withCommand);
+async function started(
+  status = 200,
+  withCommand = false,
+  after: unknown[] = [],
+) {
+  const devices = await setup(status, withCommand, after);
   await devices.pair();
   await devices.consent.save(defaultConsent(profile));
   start(devices.controller);
@@ -47,6 +51,21 @@ it("cleans up after the command disconnect of the partner", async () => {
   await expectCleaned(d);
   expect(await d.platform.database.get("sync-state", "cursor")).toBeNull();
   expect(await d.platform.database.list("sync-applied")).toEqual([]);
+});
+
+it("does not apply changes that follow the disconnect command", async () => {
+  const later = {
+    entity: "Profile",
+    id: "current",
+    op: "upsert",
+    fields: {
+      name: { value: "Ala", hlc: "000000000000002-00000-partner" },
+      form: { value: "feminine", hlc: "000000000000002-00001-partner" },
+    },
+  };
+  const d = await started(200, true, [later]);
+  await expectCleaned(d);
+  expect(await d.platform.database.list("partner-profile")).toEqual([]);
 });
 
 it("logs a fixed message when the cleanup fails", async () => {
