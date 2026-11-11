@@ -91,6 +91,18 @@ it("asks for a run on the notice of a handler with subscribe", async () => {
   });
 });
 
+it("does not ask for a run for a handler without subscribe", async () => {
+  const set = await running();
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const settled = set.syncs();
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  expect(set.syncs()).toBe(settled);
+  await runsAfter(set.syncs, () => {
+    probe.notify();
+    return Promise.resolve();
+  });
+});
+
 it("settles after merging a change of the partner without sending", async () => {
   const set = await setup(
     200,
