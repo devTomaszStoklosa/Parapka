@@ -7,7 +7,11 @@ import type { ProfileRepository } from "../data/profile-repository";
 import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import type { PartnerProfileRepository } from "../sync/partner-profile-repository";
+import type { PauseRepository } from "../sync/pause-repository";
+import { PauseToggle } from "../sync/PauseToggle";
 import { AppText } from "../ui/AppText";
+import { DisconnectControl } from "./DisconnectControl";
+import type { DisconnectRepository } from "./disconnect-repository";
 import { InviteScreen } from "./InviteScreen";
 import type { Acceptor } from "./acceptor";
 import type { Inviter } from "./inviter";
@@ -22,12 +26,14 @@ type PairingView =
   | { kind: "safety"; code: string }
   | { kind: "consent" }
   | { kind: "paired" }
+  | { kind: "ended" }
   | { kind: "unavailable" };
 
 /** Reads the stored pair: what the person sees when the screen opens. */
 function useInitialView(
   pairs: Pick<PairRepository, "current">,
   consent: Pick<ConsentRepository, "canSync">,
+  disconnect: Pick<DisconnectRepository, "state">,
   loadSafetyCode: () => Promise<string>,
 ): [PairingView, (view: PairingView) => void] {
   const [view, setView] = useState<PairingView>({ kind: "loading" });
@@ -42,7 +48,9 @@ function useInitialView(
         if (pair?.state === "confirmed") {
           show({ kind: (await consent.canSync()) ? "paired" : "consent" });
         } else if (pair) show({ kind: "safety", code: await loadSafetyCode() });
-        else show({ kind: "idle", rejected: false });
+        else if ((await disconnect.state()) === "by-partner") {
+          show({ kind: "ended" });
+        } else show({ kind: "idle", rejected: false });
       })
       .catch(() => {
         show({ kind: "unavailable" });
@@ -50,7 +58,7 @@ function useInitialView(
     return () => {
       active = false;
     };
-  }, [pairs, consent, loadSafetyCode]);
+  }, [pairs, consent, disconnect, loadSafetyCode]);
   return [view, setView];
 }
 
@@ -107,6 +115,34 @@ function PairedStatus({
   );
 }
 
+/** Tells, without blame, that the partner or the relay ended the pair. */
+function EndedView({ onAcknowledge }: { onAcknowledge: () => void }) {
+  return (
+    <View>
+      <AppText accessibilityRole="alert">{t("pairing.disconnected")}</AppText>
+      <Button primary label={t("pairing.ok")} onPress={onAcknowledge} />
+    </View>
+  );
+}
+
+function PairedView(props: {
+  partner: PairingScreenProps["partner"];
+  pause: PairingScreenProps["pause"];
+  onDisconnect: () => Promise<void>;
+  onDone: () => void;
+}) {
+  return (
+    <View>
+      <PairedStatus partner={props.partner} />
+      <PauseToggle pause={props.pause} />
+      <DisconnectControl
+        onDisconnect={props.onDisconnect}
+        onDone={props.onDone}
+      />
+    </View>
+  );
+}
+
 function Status({ kind }: { kind: "loading" | "unavailable" }) {
   if (kind === "loading") return null;
   return (
@@ -160,21 +196,63 @@ interface PairingScreenProps {
   partner: Pick<PartnerProfileRepository, "get" | "subscribe">;
   /** The code of a stored `pending-confirmation` pair. */
   loadSafetyCode: () => Promise<string>;
+  disconnect: Pick<DisconnectRepository, "state" | "acknowledge" | "subscribe">;
+  /** Ends the pair on this device and tells the relay. */
+  onDisconnect: () => Promise<void>;
+  pause: Pick<PauseRepository, "isPaused" | "setPaused" | "subscribe">;
+}
+
+/** Shows the message once the partner ends the pair while the screen is open. */
+function useEndedByPartner(
+  disconnect: Pick<DisconnectRepository, "state" | "subscribe">,
+  show: (view: PairingView) => void,
+) {
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = disconnect.subscribe(() => {
+      void disconnect
+        .state()
+        .then((state) => {
+          if (active && state === "by-partner") show({ kind: "ended" });
+        })
+        .catch(() => undefined);
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [disconnect, show]);
 }
 
 /** The Pair section of Settings: invite, compare the safety code, or the state of the pair. */
-export function PairingScreen({
-  inviter,
-  acceptor,
-  pairs,
-  consent,
-  profiles,
-  partner,
-  loadSafetyCode,
-}: PairingScreenProps) {
-  const [view, setView] = useInitialView(pairs, consent, loadSafetyCode);
+export function PairingScreen(props: PairingScreenProps) {
+  const { pairs, consent, disconnect, loadSafetyCode } = props;
+  const [view, setView] = useInitialView(
+    pairs,
+    consent,
+    disconnect,
+    loadSafetyCode,
+  );
+  useEndedByPartner(disconnect, setView);
+  return <PairingBody {...props} view={view} setView={setView} />;
+}
+
+function PairingBody({
+  view,
+  setView,
+  ...props
+}: PairingScreenProps & {
+  view: PairingView;
+  setView: (view: PairingView) => void;
+}) {
+  const { inviter, acceptor, consent, profiles, disconnect } = props;
   const go = (next: PairingView) => () => {
     setView(next);
+  };
+  const idle = go({ kind: "idle", rejected: false });
+  const acknowledge = () => {
+    void disconnect.acknowledge().catch(() => undefined);
+    idle();
   };
   const showCode = (code: string) => {
     go({ kind: "safety", code })();
@@ -182,18 +260,16 @@ export function PairingScreen({
   switch (view.kind) {
     case "invite":
       return (
-        <InviteScreen
-          inviter={inviter}
-          onAccepted={showCode}
-          onCancel={go({ kind: "idle", rejected: false })}
-        />
+        <InviteScreen inviter={inviter} onAccepted={showCode} onCancel={idle} />
       );
     case "safety":
       return <SafetyStep code={view.code} inviter={inviter} go={go} />;
     case "consent":
       return <ConsentStep consent={consent} profiles={profiles} go={go} />;
     case "paired":
-      return <PairedStatus partner={partner} />;
+      return <PairedView {...props} onDone={idle} />;
+    case "ended":
+      return <EndedView onAcknowledge={acknowledge} />;
     case "loading":
     case "unavailable":
       return <Status kind={view.kind} />;

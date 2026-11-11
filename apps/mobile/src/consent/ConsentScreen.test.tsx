@@ -123,6 +123,17 @@ it("is asked of a confirmed pair that has no consent yet", async () => {
           subscribe: () => () => undefined,
         }}
         loadSafetyCode={() => Promise.resolve("")}
+        disconnect={{
+          state: () => Promise.resolve("none"),
+          acknowledge: () => Promise.resolve(),
+          subscribe: () => () => undefined,
+        }}
+        onDisconnect={() => Promise.resolve()}
+        pause={{
+          isPaused: () => Promise.resolve(false),
+          setPaused: () => Promise.resolve(),
+          subscribe: () => () => undefined,
+        }}
       />,
     );
     await Promise.resolve();
@@ -151,6 +162,17 @@ async function openPaired(partner: { get: () => Promise<unknown> }) {
         profiles={{ get: () => Promise.resolve(null) }}
         partner={{ subscribe: () => () => undefined, ...partner } as never}
         loadSafetyCode={() => Promise.resolve("")}
+        disconnect={{
+          state: () => Promise.resolve("none"),
+          acknowledge: () => Promise.resolve(),
+          subscribe: () => () => undefined,
+        }}
+        onDisconnect={() => Promise.resolve()}
+        pause={{
+          isPaused: () => Promise.resolve(false),
+          setPaused: () => Promise.resolve(),
+          subscribe: () => () => undefined,
+        }}
       />,
     );
     await Promise.resolve();

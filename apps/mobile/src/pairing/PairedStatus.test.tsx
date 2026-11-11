@@ -41,6 +41,17 @@ it("shows the name of the partner without remounting once the handler stores it"
       profiles={{ get: () => Promise.resolve(null) }}
       partner={partner}
       loadSafetyCode={() => Promise.resolve("")}
+      disconnect={{
+        state: () => Promise.resolve("none"),
+        acknowledge: () => Promise.resolve(),
+        subscribe: () => () => undefined,
+      }}
+      onDisconnect={() => Promise.resolve()}
+      pause={{
+        isPaused: () => Promise.resolve(false),
+        setPaused: () => Promise.resolve(),
+        subscribe: () => () => undefined,
+      }}
     />,
   );
   await screen.findByText("Jesteście w parze.");

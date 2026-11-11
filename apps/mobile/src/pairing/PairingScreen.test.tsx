@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/* eslint-disable max-lines -- one suite for the whole screen; the new dependencies pushed it over */
 import {
   act,
   cleanup,
@@ -8,7 +9,10 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi, type Mock } from "vitest";
 
+import { createMemoryDatabase } from "../data/memory-database";
 import { pl } from "../i18n/pl";
+import { createPauseRepository } from "../sync/pause-repository";
+import { createDisconnectRepository } from "./disconnect-repository";
 import { InviteScreen, POLL_INTERVAL_MS } from "./InviteScreen";
 import type { Acceptor, AcceptResult } from "./acceptor";
 import type { CreateResult, Inviter, PollResult } from "./inviter";
@@ -74,6 +78,7 @@ async function open(
   loadSafetyCode = () => Promise.resolve("123456"),
   accept = fakeAcceptor({ status: "accepted", safetyCode: "042042" }),
 ) {
+  const database = createMemoryDatabase();
   render(
     <PairingScreen
       inviter={inviter}
@@ -83,6 +88,9 @@ async function open(
       profiles={{ get: () => Promise.resolve(null) }}
       partner={{ get: () => Promise.resolve(null), subscribe: () => vi.fn() }}
       loadSafetyCode={loadSafetyCode}
+      disconnect={createDisconnectRepository(database)}
+      onDisconnect={vi.fn()}
+      pause={createPauseRepository(database)}
     />,
   );
   await flush();
