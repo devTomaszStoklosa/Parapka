@@ -29,3 +29,17 @@ it("removes the envelopes of every other mailbox", async () => {
   await removeForeignEnvelopes(database, "old");
   expect(await ids(database)).toEqual(["e1", "e3"]);
 });
+
+it("keeps the envelopes of the mailbox that is being closed", async () => {
+  const database = await queue();
+  await database.put("pair-closing", "current", { pairMailboxId: "old" });
+  await removeForeignEnvelopes(database, "new");
+  expect(await ids(database)).toEqual(["e1", "e2", "e3"]);
+});
+
+it("removes the other foreign envelopes when a mailbox is being closed", async () => {
+  const database = await queue();
+  await database.put("pair-closing", "current", { pairMailboxId: "other" });
+  await removeForeignEnvelopes(database, "new");
+  expect(await ids(database)).toEqual(["e2"]);
+});

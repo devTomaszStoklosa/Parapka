@@ -1,12 +1,11 @@
 import type { LocalDatabase } from "../data/local-database";
 import { RelayError } from "../net/relay-error";
+import { CLOSING } from "../sync/engine-state";
 import { removeMailboxEnvelopes } from "../sync/outbox-guard";
 import type { SyncEngine } from "../sync/sync-engine";
 import type { SyncTransport } from "../sync/transport";
 import { clearPairLocally, type ClearPairDeps } from "./clear-pair";
 import type { PairRepository } from "./pair-repository";
-
-const CLOSING = { collection: "pair-closing", id: "current" };
 
 export interface FinishClosingDeps {
   readonly database: LocalDatabase;

@@ -243,3 +243,34 @@ it("does not carry the envelopes of a closed mailbox to a new pair", async () =>
   expect((await d.pairs.current())?.pairMailboxId).toBe("mailbox-2");
   expect(warn).not.toHaveBeenCalledWith(PAIR_GONE_MESSAGE);
 });
+
+it("keeps the command for the closed mailbox through a new pairing", async () => {
+  const { d, r } = await online();
+  await disconnectOffline(d, r);
+  vi.useRealTimers();
+  // The old mailbox stays unreachable while the new one answers.
+  r.offline = false;
+  r.statuses["mailbox-1"] = 503;
+
+  await d.pair("mailbox-2");
+  await d.consent.save(defaultConsent(profile));
+  d.controller.setActive(false);
+  start(d.controller);
+  await vi.waitFor(() => {
+    expect(pulls(r, "mailbox-2")).toBeGreaterThan(0);
+  });
+  expect(sends(r, "mailbox-2")).toEqual([]);
+  expect(await d.platform.database.list("sync-outbox")).toHaveLength(1);
+  expect(await marker(d)).toEqual({ pairMailboxId: "mailbox-1" });
+
+  delete r.statuses["mailbox-1"];
+  r.calls.length = 0;
+  d.controller.setActive(false);
+  d.controller.setActive(true);
+  await vi.waitFor(async () => {
+    expect(await marker(d)).toBeNull();
+  });
+  expect(sends(r, "mailbox-1")).toHaveLength(1);
+  expect(closes(r)).toHaveLength(1);
+  expect(await d.platform.database.list("sync-outbox")).toEqual([]);
+});

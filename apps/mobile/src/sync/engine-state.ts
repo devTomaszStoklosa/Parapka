@@ -7,6 +7,8 @@ export const HELD = "sync-held";
 export const STATE = "sync-state";
 export const CURSOR = "cursor";
 export const CLOCK = "hlc";
+/** The marker of the pair that is being closed; holds its `pairMailboxId`. */
+export const CLOSING = { collection: "pair-closing", id: "current" };
 
 const COLLECTIONS = [APPLIED, HELD, ERRORS];
 
