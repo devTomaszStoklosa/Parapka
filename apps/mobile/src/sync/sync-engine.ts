@@ -27,9 +27,7 @@ import {
   CURSOR,
   ERRORS,
   HELD,
-  hlcTexts,
   OUTBOX,
-  pairEnded,
   STATE,
 } from "./engine-state";
 import type { HandlerRegistry, SyncHandler } from "./handler-registry";
@@ -96,6 +94,12 @@ interface Session {
 
 const asJson = (value: unknown) => value as JsonValue;
 
+/** The timestamps (text form) in a change. */
+const hlcTexts = (change: ContentChange): string[] =>
+  change.op === "upsert"
+    ? Object.values(change.fields).map((field) => field.hlc)
+    : [change.hlc];
+
 class Engine implements SyncEngine {
   private hlc: HybridLogicalClock | null = null;
   private readonly newId: () => string;
@@ -127,7 +131,7 @@ class Engine implements SyncEngine {
     const fetched = await transport.fetch(state?.after ?? null);
     for (const { envelope } of fetched.envelopes) {
       await this.receive(session, envelope);
-      if (await pairEnded(this.o.pairs)) return;
+      if (await this.pairEnded()) return;
     }
     if (fetched.nextCursor !== null) {
       await database.put(STATE, CURSOR, { after: fetched.nextCursor });
@@ -155,6 +159,9 @@ class Engine implements SyncEngine {
     const records = await this.o.database.list(HELD);
     return records.map((r) => r.value as unknown as HeldEntry);
   }
+
+  /** True when a handler ended the pair while the engine worked. */
+  private pairEnded = async () => (await this.o.pairs.activePair()) === null;
 
   /** Nothing moves without a confirmed pair, its keys, a device id and the consent. */
   private async session(): Promise<Session | null> {
@@ -299,7 +306,7 @@ class Engine implements SyncEngine {
         );
       } else if (await this.shared(handler.category)) {
         await handler.apply(change);
-        if (await pairEnded(this.o.pairs)) return false;
+        if (await this.pairEnded()) return false;
       }
     }
     return true;
@@ -319,13 +326,8 @@ class Engine implements SyncEngine {
     envelopeId: string | null,
   ): Promise<void> {
     const id = this.newId();
-    const entry: SyncErrorEntry = {
-      id,
-      atMs: this.o.clock.nowMs(),
-      reason,
-      envelopeId,
-    };
-    await this.o.database.put(ERRORS, id, asJson(entry));
+    const atMs = this.o.clock.nowMs();
+    await this.o.database.put(ERRORS, id, { id, atMs, reason, envelopeId });
   }
 
   /** Side B learns the device id of A from the first envelope it can read. */

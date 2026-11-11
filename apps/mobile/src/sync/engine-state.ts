@@ -1,7 +1,4 @@
-import type { ContentChange } from "@parapka/protocol";
-
 import type { LocalDatabase } from "../data/local-database";
-import type { PairRepository } from "../pairing/pair-repository";
 
 export const OUTBOX = "sync-outbox";
 export const APPLIED = "sync-applied";
@@ -24,16 +21,4 @@ export async function clearEngineState(database: LocalDatabase) {
       await database.delete(collection, record.id);
     }
   }
-}
-
-/** True when a handler ended the pair while the engine worked. */
-export async function pairEnded(pairs: Pick<PairRepository, "activePair">) {
-  return (await pairs.activePair()) === null;
-}
-
-/** The timestamps (text form) in a change. */
-export function hlcTexts(change: ContentChange): string[] {
-  return change.op === "upsert"
-    ? Object.values(change.fields).map((field) => field.hlc)
-    : [change.hlc];
 }
