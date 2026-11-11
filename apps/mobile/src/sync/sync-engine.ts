@@ -92,13 +92,13 @@ interface Session {
   readonly deviceId: string;
 }
 
-const asJson = (value: unknown) => value as JsonValue;
-
-/** The timestamps (text form) in a change. */
-const hlcTexts = (change: ContentChange): string[] =>
-  change.op === "upsert"
+function hlcTexts(change: ContentChange): string[] {
+  return change.op === "upsert"
     ? Object.values(change.fields).map((field) => field.hlc)
     : [change.hlc];
+}
+
+const asJson = (value: unknown) => value as JsonValue;
 
 class Engine implements SyncEngine {
   private hlc: HybridLogicalClock | null = null;
@@ -161,7 +161,9 @@ class Engine implements SyncEngine {
   }
 
   /** True when a handler ended the pair while the engine worked. */
-  private pairEnded = async () => (await this.o.pairs.activePair()) === null;
+  private async pairEnded(): Promise<boolean> {
+    return (await this.o.pairs.activePair()) === null;
+  }
 
   /** Nothing moves without a confirmed pair, its keys, a device id and the consent. */
   private async session(): Promise<Session | null> {
@@ -318,7 +320,8 @@ class Engine implements SyncEngine {
     kind: HeldEntry["kind"],
     content: unknown,
   ): Promise<void> {
-    await this.o.database.put(HELD, id, asJson({ envelopeId, kind, content }));
+    const entry: HeldEntry = { envelopeId, kind, content: asJson(content) };
+    await this.o.database.put(HELD, id, asJson(entry));
   }
 
   private async reject(
@@ -326,8 +329,13 @@ class Engine implements SyncEngine {
     envelopeId: string | null,
   ): Promise<void> {
     const id = this.newId();
-    const atMs = this.o.clock.nowMs();
-    await this.o.database.put(ERRORS, id, { id, atMs, reason, envelopeId });
+    const entry: SyncErrorEntry = {
+      id,
+      atMs: this.o.clock.nowMs(),
+      reason,
+      envelopeId,
+    };
+    await this.o.database.put(ERRORS, id, asJson(entry));
   }
 
   /** Side B learns the device id of A from the first envelope it can read. */
