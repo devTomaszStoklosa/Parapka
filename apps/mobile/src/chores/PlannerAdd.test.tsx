@@ -57,6 +57,17 @@ describe("adding a chore", () => {
     expect((await screen.findAllByText("Zmywanie")).length).toBeGreaterThan(0);
   });
 
+  it("leaves nothing overdue for a daily chore added today", async () => {
+    const { platform } = await setup(false);
+    show(platform);
+    await press(pl.planner.empty.add);
+    typeInto(form.title, "Zmywanie");
+    await press(form.kinds.daily, "radio");
+    await save();
+    await screen.findAllByText("Zmywanie");
+    expect(screen.queryByText(pl.planner.todo)).toBeNull();
+  });
+
   it("asks about the title, rule and the rest of the form", async () => {
     const { platform, chores } = await setup(false);
     show(platform);

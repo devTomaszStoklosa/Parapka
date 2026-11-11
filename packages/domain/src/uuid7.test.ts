@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createUuid7Generator, isUuid7, type RandomSource } from "./uuid7";
+import {
+  createUuid7Generator,
+  isUuid7,
+  uuid7Timestamp,
+  type RandomSource,
+} from "./uuid7";
 
 function fakeClock(start: number) {
   const state = { now: start };
@@ -184,5 +189,18 @@ describe("isUuid7", () => {
     expect(isUuid7(valid.replace(/-/g, ""))).toBe(false);
     expect(isUuid7(` ${valid}`)).toBe(false);
     expect(isUuid7("")).toBe(false);
+  });
+});
+
+describe("uuid7Timestamp", () => {
+  it("reads back the timestamp the generator put in", () => {
+    const { clock } = fakeClock(1_700_000_000_123);
+    const id = createUuid7Generator({ clock, random: fixedRandom(0xff) })();
+    expect(uuid7Timestamp(id)).toBe(1_700_000_000_123);
+  });
+
+  it("gives null for a value that is not a UUIDv7", () => {
+    expect(uuid7Timestamp("w")).toBeNull();
+    expect(uuid7Timestamp("550e8400-e29b-41d4-a716-446655440000")).toBeNull();
   });
 });
