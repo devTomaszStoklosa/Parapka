@@ -1,5 +1,6 @@
 import type { LocalDatabase } from "../data/local-database";
 import { RelayError } from "../net/relay-error";
+import { removeMailboxEnvelopes } from "../sync/outbox-guard";
 import type { SyncEngine } from "../sync/sync-engine";
 import type { SyncTransport } from "../sync/transport";
 import { clearPairLocally, type ClearPairDeps } from "./clear-pair";
@@ -11,7 +12,9 @@ export interface FinishClosingDeps {
   readonly database: LocalDatabase;
   readonly engine: Pick<SyncEngine, "flush">;
   /** The transport of the mailbox of the pair that is being closed. */
-  readonly createTransport: (pairMailboxId: string) => SyncTransport;
+  readonly createTransport: (
+    pairMailboxId: string,
+  ) => SyncTransport | Promise<SyncTransport>;
 }
 
 export interface DisconnectDeps extends FinishClosingDeps {
@@ -23,27 +26,29 @@ export interface DisconnectDeps extends FinishClosingDeps {
 }
 
 /**
- * Sends the queue and closes the mailbox, then removes the marker. A network
- * error keeps the marker and the queue for a later try; `forbidden` and
- * `expired` mean the relay has nothing more to close.
+ * Sends the queue of the closed mailbox and closes it, then removes the
+ * marker. A network error keeps the marker and the queue for a later try;
+ * `forbidden` and `expired` mean the relay has nothing more to close, so the
+ * envelopes of that mailbox are dropped. Returns true when no marker is left.
  */
-export async function finishClosing(deps: FinishClosingDeps): Promise<void> {
+export async function finishClosing(deps: FinishClosingDeps): Promise<boolean> {
   const { database } = deps;
   const marker = await database.get(CLOSING.collection, CLOSING.id);
-  if (marker === null) return;
-  const transport = deps.createTransport(
-    (marker as { pairMailboxId: string }).pairMailboxId,
-  );
+  if (marker === null) return true;
+  const { pairMailboxId } = marker as { pairMailboxId: string };
   try {
-    await deps.engine.flush(transport);
+    const transport = await deps.createTransport(pairMailboxId);
+    await deps.engine.flush(transport, pairMailboxId);
     await transport.close();
   } catch (error) {
     const over =
       error instanceof RelayError &&
       (error.kind === "forbidden" || error.kind === "expired");
-    if (!over) return;
+    if (!over) return false;
+    await removeMailboxEnvelopes(database, pairMailboxId);
   }
   await database.delete(CLOSING.collection, CLOSING.id);
+  return true;
 }
 
 /**

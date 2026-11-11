@@ -18,6 +18,7 @@ import { APPLIED, ERRORS, HELD, OUTBOX } from "./engine-state";
 import { CLOCK, CURSOR, STATE } from "./engine-state";
 import { flushQueue, queueChanges, type OutboundContext } from "./outbound";
 import type { HandlerRegistry, SyncHandler } from "./handler-registry";
+import { removeForeignEnvelopes } from "./outbox-guard";
 import type { SyncTransport } from "./transport";
 
 // The pair repository owns this record; the engine only fills in `deviceId`.
@@ -74,8 +75,11 @@ export interface SyncEngine {
    * needs the pair and the keys, not the consent. `build` gets the clock.
    */
   queueCommand(build: CommandBuilder): Promise<void>;
-  /** Sends the queue through the transport without a session; stops at the first error. */
-  flush(transport: SyncTransport): Promise<void>;
+  /**
+   * Sends the queue through the transport without a session; stops at the
+   * first error. With `pairMailboxId` only the envelopes of that mailbox go.
+   */
+  flush(transport: SyncTransport, pairMailboxId?: string): Promise<void>;
   /** Envelopes waiting to be sent. */
   pending(): Promise<number>;
   errors(): Promise<SyncErrorEntry[]>;
@@ -116,8 +120,10 @@ class Engine implements SyncEngine {
   async push(): Promise<void> {
     const session = await this.session();
     if (session === null) return;
+    const { pairMailboxId } = session.pair;
+    await removeForeignEnvelopes(this.o.database, pairMailboxId);
     await this.enqueue(session);
-    await flushQueue(this.o.database, this.o.transport);
+    await flushQueue(this.o.database, this.o.transport, pairMailboxId);
   }
 
   async queueCommand(build: CommandBuilder): Promise<void> {
@@ -129,8 +135,8 @@ class Engine implements SyncEngine {
     await queueChanges(this.outbound, session, [change]);
   }
 
-  flush(transport: SyncTransport): Promise<void> {
-    return flushQueue(this.o.database, transport);
+  flush(transport: SyncTransport, pairMailboxId?: string): Promise<void> {
+    return flushQueue(this.o.database, transport, pairMailboxId);
   }
 
   async pull(): Promise<void> {

@@ -65,3 +65,25 @@ it("flush stops at the first error and keeps the rest", async () => {
     "e3",
   ]);
 });
+
+it("flush with a mailbox sends only the envelopes of that mailbox", async () => {
+  const { a } = await createPairedDevices();
+  for (const [id, pairMailboxId] of [
+    ["e1", "old"],
+    ["e2", "new"],
+  ] as const) {
+    await a.database.put("sync-outbox", id, { envelopeId: id, pairMailboxId });
+  }
+  const sent: string[] = [];
+  const transport = {
+    send: (envelope: Envelope) => {
+      sent.push(envelope.envelopeId);
+      return Promise.resolve();
+    },
+  } as unknown as SyncTransport;
+  await a.engine.flush(transport, "new");
+  expect(sent).toEqual(["e2"]);
+  expect((await a.database.list("sync-outbox")).map((r) => r.id)).toEqual([
+    "e1",
+  ]);
+});

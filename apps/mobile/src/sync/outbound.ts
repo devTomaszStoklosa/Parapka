@@ -56,13 +56,24 @@ export async function queueChanges(
   );
 }
 
-/** Sends the queue in order and removes what was sent; the first error stops it. */
+/**
+ * Sends the queue in order and removes what was sent; the first error stops it.
+ * With `pairMailboxId` only the envelopes of that mailbox are sent.
+ */
 export async function flushQueue(
   database: LocalDatabase,
   transport: SyncTransport,
+  pairMailboxId?: string,
 ): Promise<void> {
   for (const record of await database.list(OUTBOX)) {
-    await transport.send(record.value as unknown as Envelope);
+    const envelope = record.value as unknown as Envelope;
+    if (
+      pairMailboxId !== undefined &&
+      envelope.pairMailboxId !== pairMailboxId
+    ) {
+      continue;
+    }
+    await transport.send(envelope);
     await database.delete(OUTBOX, record.id);
   }
 }
