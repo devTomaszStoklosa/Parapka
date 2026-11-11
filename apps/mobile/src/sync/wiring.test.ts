@@ -9,6 +9,22 @@ const made = vi.hoisted(
   () => [] as { all: () => readonly { entity: string }[] }[],
 );
 
+const choreDeps = vi.hoisted(() => [] as { newId: () => string }[]);
+
+vi.mock("../chores/chore-repository", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("../chores/chore-repository")>();
+  return {
+    ...original,
+    createChoreRepository: (
+      deps: Parameters<typeof original.createChoreRepository>[0],
+    ) => {
+      choreDeps.push(deps);
+      return original.createChoreRepository(deps);
+    },
+  };
+});
+
 vi.mock("./handler-registry", async (importOriginal) => {
   const original = await importOriginal<typeof import("./handler-registry")>();
   return {
@@ -34,6 +50,12 @@ it("registers the handlers of the chores and of their check-offs", async () => {
   );
   expect(entities).toContain("Chore");
   expect(entities).toContain("ChoreCompletion");
+});
+
+it("draws the ids of the chores from the random bytes of the platform", async () => {
+  await setup();
+  const deps = choreDeps.at(-1);
+  expect(deps?.newId()).not.toBe(deps?.newId());
 });
 
 it("gives one controller for one platform", async () => {

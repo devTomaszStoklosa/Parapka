@@ -1,31 +1,18 @@
-import type { ContentChange } from "@parapka/protocol";
-
 import type { SyncHandler } from "../sync/handler-registry";
+import type { ChoreRepository } from "./chore-repository";
+import { createChoreHandler } from "./chore-handler";
 import type { CompletionRepository } from "./completion-repository";
 
 /**
  * Sync of the check-offs (FR-CHR-03): only those of the shared chores, with
- * SHARED_CHORES. Like the chores, pending changes move into the merged state
- * once the envelope is saved, and a pair that ends leaves private copies.
+ * SHARED_CHORES. It moves like the chores do, under its own entity name.
  */
 export function createChoreCompletionHandler(deps: {
   completions: Pick<CompletionRepository, "sync">;
 }): SyncHandler {
   const { sync } = deps.completions;
-  let collected: readonly ContentChange[] = [];
   return {
+    ...createChoreHandler({ chores: { sync: sync as ChoreRepository["sync"] } }),
     entity: "ChoreCompletion",
-    category: "SHARED_CHORES",
-    collect: async (nextHlc) => {
-      collected = await sync.collect(nextHlc);
-      return collected;
-    },
-    committed: async () => {
-      const sent = collected;
-      collected = [];
-      await sync.commit(sent);
-    },
-    apply: (change) => sync.merge(change),
-    disconnected: () => sync.makePrivate(),
   };
 }
