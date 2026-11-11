@@ -37,7 +37,12 @@ async function open(given: boolean) {
     render(<PrivacySettings consent={consent} profiles={profiles} />);
     await Promise.resolve();
   });
-  return consent;
+  const another = createConsentRepository({
+    database,
+    clock: { nowMs: () => time.now },
+    profiles,
+  });
+  return Object.assign(consent, { another });
 }
 
 it("says the consent comes after pairing when there is none", async () => {
@@ -137,4 +142,24 @@ it("shows the switches when the consent is saved after the screen opened", async
   });
   expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
   expect(screen.queryByText(c.settings.none)).toBeNull();
+});
+
+it("shows the pairing note after the consent is cleared by another instance, and the switches after a new one", async () => {
+  const consent = await open(true);
+  expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
+  await act(async () => {
+    await consent.another.clear();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(screen.getByText(c.settings.none)).toBeTruthy();
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  await act(async () => {
+    await consent.save(
+      defaultConsent({ cycle: "yes", shareGoalsWithPartner: false }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
 });

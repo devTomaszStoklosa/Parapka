@@ -150,3 +150,21 @@ it("removes the saved consent", async () => {
   expect(await consent.current()).toBeNull();
   expect(await consent.canSync()).toBe(false);
 });
+
+it("tells the listeners of every instance on the database when the consent is cleared", async () => {
+  const database = createMemoryDatabase();
+  const profiles = createProfileRepository(database);
+  const make = () =>
+    createConsentRepository({ database, clock: { nowMs: () => 1 }, profiles });
+  const first = make();
+  const second = make();
+  await first.save(defaults);
+  const listener = vi.fn();
+  const stop = first.onCleared(listener);
+  await second.clear();
+  expect(listener).toHaveBeenCalledTimes(1);
+  expect(await first.current()).toBeNull();
+  stop();
+  await second.clear();
+  expect(listener).toHaveBeenCalledTimes(1);
+});
