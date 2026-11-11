@@ -11,9 +11,9 @@ import type { ChoreRepository } from "./chore-repository";
  * private copies (FR-PAIR-07, A13).
  */
 export function createChoreHandler(deps: {
-  chores: Pick<ChoreRepository, "sync">;
+  chores: Pick<ChoreRepository, "sync" | "subscribe">;
 }): SyncHandler {
-  const { sync } = deps.chores;
+  const { sync, subscribe } = deps.chores;
   let collected: readonly ContentChange[] = [];
   return {
     entity: "Chore",
@@ -29,5 +29,6 @@ export function createChoreHandler(deps: {
     },
     apply: (change) => sync.merge(change),
     disconnected: () => sync.makePrivate(),
+    subscribe,
   };
 }

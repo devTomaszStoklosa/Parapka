@@ -150,3 +150,20 @@ describe("chore handler", () => {
     expect(await handler.collect(() => stamp(7))).toEqual([]);
   });
 });
+
+describe("chore handler subscription", () => {
+  it("passes on the changes of the chores and of the check-offs", async () => {
+    const { a } = await createPairedDevices();
+    const { chores, handler, completions, completionHandler } = withChores(a);
+    const heard = { chore: 0, completion: 0 };
+    const stop = handler.subscribe?.(() => (heard.chore += 1));
+    completionHandler.subscribe?.(() => (heard.completion += 1));
+    const { id } = await chores.add(input);
+    expect(heard).toEqual({ chore: 1, completion: 0 });
+    await completions.complete(id, "2026-01-05");
+    expect(heard.completion).toBe(1);
+    stop?.();
+    await chores.remove(id);
+    expect(heard.chore).toBe(1);
+  });
+});

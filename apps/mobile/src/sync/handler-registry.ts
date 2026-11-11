@@ -20,6 +20,11 @@ export interface SyncHandler {
    * queue; a handler marks its changes as sent here, not in `collect`.
    */
   committed?(): Promise<void>;
+  /**
+   * Reports the local changes of the entity; the wiring asks for a
+   * synchronization on each one. Returns the function that stops listening.
+   */
+  subscribe?(listener: () => void): () => void;
   /** Removes the data received from the partner (the pair is over). */
   forgetReceived?(): Promise<void>;
   /** Marks the shared items as private; the copies stay (A13). */
