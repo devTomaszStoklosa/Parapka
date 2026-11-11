@@ -30,6 +30,8 @@ export interface ConsentRepository {
   save(states: ConsentStates): Promise<void>;
   /** Changes one category and tells the listeners; needs a saved consent. */
   setCategory(category: ConsentCategory, enabled: boolean): Promise<void>;
+  /** Removes the saved consent; synchronization cannot start again. */
+  clear(): Promise<void>;
   /** Whether the data of the category may be sent and accepted; false without a consent. */
   isShared(category: ConsentCategory): Promise<boolean>;
   /** Synchronization starts only after the consent is saved. */
@@ -77,6 +79,7 @@ export function createConsentRepository(deps: {
       await write({ ...record.states, [category]: enabled });
       for (const listener of [...listeners]) listener({ category, enabled });
     },
+    clear: () => database.delete(COLLECTION, ID),
     isShared: async (category) => {
       const record = await current();
       if (!record?.states[category]) return false;

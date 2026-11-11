@@ -21,16 +21,20 @@ import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
 import type { Pair, PairRepository } from "../pairing/pair-repository";
 import { base64Decode, base64Encode } from "./base64";
+import {
+  APPLIED,
+  CLOCK,
+  CURSOR,
+  ERRORS,
+  HELD,
+  hlcTexts,
+  OUTBOX,
+  pairEnded,
+  STATE,
+} from "./engine-state";
 import type { HandlerRegistry, SyncHandler } from "./handler-registry";
 import type { SyncTransport } from "./transport";
 
-const OUTBOX = "sync-outbox";
-const APPLIED = "sync-applied";
-const ERRORS = "sync-errors";
-const HELD = "sync-held";
-const STATE = "sync-state";
-const CURSOR = "cursor";
-const CLOCK = "hlc";
 // The pair repository owns this record; the engine only fills in `deviceId`.
 const PAIR = { collection: "pair", id: "current" };
 
@@ -91,12 +95,6 @@ interface Session {
   readonly deviceId: string;
 }
 
-function hlcTexts(change: ContentChange): string[] {
-  return change.op === "upsert"
-    ? Object.values(change.fields).map((field) => field.hlc)
-    : [change.hlc];
-}
-
 const asJson = (value: unknown) => value as JsonValue;
 
 class Engine implements SyncEngine {
@@ -130,6 +128,7 @@ class Engine implements SyncEngine {
     const fetched = await transport.fetch(state?.after ?? null);
     for (const { envelope } of fetched.envelopes) {
       await this.receive(session, envelope);
+      if (await pairEnded(this.o.pairs)) return;
     }
     if (fetched.nextCursor !== null) {
       await database.put(STATE, CURSOR, { after: fetched.nextCursor });
@@ -274,7 +273,7 @@ class Engine implements SyncEngine {
     });
   }
 
-  /** False when a timestamp is malformed; then nothing is applied. */
+  /** False when a timestamp is malformed (nothing is applied) or the pair ended. */
   private async applyAll(
     session: Session,
     envelopeId: string,
@@ -303,7 +302,8 @@ class Engine implements SyncEngine {
         await handler.apply(change);
       }
     }
-    return true;
+    // A handler may have ended the pair; its state must not come back.
+    return !(await pairEnded(this.o.pairs));
   }
 
   private async hold(

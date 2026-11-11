@@ -54,6 +54,8 @@ export class ChoreHandler implements SyncHandler {
   applied = 0;
   /** Times the engine reported the collected changes as saved in the queue. */
   committedCount = 0;
+  forgotten = 0;
+  disconnectedCount = 0;
   private readonly states = new Map<string, EntityState>();
   private drafts: Draft[] = [];
 
@@ -87,6 +89,16 @@ export class ChoreHandler implements SyncHandler {
 
   committed(): Promise<void> {
     this.committedCount += 1;
+    return Promise.resolve();
+  }
+
+  forgetReceived(): Promise<void> {
+    this.forgotten += 1;
+    return Promise.resolve();
+  }
+
+  disconnected(): Promise<void> {
+    this.disconnectedCount += 1;
     return Promise.resolve();
   }
 

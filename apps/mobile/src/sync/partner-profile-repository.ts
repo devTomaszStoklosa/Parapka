@@ -38,6 +38,8 @@ export interface PartnerProfileRepository {
   get(): Promise<PartnerProfile | null>;
   /** Keeps the newer value of every field; a repeat or an older change is harmless. */
   merge(fields: Readonly<Record<string, StampedField>>): Promise<void>;
+  /** Removes the profile of the partner. */
+  clear(): Promise<void>;
   /** Calls the listener after every write of the profile; returns the unsubscribe. */
   subscribe(listener: () => void): () => void;
 }
@@ -85,6 +87,10 @@ export function createPartnerProfileRepository(
         form: form.value as GrammaticalForm,
         goals: (goals?.value as GoalId[] | undefined) ?? null,
       };
+    },
+    clear: async () => {
+      await db.delete(COLLECTION, ID);
+      changes.notify();
     },
     merge: async (incoming) => {
       const fields: Record<string, StampedField> = { ...(await read()).fields };

@@ -86,3 +86,16 @@ it("takes a null as the withdrawal of the goals, and only of them", async () => 
   await repo.merge({ goals: { value: ["chores"], hlc: h(1) } });
   expect((await repo.get())?.goals).toBeNull();
 });
+
+it("clears the profile and tells the listeners", async () => {
+  const repo = createPartnerProfileRepository(createMemoryDatabase());
+  await repo.merge({
+    name: { value: "Ola", hlc: h(1) },
+    form: { value: "feminine", hlc: h(1) },
+  });
+  const listener = vi.fn();
+  repo.subscribe(listener);
+  await repo.clear();
+  expect(await repo.get()).toBeNull();
+  expect(listener).toHaveBeenCalledTimes(1);
+});
