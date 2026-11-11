@@ -102,10 +102,8 @@ it("switches tabs and keeps a separate stack per tab", () => {
   fireEvent.click(screen.getByText(pl.screens.push));
   expect(screen.getByText("Poziom stosu: 2")).toBeTruthy();
 
-  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.planner }));
-  expect(screen.getByRole("heading").textContent).toBe(
-    pl.screens.planner.title,
-  );
+  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
+  expect(screen.getByRole("heading").textContent).toBe(pl.screens.cycle.title);
   expect(screen.getByText("Poziom stosu: 1")).toBeTruthy();
 
   fireEvent.click(screen.getByRole("tab", { name: pl.tabs.today }));
@@ -139,4 +137,10 @@ it("shows the pairing section in the settings tab", async () => {
   fireEvent.click(screen.getByRole("tab", { name: pl.tabs.settings }));
   expect(screen.getByText(pl.pairing.title)).toBeTruthy();
   expect(await screen.findByText(pl.pairing.unavailable)).toBeTruthy();
+});
+
+it("shows the planner in the planner tab", async () => {
+  renderTabs(true);
+  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.planner }));
+  expect(await screen.findByText(pl.planner.empty.text)).toBeTruthy();
 });

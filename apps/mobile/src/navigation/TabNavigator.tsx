@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from "react";
 import { View } from "react-native";
 
+import { PlannerScreen } from "../chores/PlannerScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { TabPlaceholderScreen } from "../screens/TabPlaceholderScreen";
 import { colors } from "../ui/theme";
@@ -25,6 +26,8 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
       <View style={{ flex: 1 }}>
         {active === "settings" ? (
           <SettingsScreen />
+        ) : active === "planner" ? (
+          <PlannerScreen />
         ) : (
           <TabPlaceholderScreen
             tab={active}
