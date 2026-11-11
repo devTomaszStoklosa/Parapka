@@ -91,6 +91,43 @@ it("asks for a run on the notice of a handler with subscribe", async () => {
   });
 });
 
+it("settles after merging a change of the partner without sending", async () => {
+  const set = await setup(
+    200,
+    false,
+    [],
+    [
+      {
+        entity: "Chore",
+        id: "p-1",
+        op: "upsert",
+        fields: Object.fromEntries(
+          Object.entries({ ...input, title: "Od partnera" }).map(
+            ([name, value]) => [
+              name,
+              { value, hlc: "000000000000002-00000-partner" },
+            ],
+          ),
+        ),
+      },
+    ],
+  );
+  await set.pair();
+  await set.consent.save(defaultConsent(profile));
+  start(set.controller);
+  await vi.waitFor(() => {
+    expect(set.syncs()).toBeGreaterThan(1);
+  });
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const settled = set.syncs();
+  expect(settled).toBeLessThanOrEqual(3);
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  expect(set.syncs()).toBe(settled);
+  expect(set.posts()).toBe(0);
+  const merged = await wireChores(set.platform).chores.list();
+  expect(merged.map((chore) => chore.title)).toEqual(["Od partnera"]);
+});
+
 it("settles: the runs stop when nothing changes", async () => {
   const { syncs, platform } = await running();
   const { chores } = wireChores(platform);

@@ -48,11 +48,11 @@ function socket() {
   };
 }
 
-/** The envelope of the partner with a command `disconnect`, readable by `keys`. */
-export function disconnectEnvelope(
+/** The envelope of the partner with `changes`, readable by `keys`. */
+export function partnerEnvelope(
   sodium: Awaited<ReturnType<typeof createWebSodium>>,
-  mailbox = "mailbox-1",
-  after: unknown[] = [],
+  mailbox: string,
+  changes: unknown[],
 ): Envelope {
   const fields = {
     envelopeId: "e-disconnect",
@@ -60,23 +60,7 @@ export function disconnectEnvelope(
     senderDeviceId: "partner",
     protocolVersion: PROTOCOL_VERSION,
   };
-  const content = {
-    schemaVersion: 1,
-    changes: [
-      {
-        entity: "Pair",
-        id: "pair",
-        op: "upsert",
-        fields: {
-          command: {
-            value: "disconnect",
-            hlc: "000000000000001-00000-partner",
-          },
-        },
-      },
-      ...after,
-    ],
-  };
+  const content = { schemaVersion: 1, changes };
   const encrypted = encryptEnvelope(
     sodium,
     keys.receiveKey,
@@ -88,6 +72,28 @@ export function disconnectEnvelope(
     nonce: base64Encode(encrypted.nonce),
     ciphertext: base64Encode(encrypted.ciphertext),
   };
+}
+
+/** The envelope of the partner with a command `disconnect`, readable by `keys`. */
+export function disconnectEnvelope(
+  sodium: Awaited<ReturnType<typeof createWebSodium>>,
+  mailbox = "mailbox-1",
+  after: unknown[] = [],
+): Envelope {
+  return partnerEnvelope(sodium, mailbox, [
+    {
+      entity: "Pair",
+      id: "pair",
+      op: "upsert",
+      fields: {
+        command: {
+          value: "disconnect",
+          hlc: "000000000000001-00000-partner",
+        },
+      },
+    },
+    ...after,
+  ]);
 }
 
 /** Answers `status` to every call but challenges; `waiting` goes out on the first fetch. */
@@ -113,6 +119,23 @@ function stubRelay(status: number, waiting: Envelope[]) {
   return calls;
 }
 
+/** The envelope the first fetch hands out, if any. */
+function waitingFor(
+  sodium: Awaited<ReturnType<typeof createWebSodium>>,
+  command: boolean,
+  after: unknown[],
+  partner: unknown[],
+) {
+  if (command) return [disconnectEnvelope(sodium, "mailbox-1", after)];
+  return partner.length > 0
+    ? [partnerEnvelope(sodium, "mailbox-1", partner)]
+    : [];
+}
+
+/** How many calls sent an envelope. */
+const countPosts = (calls: string[]) =>
+  calls.filter((c) => c.startsWith("POST") && c.includes("/envelopes")).length;
+
 /** Saves and confirms a pair with the mailbox `mailbox`. */
 function pairing(pairs: PairRepository) {
   return (mailbox = "mailbox-1") =>
@@ -131,12 +154,14 @@ function pairing(pairs: PairRepository) {
 
 /**
  * A registered device on a platform whose relay answers `status` to every call
- * but challenges; with `command` the first fetch brings the disconnect command.
+ * but challenges; with `command` the first fetch brings the disconnect command,
+ * with `partner` changes the envelope of the partner.
  */
 export async function setup(
   status = 200,
   command = false,
   after: unknown[] = [],
+  partner: unknown[] = [],
 ) {
   const sodium = await createWebSodium();
   const database = createMemoryDatabase();
@@ -149,15 +174,13 @@ export async function setup(
       registerDevice: () => Promise.resolve({ deviceId: "me" }),
     }),
   }).init();
-  const calls = stubRelay(
-    status,
-    command ? [disconnectEnvelope(sodium, "mailbox-1", after)] : [],
-  );
+  const calls = stubRelay(status, waitingFor(sodium, command, after, partner));
   const createSocket = vi.fn(socket);
+  const clock = { nowMs: () => 1_000 };
   const platform = {
     sodium,
     keyStore,
-    clock: { nowMs: () => 1_000 },
+    clock,
     database,
     sha256: webSha256,
     relayUrl: "unused-relay",
@@ -170,7 +193,6 @@ export async function setup(
   stoppers.push(() => {
     controller.unmount();
   });
-  const syncs = () => calls.filter((c) => c.includes("/envelopes")).length;
   return {
     sodium,
     platform,
@@ -180,7 +202,8 @@ export async function setup(
     consent,
     profiles,
     pair: pairing(pairs),
-    syncs,
+    syncs: () => calls.filter((c) => c.includes("/envelopes")).length,
+    posts: () => countPosts(calls),
   };
 }
 
