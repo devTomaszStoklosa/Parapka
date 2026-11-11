@@ -44,6 +44,16 @@ it("needs both the name and the form", async () => {
   expect(await repo.get()).toBeNull();
 });
 
+it("notifies a subscriber of another instance on the same database", async () => {
+  const db = createMemoryDatabase();
+  const listener = vi.fn();
+  createPartnerProfileRepository(db).subscribe(listener);
+  await createPartnerProfileRepository(db).merge({
+    name: { value: "Ola", hlc: h(1) },
+  });
+  expect(listener).toHaveBeenCalledTimes(1);
+});
+
 it("notifies the listeners after a write until they unsubscribe", async () => {
   const repo = createPartnerProfileRepository(createMemoryDatabase());
   const listener = vi.fn();
