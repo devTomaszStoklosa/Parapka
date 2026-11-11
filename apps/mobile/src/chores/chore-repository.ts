@@ -46,6 +46,10 @@ export interface ChoreInput {
   readonly assignment: Assignment;
 }
 
+export interface AddOptions {
+  readonly private?: boolean;
+}
+
 /** Local changes that have no timestamp yet; the sync stamps them. */
 interface Pending {
   fields: Record<string, unknown>;
@@ -59,8 +63,11 @@ interface ChoreRecord {
 }
 
 export interface ChoreRepository {
-  /** Without a confirmed pair the chore is private. Throws on invalid input. */
-  add(input: ChoreInput): Promise<StoredChore>;
+  /**
+   * Without a confirmed pair the chore is private; `private` keeps it private
+   * in a pair too. Throws on invalid input.
+   */
+  add(input: ChoreInput, options?: AddOptions): Promise<StoredChore>;
   /** Changes some fields of a chore; throws when it is deleted or unknown. */
   edit(id: string, changes: Partial<ChoreInput>): Promise<void>;
   /** "I can't do it" (FR-CHR-04): anyone is responsible; no event, no reason. */
@@ -240,9 +247,10 @@ export function createChoreRepository(deps: Deps): ChoreRepository {
   };
   const repository: ChoreRepository = {
     subscribe: access.changes.subscribe,
-    add: async (input) => {
+    add: async (input, options) => {
       const id = deps.newId();
-      const shared = (await deps.pairs.activePair()) !== null;
+      const paired = (await deps.pairs.activePair()) !== null;
+      const shared = paired && options?.private !== true;
       const state = emptyEntityState(ENTITY, id);
       await save(id, input, input, { shared, state, pending: emptyPending() });
       return { id, ...input, shared };
