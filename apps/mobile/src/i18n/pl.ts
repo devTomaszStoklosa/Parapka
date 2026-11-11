@@ -1,3 +1,5 @@
+import { plannerEdit } from "./pl-planner";
+
 export const pl = {
   app: {
     loading: "Wczytywanie…",
@@ -26,6 +28,7 @@ export const pl = {
     depth: "Poziom stosu: {level}",
   },
   planner: {
+    ...plannerEdit,
     views: { label: "Widok", today: "Dziś", week: "Tydzień", all: "Wszystkie" },
     filters: {
       label: "Filtr",

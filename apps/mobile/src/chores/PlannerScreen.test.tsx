@@ -80,12 +80,12 @@ const choose = (name: string) => {
 };
 
 describe("the planner screen", () => {
-  it("shows the empty state with a disabled button", async () => {
+  it("shows the empty state with an active button", async () => {
     const { platform } = await setup(false);
     show(platform);
     expect(await screen.findByText(pl.planner.empty.text)).toBeTruthy();
     const button = screen.getByRole("button", { name: pl.planner.empty.add });
-    expect(button.getAttribute("aria-disabled")).toBe("true");
+    expect(button.getAttribute("aria-disabled")).not.toBe("true");
   });
 
   it("shows only the nearest days in today and the week views", async () => {

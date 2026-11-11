@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { Pressable } from "react-native";
 
 import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
@@ -10,15 +10,27 @@ const formatDate = (date: string) => date.split("-").reverse().join(".");
 
 /**
  * One occurrence. Every row looks the same, whoever is responsible and however
- * late it is (FR-CHR-07); the actions come with #172.
+ * late it is (FR-CHR-07); the check-off comes with #172. A touch opens the chore to edit.
  */
-export function PlannerRow({ row }: { row: Row }) {
+export function PlannerRow(props: {
+  row: Row;
+  partnerName: string | null;
+  onOpen: (choreId: string) => void;
+}) {
+  const { row, partnerName } = props;
+  const who =
+    row.responsible === "partner" && partnerName !== null
+      ? partnerName
+      : t(`planner.responsible.${row.responsible}`);
   return (
-    <View
-      accessible
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        props.onOpen(row.choreId);
+      }}
       accessibilityLabel={[
         row.title,
-        t(`planner.responsible.${row.responsible}`),
+        who,
         formatDate(row.date),
         ...(row.done ? [t("planner.done")] : []),
       ].join(", ")}
@@ -30,13 +42,13 @@ export function PlannerRow({ row }: { row: Row }) {
     >
       <AppText style={{ fontWeight: "bold" }}>{row.title}</AppText>
       <AppText style={{ color: colors.textMuted }}>
-        {`${t(`planner.responsible.${row.responsible}`)} · ${formatDate(row.date)}`}
+        {`${who} · ${formatDate(row.date)}`}
       </AppText>
       {row.done ? (
         <AppText style={{ color: colors.textMuted }}>
           {t("planner.done")}
         </AppText>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
