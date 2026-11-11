@@ -1,5 +1,6 @@
 import {
   ChoreValidationError,
+  releaseChore,
   validateAssignment,
   validateChore,
   type Assignment,
@@ -62,6 +63,8 @@ export interface ChoreRepository {
   add(input: ChoreInput): Promise<StoredChore>;
   /** Changes some fields of a chore; throws when it is deleted or unknown. */
   edit(id: string, changes: Partial<ChoreInput>): Promise<void>;
+  /** "I can't do it" (FR-CHR-04): anyone is responsible; no event, no reason. */
+  release(id: string): Promise<void>;
   /** Deletes the chore (a tombstone); the sync passes it on. */
   remove(id: string): Promise<void>;
   /** Undoes a deletion. */
@@ -262,7 +265,7 @@ export function createChoreRepository(deps: Deps): ChoreRepository {
     }
     await write(id, record);
   };
-  return {
+  const repository: ChoreRepository = {
     subscribe: access.changes.subscribe,
     add: async (input) => {
       const id = deps.newId();
@@ -277,6 +280,7 @@ export function createChoreRepository(deps: Deps): ChoreRepository {
       if (current === null) throw new ChoreValidationError("chore is deleted");
       await save(id, { ...current, ...patch }, patch, record);
     },
+    release: (id) => repository.edit(id, { assignment: releaseChore() }),
     remove: (id) => mark(id, "delete"),
     restore: (id) => mark(id, "restore"),
     list: async () => {
@@ -288,4 +292,5 @@ export function createChoreRepository(deps: Deps): ChoreRepository {
     },
     sync: createSyncAccess(access),
   };
+  return repository;
 }

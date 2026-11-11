@@ -1,3 +1,9 @@
+import { createUuid7Generator } from "@parapka/domain";
+
+import { createChoreHandler } from "../chores/chore-handler";
+import { createChoreRepository } from "../chores/chore-repository";
+import { createChoreCompletionHandler } from "../chores/completion-handler";
+import { createCompletionRepository } from "../chores/completion-repository";
 import { wireConsent } from "../consent/wiring";
 import { createIdentity } from "../identity/identity";
 import { createRelayClient, type DeviceCredentials } from "../net/relay-client";
@@ -42,7 +48,7 @@ export interface SyncController {
 const wired = new WeakMap<Platform, SyncController>();
 
 function createDependencies(platform: Platform) {
-  const { database, sodium, sha256, keyStore } = platform;
+  const { database, sodium, sha256, keyStore, clock } = platform;
   const client = (credentials?: DeviceCredentials) =>
     createRelayClient({
       baseUrl: platform.relayUrl,
@@ -57,10 +63,27 @@ function createDependencies(platform: Platform) {
     database,
     relay: client,
   });
+  const pairs = createPairRepository(database, keyStore);
+  const chores = createChoreRepository({
+    database,
+    pairs,
+    identity,
+    newId: createUuid7Generator({
+      clock,
+      random: { bytes: (length) => sodium.randomBytes(length) },
+    }),
+  });
   return {
     client,
     identity,
-    pairs: createPairRepository(database, keyStore),
+    pairs,
+    chores,
+    completions: createCompletionRepository({
+      database,
+      chores,
+      identity,
+      clock,
+    }),
     disconnect: createDisconnectRepository(database),
     partner: createPartnerProfileRepository(database),
     pause: createPauseRepository(database),
@@ -90,10 +113,13 @@ function delegating(current: () => SyncTransport): SyncTransport {
 function createEngine(platform: Platform, deps: Dependencies) {
   const { database, sodium, clock } = platform;
   const { consent, profiles, partner, pairs, identity, pause } = deps;
+  const { chores, completions } = deps;
   const registry = createHandlerRegistry();
   registry.register(
     createProfileHandler({ database, profiles, partner, consent }),
   );
+  registry.register(createChoreHandler({ chores }));
+  registry.register(createChoreCompletionHandler({ completions }));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");
