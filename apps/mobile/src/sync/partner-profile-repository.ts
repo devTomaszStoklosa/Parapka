@@ -22,7 +22,7 @@ export interface PartnerProfile {
   readonly goals: readonly GoalId[] | null;
 }
 
-export type PartnerField = "name" | "form" | "goals";
+export type PartnerField = "name" | "form" | "goals" | "otherGoalText";
 
 export interface StampedField {
   readonly value: unknown;
@@ -49,7 +49,9 @@ const isGoals = (value: unknown): value is GoalId[] =>
 const VALID: Record<PartnerField, (value: unknown) => boolean> = {
   name: (value) => typeof value === "string" && value !== "",
   form: (value) => FORMS.includes(value as GrammaticalForm),
-  goals: isGoals,
+  // A null withdraws the value: the partner turned the category off.
+  goals: (value) => value === null || isGoals(value),
+  otherGoalText: (value) => value === null,
 };
 
 export const isPartnerField = (name: string): name is PartnerField =>

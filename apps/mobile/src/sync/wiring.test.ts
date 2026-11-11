@@ -11,6 +11,7 @@ import type { Platform } from "../platform/context";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
 import { webSha256 } from "../platform/sha256";
 import { createWebSodium } from "../platform/web-sodium";
+import { createPauseRepository } from "./pause-repository";
 import { PAIR_GONE_MESSAGE, wireSync, type SyncController } from "./wiring";
 
 let sodium: Sodium;
@@ -303,4 +304,20 @@ it("stops when the conditions cannot be read", async () => {
   start(controller);
   await tick();
   expect(createSocket).not.toHaveBeenCalled();
+});
+
+it("requests a synchronization after the pause changes", async () => {
+  const { controller, pair, consent, platform, syncs } = await setup();
+  await pair();
+  await consent.save(defaultConsent(profile));
+  start(controller);
+  await vi.waitFor(() => {
+    expect(syncs()).toBeGreaterThan(0);
+  });
+  await tick();
+  const before = syncs();
+  await createPauseRepository(platform.database).setPaused(true);
+  await vi.waitFor(() => {
+    expect(syncs()).toBeGreaterThan(before);
+  });
 });

@@ -64,3 +64,25 @@ it("notifies the listeners after a write until they unsubscribe", async () => {
   await repo.merge({ name: { value: "Ola K", hlc: h(2) } });
   expect(listener).toHaveBeenCalledTimes(1);
 });
+
+it("takes a null as the withdrawal of the goals, and only of them", async () => {
+  const repo = createPartnerProfileRepository(createMemoryDatabase());
+  await repo.merge({
+    name: { value: "Ola", hlc: h(1) },
+    form: { value: "feminine", hlc: h(1) },
+    goals: { value: ["chores"], hlc: h(1) },
+  });
+  await repo.merge({
+    name: { value: null, hlc: h(2) },
+    goals: { value: null, hlc: h(2) },
+    otherGoalText: { value: null, hlc: h(2) },
+  });
+  expect(await repo.get()).toEqual({
+    name: "Ola",
+    form: "feminine",
+    goals: null,
+  });
+  await repo.merge({ otherGoalText: { value: "text", hlc: h(3) } });
+  await repo.merge({ goals: { value: ["chores"], hlc: h(1) } });
+  expect((await repo.get())?.goals).toBeNull();
+});
