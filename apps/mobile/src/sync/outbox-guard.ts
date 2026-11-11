@@ -1,7 +1,7 @@
 import type { Envelope } from "@parapka/protocol";
 
 import type { LocalDatabase } from "../data/local-database";
-import { OUTBOX } from "./engine-state";
+import { CLOSING, OUTBOX } from "./engine-state";
 
 async function removeWhere(
   database: LocalDatabase,
@@ -23,10 +23,18 @@ export function removeMailboxEnvelopes(
   return removeWhere(database, (id) => id === pairMailboxId);
 }
 
-/** Removes the envelopes of every mailbox but the current one. */
-export function removeForeignEnvelopes(
+/**
+ * Removes the envelopes of every mailbox but the current one and the one
+ * that is being closed: its disconnect command still waits for the network.
+ */
+export async function removeForeignEnvelopes(
   database: LocalDatabase,
   currentMailboxId: string,
 ): Promise<void> {
-  return removeWhere(database, (id) => id !== currentMailboxId);
+  const marker = await database.get(CLOSING.collection, CLOSING.id);
+  const closingId = (marker as { pairMailboxId: string } | null)?.pairMailboxId;
+  return removeWhere(
+    database,
+    (id) => id !== currentMailboxId && id !== closingId,
+  );
 }
