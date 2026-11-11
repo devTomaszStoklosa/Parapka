@@ -15,8 +15,17 @@ import {
   createPartnerProfileRepository,
   type PartnerProfileRepository,
 } from "../sync/partner-profile-repository";
+import {
+  createPauseRepository,
+  type PauseRepository,
+} from "../sync/pause-repository";
+import { wireSync } from "../sync/wiring";
 import { createAcceptor, type Acceptor } from "./acceptor";
 import { createInviter, type Inviter } from "./inviter";
+import {
+  createDisconnectRepository,
+  type DisconnectRepository,
+} from "./disconnect-repository";
 import { createPairRepository, type PairRepository } from "./pair-repository";
 
 export interface Wiring {
@@ -27,6 +36,9 @@ export interface Wiring {
   profiles: ProfileRepository;
   partner: PartnerProfileRepository;
   loadSafetyCode: () => Promise<string>;
+  disconnect: DisconnectRepository;
+  onDisconnect: () => Promise<void>;
+  pause: PauseRepository;
 }
 
 function safetyCodeLoader(deps: {
@@ -91,6 +103,9 @@ export async function wire(platform: Platform): Promise<Wiring | null> {
     pairs,
     loadSafetyCode,
     partner,
+    disconnect: createDisconnectRepository(database),
+    onDisconnect: wireSync(platform).disconnect.bind(wireSync(platform)),
+    pause: createPauseRepository(database),
     ...wireConsent(platform),
   };
 }

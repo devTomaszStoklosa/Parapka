@@ -36,6 +36,16 @@ export const pl = {
       connect: "Połącz",
     },
     newInvite: "Nowe zaproszenie",
+    disconnected: "Para została rozłączona.",
+    ok: "OK",
+    disconnect: {
+      button: "Rozłącz",
+      title: "Rozłączyć parę?",
+      consequences:
+        "Partner straci Twoje dane. Wspólne pozycje zostaną u Was obojga jako prywatne. Ponowne połączenie wymaga nowego zaproszenia.",
+      confirm: "Rozłącz",
+      failed: "Nie udało się rozłączyć. Spróbuj jeszcze raz.",
+    },
     paired: "Jesteście w parze.",
     pairedWith: "Jesteście w parze z {name}.",
     unavailable:
@@ -70,6 +80,11 @@ export const pl = {
       invalid:
         "Odpowiedź partnera jest nieprawidłowa. Utwórz nowe zaproszenie.",
     },
+  },
+  pause: {
+    label: "Pauza",
+    hint: "Wstrzymuje wysyłanie wskazówek i check-inu. Partner zobaczy to samo co przy braku nowych danych i nie dostanie powiadomienia.",
+    failed: "Nie udało się zmienić pauzy. Spróbuj jeszcze raz.",
   },
   consent: {
     title: "Co widzi partner",
