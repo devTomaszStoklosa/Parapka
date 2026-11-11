@@ -5,10 +5,57 @@ import { createPauseRepository } from "./pause-repository";
 import { setup, start, stoppers, tick, profile } from "./wiring-test-support";
 import { wireSync } from "./wiring";
 
+const made = vi.hoisted(
+  () => [] as { all: () => readonly { entity: string }[] }[],
+);
+
+const choreDeps = vi.hoisted(() => [] as { newId: () => string }[]);
+
+vi.mock("../chores/chore-repository", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("../chores/chore-repository")>();
+  return {
+    ...original,
+    createChoreRepository: (
+      deps: Parameters<typeof original.createChoreRepository>[0],
+    ) => {
+      choreDeps.push(deps);
+      return original.createChoreRepository(deps);
+    },
+  };
+});
+
+vi.mock("./handler-registry", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./handler-registry")>();
+  return {
+    ...original,
+    createHandlerRegistry: () => {
+      const registry = original.createHandlerRegistry();
+      made.push(registry);
+      return registry;
+    },
+  };
+});
+
 afterEach(() => {
   for (const stop of stoppers.splice(0)) stop();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+it("registers the handlers of the chores and of their check-offs", async () => {
+  await setup();
+  const entities = made.flatMap((registry) =>
+    registry.all().map(({ entity }) => entity),
+  );
+  expect(entities).toContain("Chore");
+  expect(entities).toContain("ChoreCompletion");
+});
+
+it("draws the ids of the chores from the random bytes of the platform", async () => {
+  await setup();
+  const deps = choreDeps.at(-1);
+  expect(deps?.newId()).not.toBe(deps?.newId());
 });
 
 it("gives one controller for one platform", async () => {
