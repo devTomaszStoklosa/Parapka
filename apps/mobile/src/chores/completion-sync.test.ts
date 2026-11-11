@@ -70,6 +70,16 @@ describe("chore completion sync", () => {
     expect(await pair.ub.completions.list()).toEqual([]);
   });
 
+  it("keeps unsent check-offs on the device when the pair ends", async () => {
+    const { pair, id } = await shared();
+    await pair.ua.completions.complete(id, DAY);
+    await pair.ua.completionHandler.disconnected?.();
+    await pair.ua.completionHandler.disconnected?.();
+    await exchange(pair);
+    expect(await pair.ua.completions.list()).toHaveLength(1);
+    expect(await pair.ub.completions.list()).toEqual([]);
+  });
+
   it("sends nothing while SHARED_CHORES is off, and then everything", async () => {
     let on = true;
     const { pair, id } = await shared(() => on);

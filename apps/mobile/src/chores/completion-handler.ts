@@ -12,7 +12,9 @@ export function createChoreCompletionHandler(deps: {
 }): SyncHandler {
   const { sync } = deps.completions;
   return {
-    ...createChoreHandler({ chores: { sync: sync as ChoreRepository["sync"] } }),
+    ...createChoreHandler({
+      chores: { sync: sync as ChoreRepository["sync"] },
+    }),
     entity: "ChoreCompletion",
   };
 }
