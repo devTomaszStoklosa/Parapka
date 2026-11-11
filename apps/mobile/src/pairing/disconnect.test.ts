@@ -38,9 +38,9 @@ async function setup() {
         calls.push("queue");
         return a.engine.queueCommand(build);
       },
-      flush: (t: SyncTransport) => {
+      flush: (t: SyncTransport, mailbox?: string) => {
         calls.push("flush");
-        return a.engine.flush(t);
+        return a.engine.flush(t, mailbox);
       },
     },
     createTransport: (id: string) => {
@@ -147,7 +147,7 @@ it("keeps the marker and the queue when the network fails, then finishes", async
   expect(await a.pairs.activePair()).toBeNull();
 
   useTransport(a.transport);
-  await finishClosing(base);
+  expect(await finishClosing(base)).toBe(true);
   expect(await a.database.get(CLOSING, "current")).toBeNull();
   expect(await a.engine.pending()).toBe(0);
   expect((await b.transport.fetch(null)).envelopes).toHaveLength(1);
@@ -162,6 +162,42 @@ it("finishes closing when the relay answers forbidden or expired", async () => {
   }
 });
 
+it("drops the envelopes of the closed mailbox and keeps the others", async () => {
+  const { deps, a, useTransport } = await setup();
+  await a.database.put("sync-outbox", "other", {
+    envelopeId: "other",
+    pairMailboxId: "new-mailbox",
+  });
+  useTransport(failing(new RelayError("expired", 410), a.transport));
+  await disconnect(deps);
+  expect((await a.database.list("sync-outbox")).map((r) => r.id)).toEqual([
+    "other",
+  ]);
+});
+
+it("keeps the envelopes of another mailbox out of the closed one", async () => {
+  const { deps, base, a, b } = await setup();
+  await a.database.put("sync-outbox", "other", {
+    envelopeId: "other",
+    pairMailboxId: "new-mailbox",
+  });
+  await disconnect(deps);
+  expect(await finishClosing(base)).toBe(true);
+  expect((await b.transport.fetch(null)).envelopes).toHaveLength(1);
+  expect(await a.engine.pending()).toBe(1);
+});
+
+it("keeps the marker when the transport cannot be made", async () => {
+  const { deps, a } = await setup();
+  const broken = {
+    ...deps,
+    createTransport: () => Promise.reject(new Error("no credentials")),
+  };
+  await disconnect(broken);
+  expect(await finishClosing(broken)).toBe(false);
+  expect(await a.database.get(CLOSING, "current")).not.toBeNull();
+});
+
 it("keeps the marker on an error that is not a relay error", async () => {
   const { deps, a, useTransport } = await setup();
   useTransport(failing(new Error("boom"), a.transport));
@@ -171,6 +207,6 @@ it("keeps the marker on an error that is not a relay error", async () => {
 
 it("finishClosing does nothing without a marker", async () => {
   const { base, calls } = await setup();
-  await finishClosing(base);
+  expect(await finishClosing(base)).toBe(true);
   expect(calls).toEqual([]);
 });

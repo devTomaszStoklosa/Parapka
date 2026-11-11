@@ -258,3 +258,18 @@ describe("SyncEngine gates", () => {
     expect(await queue(true)).toEqual(await queue(false));
   });
 });
+
+describe("SyncEngine foreign envelopes", () => {
+  it("drops the envelopes of another mailbox and sends the rest", async () => {
+    const { a, b } = await createPairedDevices();
+    await a.database.put("sync-outbox", "old", {
+      envelopeId: "old",
+      pairMailboxId: "closed-mailbox",
+    });
+    a.handler.edit("c1", "title", "Dishes");
+    await a.engine.push();
+    expect(await a.engine.pending()).toBe(0);
+    const fetched = await b.transport.fetch(null);
+    expect(fetched.envelopes).toHaveLength(1);
+  });
+});

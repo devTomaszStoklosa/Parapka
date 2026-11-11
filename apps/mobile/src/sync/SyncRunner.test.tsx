@@ -13,7 +13,12 @@ afterEach(() => {
 });
 
 function setup(current: string) {
-  const controller = { setActive: vi.fn(), mount: vi.fn(), unmount: vi.fn() };
+  const controller = {
+    setActive: vi.fn(),
+    mount: vi.fn(),
+    unmount: vi.fn(),
+    disconnect: vi.fn(),
+  };
   vi.spyOn(wiring, "wireSync").mockReturnValue(controller);
   const remove = vi.fn();
   let listener: (state: string) => void = () => undefined;

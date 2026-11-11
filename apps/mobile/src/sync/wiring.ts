@@ -2,9 +2,14 @@ import { wireConsent } from "../consent/wiring";
 import { createIdentity } from "../identity/identity";
 import { createRelayClient, type DeviceCredentials } from "../net/relay-client";
 import { clearPairLocally } from "../pairing/clear-pair";
+import {
+  disconnect as disconnectPair,
+  finishClosing,
+} from "../pairing/disconnect";
 import { createDisconnectRepository } from "../pairing/disconnect-repository";
 import { createPairRepository } from "../pairing/pair-repository";
 import type { Platform } from "../platform/context";
+import { createClosingRetry } from "./closing-retry";
 import {
   createHandlerRegistry,
   type HandlerRegistry,
@@ -30,6 +35,8 @@ export interface SyncController {
   mount(): void;
   /** The screen is gone or locked. */
   unmount(): void;
+  /** Ends the pair on the initiative of this person (FR-PAIR-07). */
+  disconnect(): Promise<void>;
 }
 
 const wired = new WeakMap<Platform, SyncController>();
@@ -189,9 +196,63 @@ function createEndByPartner(
   };
 }
 
+/** Ends the pair here and finishes the closing of its mailbox, also later. */
+function createClosing(
+  platform: Platform,
+  deps: Dependencies,
+  e: Engine,
+  stopScheduler: () => void,
+) {
+  const { database } = platform;
+  const { pairs, consent } = deps;
+  const closing = {
+    database,
+    engine: e.engine,
+    createTransport: async (pairMailboxId: string) => {
+      const credentials = await deps.identity.credentials();
+      const { createSocket } = platform;
+      if (credentials === null || !createSocket) {
+        throw new Error("There is no way to reach the relay");
+      }
+      return createRelayTransport({
+        client: deps.client(credentials),
+        pairMailboxId,
+        createSocket,
+      });
+    },
+  };
+  const retry = createClosingRetry({ finish: () => finishClosing(closing) });
+  return {
+    retry,
+    disconnect: async () => {
+      const clearPair = { database, registry: e.registry, pairs, consent };
+      try {
+        await disconnectPair({ ...closing, pairs, clearPair, stopScheduler });
+      } finally {
+        retry.run();
+      }
+    },
+  };
+}
+
+/** Re-evaluates the conditions and asks for a run when the inputs change. */
+function subscribe(
+  { consent, profiles, pairs, pause }: Dependencies,
+  reevaluate: () => void,
+  requestSync: () => void,
+) {
+  pairs.subscribe(reevaluate);
+  consent.onSaved(reevaluate);
+  consent.onChange(() => {
+    reevaluate();
+    requestSync();
+  });
+  profiles.subscribe(requestSync);
+  pause.subscribe(requestSync);
+}
+
 function build(platform: Platform): SyncController {
   const deps = createDependencies(platform);
-  const { consent, profiles, pairs, pause } = deps;
   const e = createEngine(platform, deps);
   const { registry } = e;
   const sessions = createSessions(platform, deps, e, () => {
@@ -204,6 +265,7 @@ function build(platform: Platform): SyncController {
     sessions.stop();
   });
   registry.register(createPairHandler({ onDisconnect: endByPartner }));
+  const closing = createClosing(platform, deps, e, sessions.stop);
   const state: Conditions = { active: false, mounted: false, version: 0 };
 
   const evaluate = async () => {
@@ -220,14 +282,7 @@ function build(platform: Platform): SyncController {
     evaluate().catch(sessions.stop);
   };
 
-  pairs.subscribe(reevaluate);
-  consent.onSaved(reevaluate);
-  consent.onChange(() => {
-    reevaluate();
-    sessions.requestSync();
-  });
-  profiles.subscribe(sessions.requestSync);
-  pause.subscribe(sessions.requestSync);
+  subscribe(deps, reevaluate, sessions.requestSync);
 
   const set = (change: Partial<Conditions>) => () => {
     Object.assign(state, change);
@@ -236,7 +291,9 @@ function build(platform: Platform): SyncController {
   return {
     setActive: (active) => {
       set({ active })();
+      if (active) closing.retry.run();
     },
+    disconnect: closing.disconnect,
     mount: set({ mounted: true }),
     unmount: set({ mounted: false }),
   };
