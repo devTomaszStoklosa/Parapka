@@ -73,6 +73,39 @@ function createHeldGoals(
   };
 }
 
+/** Takes in the fields of the partner; the goals wait while the category is off. */
+async function applyChange(
+  change: ContentChange,
+  deps: {
+    partner: PartnerProfileRepository;
+    consent: Pick<ConsentRepository, "isShared">;
+    held: ReturnType<typeof createHeldGoals>;
+  },
+) {
+  if (change.op !== "upsert") return;
+  const fields: Record<string, StampedField> = {};
+  const goalsShared = await deps.consent.isShared("ONBOARDING_GOALS");
+  for (const [name, field] of Object.entries(change.fields)) {
+    if (!isPartnerField(name)) continue;
+    if (name === "goals" && !goalsShared) {
+      await deps.held.hold(field);
+      continue;
+    }
+    fields[name] = field;
+  }
+  await deps.partner.merge(fields);
+}
+
+/** Drops the profile of the partner, the held goals and the marker. */
+async function forget(
+  database: LocalDatabase,
+  partner: PartnerProfileRepository,
+) {
+  await partner.clear();
+  await database.delete(COLLECTION, HELD);
+  await database.delete(COLLECTION, MARKER);
+}
+
 /**
  * Sync of the profile (FR-PAIR-03): the name and form always, the goals only
  * while ONBOARDING_GOALS is shared. The marker keeps what was last put in the
@@ -115,19 +148,10 @@ export function createProfileHandler(deps: {
       await database.put(COLLECTION, MARKER, collected as JsonValue);
       collected = null;
     },
-    apply: async (change: ContentChange) => {
-      if (change.op !== "upsert") return;
-      const fields: Record<string, StampedField> = {};
-      const goalsShared = await consent.isShared("ONBOARDING_GOALS");
-      for (const [name, field] of Object.entries(change.fields)) {
-        if (!isPartnerField(name)) continue;
-        if (name === "goals" && !goalsShared) {
-          await held.hold(field);
-          continue;
-        }
-        fields[name] = field;
-      }
-      await partner.merge(fields);
+    forgetReceived: async () => {
+      collected = null;
+      await forget(database, partner);
     },
+    apply: (change) => applyChange(change, { partner, consent, held }),
   };
 }

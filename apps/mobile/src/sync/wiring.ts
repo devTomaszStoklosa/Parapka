@@ -1,9 +1,15 @@
 import { wireConsent } from "../consent/wiring";
 import { createIdentity } from "../identity/identity";
 import { createRelayClient, type DeviceCredentials } from "../net/relay-client";
+import { clearPairLocally } from "../pairing/clear-pair";
+import { createDisconnectRepository } from "../pairing/disconnect-repository";
 import { createPairRepository } from "../pairing/pair-repository";
 import type { Platform } from "../platform/context";
-import { createHandlerRegistry } from "./handler-registry";
+import {
+  createHandlerRegistry,
+  type HandlerRegistry,
+} from "./handler-registry";
+import { createPairHandler } from "./pair-handler";
 import { createPartnerProfileRepository } from "./partner-profile-repository";
 import { createPauseRepository } from "./pause-repository";
 import { createProfileHandler } from "./profile-handler";
@@ -14,6 +20,8 @@ import type { SyncTransport } from "./transport";
 
 /** The message logged when the relay says the pair is gone; it holds no data. */
 export const PAIR_GONE_MESSAGE = "Synchronization stopped: the pair is gone.";
+/** The message logged when the local cleanup after the pair ended fails. */
+export const CLEANUP_FAILED_MESSAGE = "The cleanup after the pair failed.";
 
 export interface SyncController {
   /** The app moved to the foreground (true) or away from it (false). */
@@ -46,6 +54,7 @@ function createDependencies(platform: Platform) {
     client,
     identity,
     pairs: createPairRepository(database, keyStore),
+    disconnect: createDisconnectRepository(database),
     partner: createPartnerProfileRepository(database),
     pause: createPauseRepository(database),
     ...wireConsent(platform),
@@ -97,6 +106,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   });
   return {
     engine,
+    registry,
     use: (next: SyncTransport | null) => {
       transport = next;
     },
@@ -111,7 +121,12 @@ interface Session {
 type Engine = ReturnType<typeof createEngine>;
 
 /** The transport and the scheduler of the running session, if any. */
-function createSessions(platform: Platform, deps: Dependencies, e: Engine) {
+function createSessions(
+  platform: Platform,
+  deps: Dependencies,
+  e: Engine,
+  onPairGone: () => void,
+) {
   let session: Session | null = null;
   const stop = () => {
     session?.scheduler.stop();
@@ -131,10 +146,7 @@ function createSessions(platform: Platform, deps: Dependencies, e: Engine) {
     const scheduler = createSyncScheduler({
       run: () => e.engine.sync(),
       transport,
-      onPairGone: () => {
-        stop();
-        console.warn(PAIR_GONE_MESSAGE);
-      },
+      onPairGone,
     });
     session = { mailboxId, scheduler };
     scheduler.start();
@@ -163,10 +175,35 @@ async function wantedMailbox(state: Conditions, deps: Dependencies) {
   return (await deps.pairs.activePair())?.pairMailboxId ?? null;
 }
 
+/** The partner ended the pair: stop, clean up here, keep the message to show. */
+function createEndByPartner(
+  { database }: Platform,
+  { pairs, consent, disconnect }: Dependencies,
+  registry: HandlerRegistry,
+  stop: () => void,
+) {
+  return async () => {
+    stop();
+    await clearPairLocally({ database, registry, pairs, consent });
+    await disconnect.markByPartner();
+  };
+}
+
 function build(platform: Platform): SyncController {
   const deps = createDependencies(platform);
   const { consent, profiles, pairs, pause } = deps;
-  const sessions = createSessions(platform, deps, createEngine(platform, deps));
+  const e = createEngine(platform, deps);
+  const { registry } = e;
+  const sessions = createSessions(platform, deps, e, () => {
+    console.warn(PAIR_GONE_MESSAGE);
+    endByPartner().catch(() => {
+      console.warn(CLEANUP_FAILED_MESSAGE);
+    });
+  });
+  const endByPartner = createEndByPartner(platform, deps, registry, () => {
+    sessions.stop();
+  });
+  registry.register(createPairHandler({ onDisconnect: endByPartner }));
   const state: Conditions = { active: false, mounted: false, version: 0 };
 
   const evaluate = async () => {

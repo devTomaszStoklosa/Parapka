@@ -142,3 +142,11 @@ it("tells the listeners when the first consent is saved, until they stop", async
   await consent.save(defaults);
   expect(listener).toHaveBeenCalledOnce();
 });
+
+it("removes the saved consent", async () => {
+  const { consent } = await setup();
+  await consent.save(defaults);
+  await consent.clear();
+  expect(await consent.current()).toBeNull();
+  expect(await consent.canSync()).toBe(false);
+});

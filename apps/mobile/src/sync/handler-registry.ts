@@ -20,6 +20,10 @@ export interface SyncHandler {
    * queue; a handler marks its changes as sent here, not in `collect`.
    */
   committed?(): Promise<void>;
+  /** Removes the data received from the partner (the pair is over). */
+  forgetReceived?(): Promise<void>;
+  /** Marks the shared items as private; the copies stay (A13). */
+  disconnected?(): Promise<void>;
 }
 
 export interface HandlerRegistry {

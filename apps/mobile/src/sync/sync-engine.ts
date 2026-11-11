@@ -21,16 +21,11 @@ import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
 import type { Pair, PairRepository } from "../pairing/pair-repository";
 import { base64Decode, base64Encode } from "./base64";
+import { APPLIED, ERRORS, HELD, OUTBOX } from "./engine-state";
+import { CLOCK, CURSOR, STATE } from "./engine-state";
 import type { HandlerRegistry, SyncHandler } from "./handler-registry";
 import type { SyncTransport } from "./transport";
 
-const OUTBOX = "sync-outbox";
-const APPLIED = "sync-applied";
-const ERRORS = "sync-errors";
-const HELD = "sync-held";
-const STATE = "sync-state";
-const CURSOR = "cursor";
-const CLOCK = "hlc";
 // The pair repository owns this record; the engine only fills in `deviceId`.
 const PAIR = { collection: "pair", id: "current" };
 
@@ -130,6 +125,7 @@ class Engine implements SyncEngine {
     const fetched = await transport.fetch(state?.after ?? null);
     for (const { envelope } of fetched.envelopes) {
       await this.receive(session, envelope);
+      if (await this.pairEnded()) return;
     }
     if (fetched.nextCursor !== null) {
       await database.put(STATE, CURSOR, { after: fetched.nextCursor });
@@ -156,6 +152,11 @@ class Engine implements SyncEngine {
   async held(): Promise<HeldEntry[]> {
     const records = await this.o.database.list(HELD);
     return records.map((r) => r.value as unknown as HeldEntry);
+  }
+
+  /** True when a handler ended the pair while the engine worked. */
+  private async pairEnded(): Promise<boolean> {
+    return (await this.o.pairs.activePair()) === null;
   }
 
   /** Nothing moves without a confirmed pair, its keys, a device id and the consent. */
@@ -274,7 +275,7 @@ class Engine implements SyncEngine {
     });
   }
 
-  /** False when a timestamp is malformed; then nothing is applied. */
+  /** False when a timestamp is malformed (nothing is applied) or the pair ended. */
   private async applyAll(
     session: Session,
     envelopeId: string,
@@ -301,6 +302,7 @@ class Engine implements SyncEngine {
         );
       } else if (await this.shared(handler.category)) {
         await handler.apply(change);
+        if (await this.pairEnded()) return false;
       }
     }
     return true;

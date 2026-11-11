@@ -1,136 +1,15 @@
-import type { Sodium } from "@parapka/crypto";
-import { afterEach, beforeAll, expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import { defaultConsent } from "../consent/consent-model";
-import { wireConsent } from "../consent/wiring";
-import { createMemoryDatabase } from "../data/memory-database";
-import type { Profile } from "../data/profile";
-import { createIdentity } from "../identity/identity";
-import { createPairRepository } from "../pairing/pair-repository";
-import type { Platform } from "../platform/context";
-import { createMemoryKeyStore } from "../platform/memory-key-store";
-import { webSha256 } from "../platform/sha256";
-import { createWebSodium } from "../platform/web-sodium";
 import { createPauseRepository } from "./pause-repository";
-import { PAIR_GONE_MESSAGE, wireSync, type SyncController } from "./wiring";
-
-let sodium: Sodium;
-
-beforeAll(async () => {
-  sodium = await createWebSodium();
-});
-
-const stoppers: (() => void)[] = [];
+import { setup, start, stoppers, tick, profile } from "./wiring-test-support";
+import { wireSync } from "./wiring";
 
 afterEach(() => {
   for (const stop of stoppers.splice(0)) stop();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-
-const profile: Profile = {
-  name: "Ola",
-  form: "feminine",
-  adultConfirmed: true,
-  relationshipTenure: "1-3",
-  hasChildren: false,
-  childrenCount: 0,
-  goals: [],
-  otherGoalText: null,
-  shareGoalsWithPartner: false,
-  cycle: "no",
-  pinDecision: "skipped",
-};
-
-const keys = {
-  sendKey: new Uint8Array(32).fill(1),
-  receiveKey: new Uint8Array(32).fill(2),
-};
-
-function socket() {
-  return {
-    onopen: null,
-    onmessage: null,
-    onclose: null,
-    onerror: null,
-    close: vi.fn(),
-  };
-}
-
-/** A registered device on a platform whose relay answers `status` to every call but challenges. */
-async function setup(status = 200) {
-  const database = createMemoryDatabase();
-  const keyStore = createMemoryKeyStore();
-  await createIdentity({
-    sodium,
-    keyStore,
-    database,
-    relay: () => ({
-      registerDevice: () => Promise.resolve({ deviceId: "me" }),
-    }),
-  }).init();
-  const calls: string[] = [];
-  vi.stubGlobal("fetch", (url: string, init: { method: string }) => {
-    calls.push(`${init.method} ${url}`);
-    const challenge = url.endsWith("/challenges");
-    return Promise.resolve({
-      status: challenge ? 201 : status,
-      text: () =>
-        Promise.resolve(
-          challenge
-            ? JSON.stringify({ challengeId: "c", nonce: "n" })
-            : JSON.stringify({ envelopes: [], nextCursor: null }),
-        ),
-    });
-  });
-  const createSocket = vi.fn(socket);
-  const platform = {
-    sodium,
-    keyStore,
-    clock: { nowMs: () => 1_000 },
-    database,
-    sha256: webSha256,
-    relayUrl: "unused-relay",
-    appUrl: "unused",
-    createSocket,
-  } as unknown as Platform;
-  const pairs = createPairRepository(database, keyStore);
-  const { consent, profiles } = wireConsent(platform);
-  const controller = wireSync(platform);
-  stoppers.push(() => {
-    controller.unmount();
-  });
-  const pair = (mailbox = "mailbox-1") =>
-    pairs
-      .savePending(
-        {
-          pairMailboxId: mailbox,
-          deviceId: "partner",
-          signingPublicKey: "s",
-          agreementPublicKey: "a",
-        },
-        keys,
-      )
-      .then(() => pairs.confirm());
-  const syncs = () => calls.filter((c) => c.includes("/envelopes")).length;
-  return {
-    platform,
-    controller,
-    createSocket,
-    pairs,
-    consent,
-    profiles,
-    pair,
-    syncs,
-  };
-}
-
-function start(controller: SyncController) {
-  controller.setActive(true);
-  controller.mount();
-}
-
-const tick = () => new Promise((resolve) => setTimeout(resolve, 20));
 
 it("gives one controller for one platform", async () => {
   const { platform, controller } = await setup();
@@ -283,19 +162,6 @@ it("requests a synchronization after a consent changes", async () => {
     expect(syncs()).toBeGreaterThan(before);
   });
   expect(createSocket).toHaveBeenCalledTimes(1);
-});
-
-it("stops on pair-gone and logs a fixed message", async () => {
-  const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-  const { controller, createSocket, pair, consent } = await setup(410);
-  await pair();
-  await consent.save(defaultConsent(profile));
-  start(controller);
-  await vi.waitFor(() => {
-    expect(warn).toHaveBeenCalledWith(PAIR_GONE_MESSAGE);
-  });
-  const first = createSocket.mock.results[0]?.value as { close: () => void };
-  expect(first.close).toHaveBeenCalled();
 });
 
 it("stops when the conditions cannot be read", async () => {

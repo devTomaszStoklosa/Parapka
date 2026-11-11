@@ -181,6 +181,23 @@ describe("profile sync", () => {
     });
   });
 
+  it("forgets the profile of the partner, the held goals and the marker", async () => {
+    const { a, b, ua, ub } = await setup();
+    await ua.give(true);
+    await ub.give(false);
+    await a.engine.sync();
+    await b.engine.sync();
+    expect(await b.database.get("sync-profile", "held-goals")).not.toBeNull();
+    expect(await b.database.get("sync-profile", "collected")).not.toBeNull();
+
+    await ub.gates.registry.get("Profile")?.forgetReceived?.();
+
+    expect(await ub.partner.get()).toBeNull();
+    expect(await b.database.get("sync-profile", "held-goals")).toBeNull();
+    expect(await b.database.get("sync-profile", "collected")).toBeNull();
+    expect(await createProfileRepository(b.database).get()).not.toBeNull();
+  });
+
   it("queues a change of the own profile", async () => {
     const { a, b, ua, ub } = await setup();
     await ua.give(false);
