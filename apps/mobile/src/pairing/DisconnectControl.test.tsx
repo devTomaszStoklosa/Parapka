@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { DisconnectControl } from "./DisconnectControl";
@@ -45,7 +51,17 @@ it("shows a message when disconnecting fails", async () => {
   press("Rozłącz");
   await screen.findByText("Nie udało się rozłączyć. Spróbuj jeszcze raz.");
   expect(onDone).not.toHaveBeenCalled();
+  await waitFor(() => {
+    expect(
+      screen
+        .getByRole("button", { name: "Anuluj" })
+        .getAttribute("aria-disabled"),
+    ).not.toBe("true");
+  });
   press("Anuluj");
   press("Rozłącz");
-  expect(screen.queryByRole("alert")).toBeNull();
+  await screen.findByText(/Partner straci Twoje dane/);
+  await waitFor(() => {
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });
