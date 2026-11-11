@@ -37,14 +37,14 @@ function renamed(handler: ChoreHandler, entity: string): SyncHandler {
 /** A device with the profile, a CHECKIN and a SHARED_CHORES handler, the consent and the pause. */
 async function withHandlers(device: Device) {
   const { database } = device;
-  const profiles = createProfileRepository(database);
-  const consent = createConsentRepository({
-    database,
-    clock: { nowMs: () => 1 },
-    profiles,
-  });
   const partner = createPartnerProfileRepository(database);
   const pause = createPauseRepository(database);
+  const profiles = createProfileRepository(database);
+  const consent = createConsentRepository({
+    profiles,
+    clock: { nowMs: () => 1 },
+    database,
+  });
   const checkin = new ChoreHandler("CHECKIN");
   const chores = new ChoreHandler("SHARED_CHORES");
   const registry = createHandlerRegistry();
@@ -93,21 +93,4 @@ it("blocks CHECKIN during the pause but not the profile or SHARED_CHORES", async
   await a.engine.sync();
   await b.engine.sync();
   expect(ub.checkin.snapshot()).toEqual({ c1: { mood: "good" } });
-});
-
-it("withdraws the goals at the partner and sends them again when turned on", async () => {
-  const { a, b, ua, ub } = await setup();
-  await a.engine.sync();
-  await b.engine.sync();
-  expect((await ub.partner.get())?.goals).toEqual(["chores", "closeness"]);
-
-  await ua.consent.setCategory("ONBOARDING_GOALS", false);
-  await a.engine.sync();
-  await b.engine.sync();
-  expect((await ub.partner.get())?.goals).toBeNull();
-
-  await ua.consent.setCategory("ONBOARDING_GOALS", true);
-  await a.engine.sync();
-  await b.engine.sync();
-  expect((await ub.partner.get())?.goals).toEqual(["chores", "closeness"]);
 });

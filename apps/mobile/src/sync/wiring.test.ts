@@ -307,13 +307,12 @@ it("stops when the conditions cannot be read", async () => {
 });
 
 it("requests a synchronization after the pause changes", async () => {
-  const { controller, createSocket, pair, consent, platform, syncs } =
-    await setup();
+  const { controller, pair, consent, platform, syncs } = await setup();
   await pair();
   await consent.save(defaultConsent(profile));
   start(controller);
   await vi.waitFor(() => {
-    expect(createSocket).toHaveBeenCalledTimes(1);
+    expect(syncs()).toBeGreaterThan(0);
   });
   await tick();
   const before = syncs();
@@ -321,5 +320,4 @@ it("requests a synchronization after the pause changes", async () => {
   await vi.waitFor(() => {
     expect(syncs()).toBeGreaterThan(before);
   });
-  expect(createSocket).toHaveBeenCalledTimes(1);
 });

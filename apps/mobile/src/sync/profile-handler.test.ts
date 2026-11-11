@@ -176,7 +176,9 @@ describe("profile sync", () => {
     await ua.consent.setCategory("ONBOARDING_GOALS", true);
     await a.engine.sync();
     await b.engine.sync();
-    expect((await ub.partner.get())?.goals).toEqual(["chores", "closeness"]);
+    expect(await ub.partner.get()).toMatchObject({
+      goals: ["chores", "closeness"],
+    });
   });
 
   it("queues a change of the own profile", async () => {
