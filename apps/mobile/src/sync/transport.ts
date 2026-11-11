@@ -1,3 +1,4 @@
+import { RelayError } from "../net/relay-error";
 import type { Envelope, FetchEnvelopesResponse } from "@parapka/protocol";
 
 /** Link of one device with the relay mailbox of the pair (spec 7.4). */
@@ -9,6 +10,8 @@ export interface SyncTransport {
   ack(envelopeIds: readonly string[]): Promise<void>;
   /** Listens to news in the mailbox; returns the function that stops it. */
   onNotify(listener: () => void): () => void;
+  /** Closes the mailbox of the pair; later sends fail as the relay does (410). */
+  close(): Promise<void>;
 }
 
 export interface MemoryRelay {
@@ -25,6 +28,16 @@ class Mailbox {
   private readonly stored: Stored[] = [];
   private readonly listeners = new Map<string, Set<() => void>>();
   private counter = 0;
+
+  private closed = false;
+
+  close(): void {
+    this.closed = true;
+  }
+
+  get isClosed(): boolean {
+    return this.closed;
+  }
 
   send(deviceId: string, envelope: Envelope): void {
     if (
@@ -80,7 +93,14 @@ export function createMemoryRelay(): MemoryRelay {
   return {
     connect: (deviceId) => ({
       send: (envelope) => {
+        if (mailbox.isClosed) {
+          return Promise.reject(new RelayError("expired", 410));
+        }
         mailbox.send(deviceId, envelope);
+        return Promise.resolve();
+      },
+      close: () => {
+        mailbox.close();
         return Promise.resolve();
       },
       fetch: (after) => Promise.resolve(mailbox.fetch(deviceId, after)),

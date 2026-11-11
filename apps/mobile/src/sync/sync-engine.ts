@@ -1,13 +1,6 @@
-import {
-  decryptEnvelope,
-  encryptEnvelope,
-  type PairKeys,
-  type Sodium,
-} from "@parapka/crypto";
+import { decryptEnvelope, type PairKeys, type Sodium } from "@parapka/crypto";
 import { createUuid7Generator, type Clock } from "@parapka/domain";
 import {
-  PROTOCOL_VERSION,
-  SUPPORTED_SCHEMA_VERSION,
   validateContent,
   validateEnvelope,
   type ContentChange,
@@ -20,9 +13,10 @@ import type { ConsentCategory } from "../consent/consent-model";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
 import type { Pair, PairRepository } from "../pairing/pair-repository";
-import { base64Decode, base64Encode } from "./base64";
+import { base64Decode } from "./base64";
 import { APPLIED, ERRORS, HELD, OUTBOX } from "./engine-state";
 import { CLOCK, CURSOR, STATE } from "./engine-state";
+import { flushQueue, queueChanges, type OutboundContext } from "./outbound";
 import type { HandlerRegistry, SyncHandler } from "./handler-registry";
 import type { SyncTransport } from "./transport";
 
@@ -31,7 +25,6 @@ const PAIR = { collection: "pair", id: "current" };
 
 const PAUSED: unknown[] = ["CYCLE_HINTS", "CHECKIN"];
 
-const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 export type SyncErrorReason =
@@ -68,12 +61,21 @@ export interface SyncEngineOptions {
   isPaused?: () => boolean | Promise<boolean>;
 }
 
+export type CommandBuilder = (stamp: () => string) => ContentChange;
+
 export interface SyncEngine {
   /** Queues the local changes and sends the queue; keeps what it cannot send. */
   push(): Promise<void>;
   /** Fetches, applies and acknowledges the envelopes of the partner. */
   pull(): Promise<void>;
   sync(): Promise<void>;
+  /**
+   * Queues a command for the partner as the last envelope of the queue. It
+   * needs the pair and the keys, not the consent. `build` gets the clock.
+   */
+  queueCommand(build: CommandBuilder): Promise<void>;
+  /** Sends the queue through the transport without a session; stops at the first error. */
+  flush(transport: SyncTransport): Promise<void>;
   /** Envelopes waiting to be sent. */
   pending(): Promise<number>;
   errors(): Promise<SyncErrorEntry[]>;
@@ -97,22 +99,38 @@ const asJson = (value: unknown) => value as JsonValue;
 class Engine implements SyncEngine {
   private hlc: HybridLogicalClock | null = null;
   private readonly newId: () => string;
+  private readonly outbound: OutboundContext;
 
   constructor(private readonly o: SyncEngineOptions) {
     this.newId = createUuid7Generator({
       clock: o.clock,
       random: { bytes: (length) => o.sodium.randomBytes(length) },
     });
+    this.outbound = {
+      database: o.database,
+      sodium: o.sodium,
+      newId: this.newId,
+    };
   }
 
   async push(): Promise<void> {
     const session = await this.session();
     if (session === null) return;
     await this.enqueue(session);
-    for (const record of await this.o.database.list(OUTBOX)) {
-      await this.o.transport.send(record.value as unknown as Envelope);
-      await this.o.database.delete(OUTBOX, record.id);
-    }
+    await flushQueue(this.o.database, this.o.transport);
+  }
+
+  async queueCommand(build: CommandBuilder): Promise<void> {
+    const session = await this.credentials();
+    if (session === null) return;
+    const hlc = await this.clockFor(session.deviceId);
+    const change = build(() => formatHlc(hlc.now()));
+    await this.saveClock(hlc);
+    await queueChanges(this.outbound, session, [change]);
+  }
+
+  flush(transport: SyncTransport): Promise<void> {
+    return flushQueue(this.o.database, transport);
   }
 
   async pull(): Promise<void> {
@@ -162,6 +180,11 @@ class Engine implements SyncEngine {
   /** Nothing moves without a confirmed pair, its keys, a device id and the consent. */
   private async session(): Promise<Session | null> {
     if (!(await (this.o.canSync?.() ?? true))) return null;
+    return this.credentials();
+  }
+
+  /** The pair, its keys and the device id; without the consent check. */
+  private async credentials(): Promise<Session | null> {
     const pair = await this.o.pairs.activePair();
     const keys = await this.o.pairs.keys();
     const deviceId = await this.o.identity.deviceId();
@@ -203,28 +226,7 @@ class Engine implements SyncEngine {
     }
     if (changes.length === 0) return;
     await this.saveClock(hlc);
-    const content: EnvelopeContent = {
-      schemaVersion: SUPPORTED_SCHEMA_VERSION,
-      changes,
-    };
-    const fields = {
-      envelopeId: this.newId(),
-      pairMailboxId: session.pair.pairMailboxId,
-      senderDeviceId: session.deviceId,
-      protocolVersion: PROTOCOL_VERSION,
-    };
-    const encrypted = encryptEnvelope(
-      this.o.sodium,
-      session.keys.sendKey,
-      fields,
-      encoder.encode(JSON.stringify(content)),
-    );
-    const envelope: Envelope = {
-      ...fields,
-      nonce: base64Encode(encrypted.nonce),
-      ciphertext: base64Encode(encrypted.ciphertext),
-    };
-    await this.o.database.put(OUTBOX, fields.envelopeId, asJson(envelope));
+    await queueChanges(this.outbound, session, changes);
     for (const handler of collected) await handler.committed?.();
   }
 

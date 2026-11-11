@@ -76,4 +76,14 @@ describe("memory transport", () => {
     await a.send(envelope("e2", "a"));
     expect([own, partner]).toEqual([0, 1]);
   });
+
+  it("rejects sends after the mailbox is closed, as the relay does", async () => {
+    const relay = createMemoryRelay();
+    const a = relay.connect("a");
+    await a.close();
+    await expect(a.send(envelope("e1", "a"))).rejects.toMatchObject({
+      kind: "expired",
+      status: 410,
+    });
+  });
 });

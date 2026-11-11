@@ -33,6 +33,7 @@ function setup() {
       Promise.resolve({ envelopes: [], nextCursor: null }),
     ),
     ack: vi.fn(() => Promise.resolve({ deleted: 1 })),
+    closePair: vi.fn(() => Promise.resolve()),
     webSocketUrl: vi.fn(() => Promise.resolve("wss://relay/ws?x=1")),
   };
   const sockets: FakeSocket[] = [];
@@ -95,4 +96,12 @@ it("passes the injected timers to the socket", async () => {
   });
   stop();
   expect(clearTimer).toHaveBeenCalledWith("timer");
+});
+
+it("closes the mailbox of the pair and passes the error on", async () => {
+  const { client, transport } = setup();
+  await transport.close();
+  expect(client.closePair).toHaveBeenCalledWith("mailbox");
+  client.closePair.mockRejectedValueOnce(new Error("gone"));
+  await expect(transport.close()).rejects.toThrow("gone");
 });
