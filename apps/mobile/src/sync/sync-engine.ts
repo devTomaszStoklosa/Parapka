@@ -21,15 +21,8 @@ import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
 import type { Pair, PairRepository } from "../pairing/pair-repository";
 import { base64Decode, base64Encode } from "./base64";
-import {
-  APPLIED,
-  CLOCK,
-  CURSOR,
-  ERRORS,
-  HELD,
-  OUTBOX,
-  STATE,
-} from "./engine-state";
+import { APPLIED, ERRORS, HELD, OUTBOX } from "./engine-state";
+import { CLOCK, CURSOR, STATE } from "./engine-state";
 import type { HandlerRegistry, SyncHandler } from "./handler-registry";
 import type { SyncTransport } from "./transport";
 
@@ -37,6 +30,7 @@ import type { SyncTransport } from "./transport";
 const PAIR = { collection: "pair", id: "current" };
 
 const PAUSED: unknown[] = ["CYCLE_HINTS", "CHECKIN"];
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
