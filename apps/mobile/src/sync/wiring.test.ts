@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { defaultConsent } from "../consent/consent-model";
 import { createPauseRepository } from "./pause-repository";
 import { setup, start, stoppers, tick, profile } from "./wiring-test-support";
-import { wireSync } from "./wiring";
+import { wireChores, wireSync } from "./wiring";
 
 const made = vi.hoisted(
   () => [] as { all: () => readonly { entity: string }[] }[],
@@ -56,6 +56,13 @@ it("draws the ids of the chores from the random bytes of the platform", async ()
   await setup();
   const deps = choreDeps.at(-1);
   expect(deps?.newId()).not.toBe(deps?.newId());
+});
+
+it("gives the screens the repositories of the synchronization", async () => {
+  const { platform } = await setup();
+  const made = choreDeps.length;
+  expect(wireChores(platform)).toBe(wireChores(platform));
+  expect(choreDeps).toHaveLength(made);
 });
 
 it("gives one controller for one platform", async () => {

@@ -25,6 +25,31 @@ export const pl = {
     pop: "Wstecz",
     depth: "Poziom stosu: {level}",
   },
+  planner: {
+    views: { label: "Widok", today: "Dziś", week: "Tydzień", all: "Wszystkie" },
+    filters: {
+      label: "Filtr",
+      all: "Wszystkie",
+      mine: "Moje",
+      partner: "Partnera",
+      shared: "Wspólne",
+    },
+    todo: "Do zrobienia",
+    upcoming: "Najbliższe",
+    done: "Odhaczone",
+    responsible: {
+      me: "Ty",
+      partner: "Partner",
+      both: "Oboje",
+      anyone: "Ktokolwiek",
+    },
+    emptyViewText: "Nic do zrobienia w tym widoku.",
+    empty: {
+      text: "Nie masz jeszcze żadnych obowiązków. Dodaj pierwszy, na przykład wynoszenie śmieci.",
+      add: "Dodaj pierwszy obowiązek",
+    },
+    failed: "Nie udało się wczytać obowiązków. Spróbuj ponownie później.",
+  },
   pairing: {
     title: "Para",
     invite: "Zaproś partnera",

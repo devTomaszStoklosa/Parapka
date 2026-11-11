@@ -47,7 +47,7 @@ export interface SyncController {
 
 const wired = new WeakMap<Platform, SyncController>();
 
-function createDependencies(platform: Platform) {
+function buildChores(platform: Platform) {
   const { database, sodium, sha256, keyStore, clock } = platform;
   const client = (credentials?: DeviceCredentials) =>
     createRelayClient({
@@ -64,26 +64,34 @@ function createDependencies(platform: Platform) {
     relay: client,
   });
   const pairs = createPairRepository(database, keyStore);
-  const chores = createChoreRepository({
+  const random = { bytes: (length: number) => sodium.randomBytes(length) };
+  const newId = createUuid7Generator({ clock, random });
+  const chores = createChoreRepository({ database, pairs, identity, newId });
+  const completions = createCompletionRepository({
     database,
-    pairs,
-    identity,
-    newId: createUuid7Generator({
-      clock,
-      random: { bytes: (length) => sodium.randomBytes(length) },
-    }),
-  });
-  return {
-    client,
-    identity,
-    pairs,
     chores,
-    completions: createCompletionRepository({
-      database,
-      chores,
-      identity,
-      clock,
-    }),
+    identity,
+    clock,
+  });
+  return { client, identity, pairs, chores, completions };
+}
+
+const wiredChores = new WeakMap<Platform, ReturnType<typeof buildChores>>();
+
+/**
+ * The identity, pair, chore and check-off repositories of the platform: one set
+ * per platform, so the screens and the synchronization share the instances.
+ */
+export function wireChores(platform: Platform) {
+  const set = wiredChores.get(platform) ?? buildChores(platform);
+  wiredChores.set(platform, set);
+  return set;
+}
+
+function createDependencies(platform: Platform) {
+  const { database } = platform;
+  return {
+    ...wireChores(platform),
     disconnect: createDisconnectRepository(database),
     partner: createPartnerProfileRepository(database),
     pause: createPauseRepository(database),
