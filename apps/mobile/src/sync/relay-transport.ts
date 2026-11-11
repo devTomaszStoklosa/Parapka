@@ -26,6 +26,7 @@ export function createRelayTransport(
     ack: async (envelopeIds) => {
       await client.ack(pairMailboxId, envelopeIds);
     },
+    close: () => client.closePair(pairMailboxId),
     onNotify: (listener) => {
       const socket = connectRelaySocket({
         url: () => client.webSocketUrl(pairMailboxId),
