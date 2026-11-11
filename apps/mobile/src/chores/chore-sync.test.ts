@@ -1,29 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { createPairedDevices } from "../sync/sync-test-support";
-import { ME, PARTNER, WEEKDAYS, withChores } from "./chore-test-support";
+import {
+  ME,
+  PARTNER,
+  WEEKDAYS,
+  exchange,
+  setupChorePair,
+} from "./chore-test-support";
 
 const input = { title: "Wynieść śmieci", rule: WEEKDAYS, assignment: ME };
 
-/** Two paired devices with the real chore repositories and handlers. */
-async function setup(isShared?: () => boolean) {
-  const devices = await createPairedDevices();
-  const { a, b } = devices;
-  const ua = withChores(a, isShared);
-  const ub = withChores(b, isShared);
-  return { ...devices, ca: ua.chores, cb: ub.chores, ua, ub };
-}
-
-/** A sends, B takes it in and answers, A takes in the answer. */
-async function exchange({ a, b }: Awaited<ReturnType<typeof setup>>) {
-  await a.engine.sync();
-  await b.engine.sync();
-  await a.engine.sync();
-}
-
 describe("chore sync", () => {
   it("passes on a rule of weekdays to the partner (FR-CHR-01)", async () => {
-    const pair = await setup();
+    const pair = await setupChorePair();
     await pair.ca.add(input);
     await exchange(pair);
     const [chore] = await pair.cb.list();
@@ -36,7 +25,7 @@ describe("chore sync", () => {
   });
 
   it("turns mine into the partner's on the other device", async () => {
-    const pair = await setup();
+    const pair = await setupChorePair();
     await pair.ca.add(input);
     await pair.ca.add({ ...input, assignment: PARTNER });
     await pair.ca.add({
@@ -63,7 +52,7 @@ describe("chore sync", () => {
   });
 
   it("keeps both fields changed offline on the two devices (FR-CHR-06)", async () => {
-    const pair = await setup();
+    const pair = await setupChorePair();
     const { id } = await pair.ca.add({
       ...input,
       rule: { kind: "occasional", dueDate: "2026-02-01" },
@@ -86,7 +75,7 @@ describe("chore sync", () => {
   });
 
   it("lets the last change of one field win", async () => {
-    const pair = await setup();
+    const pair = await setupChorePair();
     const { id } = await pair.ca.add(input);
     await exchange(pair);
     await pair.ca.edit(id, { title: "Wcześniej" });
@@ -99,7 +88,7 @@ describe("chore sync", () => {
   });
 
   it("lets a deletion win over an edit made at the same time", async () => {
-    const pair = await setup();
+    const pair = await setupChorePair();
     const { id } = await pair.ca.add(input);
     await exchange(pair);
     await pair.ca.remove(id);
@@ -111,7 +100,7 @@ describe("chore sync", () => {
   });
 
   it("brings a chore back with a restore that is later", async () => {
-    const pair = await setup();
+    const pair = await setupChorePair();
     const { id } = await pair.ca.add(input);
     await exchange(pair);
     await pair.cb.remove(id);
@@ -125,7 +114,7 @@ describe("chore sync", () => {
   });
 
   it("does not send a chore that stays private", async () => {
-    const pair = await setup();
+    const pair = await setupChorePair();
     const { id } = await pair.ca.add(input);
     await pair.ua.handler.disconnected?.();
     await pair.ca.edit(id, { title: "Tylko moje" });
@@ -138,7 +127,7 @@ describe("chore sync", () => {
 
   it("sends nothing while SHARED_CHORES is off, and then everything", async () => {
     let shared = false;
-    const pair = await setup(() => shared);
+    const pair = await setupChorePair(() => shared);
     await pair.ca.add(input);
     await exchange(pair);
     expect(await pair.cb.list()).toEqual([]);
@@ -149,7 +138,7 @@ describe("chore sync", () => {
 
   it("does not take in chores of the partner while SHARED_CHORES is off", async () => {
     let shared = true;
-    const pair = await setup(() => shared);
+    const pair = await setupChorePair(() => shared);
     await pair.ca.add(input);
     await pair.a.engine.sync();
     shared = false;

@@ -1,7 +1,6 @@
 import { ChoreValidationError, type Clock } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
 import {
-  applyChange,
   createHlc,
   emptyEntityState,
   formatHlc,
@@ -18,6 +17,7 @@ import type { Identity } from "../identity/identity";
 import type { NextHlc } from "../sync/handler-registry";
 import { ChoreDeviceError } from "./chore-codec";
 import type { ChoreRepository } from "./chore-repository";
+import { createRecordSync } from "./record-sync";
 
 const COLLECTION = "chore-completions";
 const ENTITY = "ChoreCompletion";
@@ -163,49 +163,6 @@ function toCompletion(record: CompletionRecord): StoredCompletion | null {
     : null;
 }
 
-function createSyncAccess(
-  records: () => Promise<{ id: string; record: CompletionRecord }[]>,
-  read: (id: string) => Promise<CompletionRecord | null>,
-  write: (id: string, record: CompletionRecord) => Promise<void>,
-): CompletionRepository["sync"] {
-  return {
-    collect: async (nextHlc) => {
-      const result: ContentChange[] = [];
-      for (const { id, record } of await records()) {
-        if (record.shared) {
-          result.push(...stampPending(id, record.pending, nextHlc));
-        }
-      }
-      return result;
-    },
-    commit: async (sent) => {
-      for (const change of sent) {
-        const record = (await read(change.id)) as CompletionRecord;
-        record.state = applyChange(record.state, forMerge(change));
-        settle(record.pending, change);
-        await write(change.id, record);
-      }
-    },
-    merge: async (change) => {
-      const known = await read(change.id);
-      // A check-off that is private here is not overwritten.
-      if (known?.shared === false) return;
-      const incoming = sanitize(change);
-      if (incoming === null) return;
-      const record = known ?? emptyRecord(change.id, true);
-      record.state = applyChange(record.state, incoming);
-      await write(change.id, record);
-    },
-    makePrivate: async () => {
-      for (const { id, record } of await records()) {
-        if (!record.shared) continue;
-        record.shared = false;
-        await write(id, record);
-      }
-    },
-  };
-}
-
 function createAccess({ database, identity }: Deps) {
   const changes = changeChannel(database, COLLECTION);
   return {
@@ -270,6 +227,15 @@ export function createCompletionRepository(deps: Deps): CompletionRepository {
         alive.map((c) => ({ ...c, hlc: parseHlc(c.completedAt) })),
       ).map(({ hlc, ...rest }) => ({ ...rest, completedAt: formatHlc(hlc) }));
     },
-    sync: createSyncAccess(records, read, write),
+    sync: createRecordSync({
+      records,
+      read,
+      write,
+      stampPending,
+      settle,
+      sanitize,
+      toMerge: forMerge,
+      emptyRecord,
+    }),
   };
 }

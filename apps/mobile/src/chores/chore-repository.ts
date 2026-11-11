@@ -9,7 +9,6 @@ import {
 } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
 import {
-  applyChange,
   emptyEntityState,
   isAlive,
   type Change,
@@ -29,6 +28,7 @@ import {
   type Devices,
   type StoredAssignment,
 } from "./chore-codec";
+import { createRecordSync } from "./record-sync";
 
 const COLLECTION = "chores";
 const ENTITY = "Chore";
@@ -75,7 +75,7 @@ export interface ChoreRepository {
   /** For the sync handler. */
   readonly sync: {
     /** Stamps the pending changes of the shared chores. */
-    collect(nextHlc: NextHlc): Promise<Change[]>;
+    collect(nextHlc: NextHlc): Promise<ContentChange[]>;
     /** Merges the collected changes into the state and drops them from pending. */
     commit(changes: readonly ContentChange[]): Promise<void>;
     /** Takes in a change of the partner; invalid fields are skipped. */
@@ -201,47 +201,20 @@ function createAccess({ database, pairs, identity }: Deps) {
 type Access = ReturnType<typeof createAccess>;
 
 function createSyncAccess(access: Access): ChoreRepository["sync"] {
-  const { read, write, records } = access;
-  return {
-    collect: async (nextHlc) => {
-      const result: Change[] = [];
-      for (const { id, record } of await records()) {
-        if (record.shared) {
-          result.push(...stampPending(id, record.pending, nextHlc));
-        }
-      }
-      return result;
-    },
-    commit: async (sent) => {
-      for (const change of sent) {
-        const record = (await read(change.id)) as ChoreRecord;
-        record.state = applyChange(record.state, change as Change);
-        settle(record.pending, change);
-        await write(change.id, record);
-      }
-    },
-    merge: async (change) => {
-      const known = await read(change.id);
-      // A chore that is private here is not overwritten.
-      if (known?.shared === false) return;
-      const incoming = sanitize(change);
-      if (incoming === null) return;
-      const record = known ?? {
-        shared: true,
-        state: emptyEntityState(ENTITY, change.id),
-        pending: emptyPending(),
-      };
-      record.state = applyChange(record.state, incoming);
-      await write(change.id, record);
-    },
-    makePrivate: async () => {
-      for (const { id, record } of await records()) {
-        if (!record.shared) continue;
-        record.shared = false;
-        await write(id, record);
-      }
-    },
-  };
+  return createRecordSync({
+    records: access.records,
+    read: access.read,
+    write: access.write,
+    stampPending,
+    settle,
+    sanitize,
+    toMerge: (change) => change as Change,
+    emptyRecord: (id, shared) => ({
+      shared,
+      state: emptyEntityState(ENTITY, id),
+      pending: emptyPending(),
+    }),
+  });
 }
 
 export function createChoreRepository(deps: Deps): ChoreRepository {

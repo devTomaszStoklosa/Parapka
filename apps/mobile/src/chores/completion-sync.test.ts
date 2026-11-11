@@ -1,30 +1,25 @@
 import { describe, expect, it } from "vitest";
 
-import { createPairedDevices } from "../sync/sync-test-support";
-import { ME, WEEKDAYS, withChores } from "./chore-test-support";
+import { ME, WEEKDAYS, exchange, setupChorePair } from "./chore-test-support";
 
 const input = { title: "Wynieść śmieci", rule: WEEKDAYS, assignment: ME };
 const DAY = "2026-11-05";
 
-async function setup(isShared?: () => boolean) {
-  const devices = await createPairedDevices();
-  const ua = withChores(devices.a, isShared);
-  const ub = withChores(devices.b, isShared);
-  return { ...devices, ua, ub };
-}
-
-async function exchange({ a, b }: Awaited<ReturnType<typeof setup>>) {
-  await a.engine.sync();
-  await b.engine.sync();
-  await a.engine.sync();
-}
-
 /** A chore on both devices. */
 async function shared(isShared?: () => boolean) {
-  const pair = await setup(isShared);
+  const pair = await setupChorePair(isShared);
   const { id } = await pair.ua.chores.add(input);
   await exchange(pair);
   return { pair, id };
+}
+
+/** After a sync A has its check-off and B has none. */
+async function expectOnlyLocal(
+  pair: Awaited<ReturnType<typeof setupChorePair>>,
+) {
+  await exchange(pair);
+  expect(await pair.ua.completions.list()).toHaveLength(1);
+  expect(await pair.ub.completions.list()).toEqual([]);
 }
 
 describe("chore completion sync", () => {
@@ -65,9 +60,7 @@ describe("chore completion sync", () => {
     await pair.ua.handler.disconnected?.();
     await pair.ua.completionHandler.disconnected?.();
     await pair.ua.completions.complete(id, DAY);
-    await exchange(pair);
-    expect(await pair.ua.completions.list()).toHaveLength(1);
-    expect(await pair.ub.completions.list()).toEqual([]);
+    await expectOnlyLocal(pair);
   });
 
   it("keeps unsent check-offs on the device when the pair ends", async () => {
@@ -75,9 +68,7 @@ describe("chore completion sync", () => {
     await pair.ua.completions.complete(id, DAY);
     await pair.ua.completionHandler.disconnected?.();
     await pair.ua.completionHandler.disconnected?.();
-    await exchange(pair);
-    expect(await pair.ua.completions.list()).toHaveLength(1);
-    expect(await pair.ub.completions.list()).toEqual([]);
+    await expectOnlyLocal(pair);
   });
 
   it("sends nothing while SHARED_CHORES is off, and then everything", async () => {

@@ -1,5 +1,4 @@
 import type { SyncHandler } from "../sync/handler-registry";
-import type { ChoreRepository } from "./chore-repository";
 import { createChoreHandler } from "./chore-handler";
 import type { CompletionRepository } from "./completion-repository";
 
@@ -13,7 +12,7 @@ export function createChoreCompletionHandler(deps: {
   const { sync } = deps.completions;
   return {
     ...createChoreHandler({
-      chores: { sync: sync as ChoreRepository["sync"] },
+      chores: { sync },
     }),
     entity: "ChoreCompletion",
   };
