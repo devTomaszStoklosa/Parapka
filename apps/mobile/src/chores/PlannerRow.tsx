@@ -4,10 +4,11 @@ import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
 import { PlannerActions, type RowActions } from "./PlannerActions";
-import { formatMoment, type PlannerRow as Row } from "./planner-model";
-
-/** `2026-11-05` as `05.11.2026`. */
-const formatDate = (date: string) => date.split("-").reverse().join(".");
+import {
+  formatDate,
+  formatMoment,
+  type PlannerRow as Row,
+} from "./planner-model";
 
 /** Who is responsible, by the name of the partner when it is known. */
 const whoText = (row: Row, partnerName: string | null) =>

@@ -4,8 +4,10 @@ import { cleanup, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { pl } from "../i18n/pl";
+import { colors, contrastRatio } from "../ui/theme";
 import {
   NOW,
+  action,
   press,
   receiveProfile,
   setup,
@@ -37,7 +39,7 @@ describe("ticking off an occurrence", () => {
     const { platform, chores, completions } = await setup(false);
     await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
     show(platform);
-    await press(pl.planner.actions.done);
+    await press(action(pl.planner.actions.done));
     expect(
       await screen.findByText("Zrobił(a): Ty, 11.11.2026 12:00"),
     ).toBeTruthy();
@@ -48,7 +50,7 @@ describe("ticking off an occurrence", () => {
       ),
     ).toBeTruthy();
     expect(
-      screen.queryByRole("button", { name: pl.planner.actions.done }),
+      screen.queryByRole("button", { name: action(pl.planner.actions.done) }),
     ).toBeNull();
   });
 
@@ -62,7 +64,7 @@ describe("ticking off an occurrence", () => {
     show(platform);
     await press(pl.planner.views.week, "radio");
     const buttons = await screen.findAllByRole("button", {
-      name: pl.planner.actions.done,
+      name: action(pl.planner.actions.done),
     });
     expect(buttons).toHaveLength(2);
     buttons[0]?.click();
@@ -72,8 +74,60 @@ describe("ticking off an occurrence", () => {
       ]);
     });
     expect(
-      await screen.findAllByRole("button", { name: pl.planner.actions.done }),
+      await screen.findAllByRole("button", {
+        name: action(pl.planner.actions.done),
+      }),
     ).toHaveLength(1);
+  });
+
+  it("labels each button with the title and the date", async () => {
+    const { platform, chores } = await setup(false);
+    await chores.add({
+      title: "Śmieci",
+      rule: { kind: "weekdays", weekdays: [1, 4] },
+      assignment: ME,
+    });
+    show(platform);
+    await press(pl.planner.views.week, "radio");
+    const done = pl.planner.actions.done;
+    expect(
+      await screen.findByRole("button", {
+        name: `${done}: Śmieci, 12.11.2026`,
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: `${done}: Śmieci, 16.11.2026` }),
+    ).toBeTruthy();
+    expect(screen.getAllByText(done)).toHaveLength(2);
+  });
+
+  it("draws the action buttons with a border that sets them apart", async () => {
+    const { platform, chores } = await setup(false);
+    await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
+    show(platform);
+    const button = await screen.findByRole("button", {
+      name: action(pl.planner.actions.done),
+    });
+    const style = getComputedStyle(button);
+    expect(style.borderTopWidth).toBe("1px");
+    expect(style.borderTopColor).not.toBe("");
+    expect(contrastRatio(colors.border, colors.surface)).toBeGreaterThan(3);
+  });
+
+  it("labels the undo button with the title and the date", async () => {
+    const { platform, chores, completions } = await setup(false);
+    const { id } = await chores.add({
+      title: "Zmywanie",
+      rule: DAILY,
+      assignment: ME,
+    });
+    await completions.complete(id, "2026-11-11");
+    show(platform);
+    expect(
+      await screen.findByRole("button", {
+        name: `${pl.planner.actions.undo}: Zmywanie, 11.11.2026`,
+      }),
+    ).toBeTruthy();
   });
 
   it("removes a ticked off overdue occurrence from the to-do list", async () => {
@@ -87,7 +141,7 @@ describe("ticking off an occurrence", () => {
     time.now = NOW;
     show(platform);
     await screen.findByRole("heading", { name: pl.planner.todo });
-    await press(pl.planner.actions.done);
+    await press(action(pl.planner.actions.done));
     await waitFor(() => {
       expect(
         screen.queryByRole("heading", { name: pl.planner.todo }),
@@ -104,9 +158,11 @@ describe("ticking off an occurrence", () => {
     });
     await completions.complete(id, "2026-11-11");
     show(platform);
-    await press(pl.planner.actions.undo);
+    await press(action(pl.planner.actions.undo));
     expect(
-      await screen.findByRole("button", { name: pl.planner.actions.done }),
+      await screen.findByRole("button", {
+        name: action(pl.planner.actions.done),
+      }),
     ).toBeTruthy();
     expect(await completions.list()).toEqual([]);
   });
@@ -125,7 +181,7 @@ describe("ticking off an occurrence", () => {
       await screen.findByText("Zrobił(a): Ola, 12.11.2026 18:05"),
     ).toBeTruthy();
     expect(
-      screen.queryByRole("button", { name: pl.planner.actions.undo }),
+      screen.queryByRole("button", { name: action(pl.planner.actions.undo) }),
     ).toBeNull();
   });
 
@@ -149,10 +205,10 @@ describe("ticking off an occurrence", () => {
     const complete = completions.complete.bind(completions);
     completions.complete = () => Promise.reject(new Error("broken"));
     show(platform);
-    await press(pl.planner.actions.done);
+    await press(action(pl.planner.actions.done));
     expect(await screen.findByText(FAILED)).toBeTruthy();
     completions.complete = complete;
-    await press(pl.planner.actions.done);
+    await press(action(pl.planner.actions.done));
     await waitFor(() => {
       expect(screen.queryByText(FAILED)).toBeNull();
     });
@@ -168,7 +224,7 @@ describe("ticking off an occurrence", () => {
     await completions.complete(id, "2026-11-11");
     completions.undo = () => Promise.reject(new Error("broken"));
     show(platform);
-    await press(pl.planner.actions.undo);
+    await press(action(pl.planner.actions.undo));
     expect(await screen.findByText(FAILED)).toBeTruthy();
   });
 });

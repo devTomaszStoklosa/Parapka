@@ -3,15 +3,30 @@ import { cleanup, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { pl } from "../i18n/pl";
-import { press, setup, show, useSodium } from "./planner-test-support";
+import { action, press, setup, show, useSodium } from "./planner-test-support";
 
 useSodium();
 afterEach(cleanup);
 
-const RELEASE = pl.planner.actions.release;
+const RELEASE = action(pl.planner.actions.release);
 const rule = { kind: "daily" } as const;
 
 describe("can't manage", () => {
+  it("labels the button with the title and the date", async () => {
+    const { platform, chores } = await setup(true);
+    await chores.add({
+      title: "Zmywanie",
+      rule,
+      assignment: { kind: "person", person: "me" },
+    });
+    show(platform);
+    expect(
+      await screen.findByRole("button", {
+        name: `${pl.planner.actions.release}: Zmywanie, 11.11.2026`,
+      }),
+    ).toBeTruthy();
+  });
+
   it("hands the chore to anyone with one touch and no message", async () => {
     const { platform, chores } = await setup(true);
     const { id } = await chores.add({
@@ -54,7 +69,9 @@ describe("can't manage", () => {
       const { platform, chores } = await setup(true);
       await chores.add({ title: "Zmywanie", rule, assignment });
       show(platform);
-      await screen.findByRole("button", { name: pl.planner.actions.done });
+      await screen.findByRole("button", {
+        name: action(pl.planner.actions.done),
+      });
       expect(screen.queryByRole("button", { name: RELEASE })).toBeNull();
     },
   );
@@ -67,7 +84,9 @@ describe("can't manage", () => {
       assignment: { kind: "person", person: "me" },
     });
     show(platform);
-    await screen.findByRole("button", { name: pl.planner.actions.done });
+    await screen.findByRole("button", {
+      name: action(pl.planner.actions.done),
+    });
     expect(screen.queryByRole("button", { name: RELEASE })).toBeNull();
   });
 
@@ -80,7 +99,9 @@ describe("can't manage", () => {
     });
     await completions.complete(id, "2026-11-11");
     show(platform);
-    await screen.findByRole("button", { name: pl.planner.actions.undo });
+    await screen.findByRole("button", {
+      name: action(pl.planner.actions.undo),
+    });
     expect(screen.queryByRole("button", { name: RELEASE })).toBeNull();
   });
 

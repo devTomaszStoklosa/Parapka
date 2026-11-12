@@ -63,6 +63,9 @@ export function localDate(ms: number): CalendarDate {
   return `${year}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/** `2026-11-05` as `05.11.2026`. */
+export const formatDate = (date: string) => date.split("-").reverse().join(".");
+
 /** A moment as local `05.11.2026 18:05`. */
 export function formatMoment(ms: number): string {
   const date = new Date(ms);

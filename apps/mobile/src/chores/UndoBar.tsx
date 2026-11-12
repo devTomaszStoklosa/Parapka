@@ -31,7 +31,9 @@ export function UndoBar(props: {
         alignItems: "center",
         gap: spacing.md,
         padding: spacing.md,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.background,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
       }}
     >
       <AppText style={{ flex: 1 }}>

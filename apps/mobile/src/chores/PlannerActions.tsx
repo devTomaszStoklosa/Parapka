@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { spacing } from "../ui/theme";
-import type { PlannerRow as Row } from "./planner-model";
+import { formatDate, type PlannerRow as Row } from "./planner-model";
 
 /** What the buttons of a row do; each one gets the row it belongs to. */
 export interface RowActions {
@@ -25,12 +25,19 @@ export function PlannerActions(props: {
 }) {
   const { row, deviceId, paired, actions } = props;
   const { completion } = row;
+  const labelFor = (action: string) =>
+    t("planner.actions.label", {
+      action,
+      title: row.title,
+      date: formatDate(row.date),
+    });
   const mine = row.responsible === "me" || row.responsible === "both";
   return (
     <View style={{ flexDirection: "row", gap: spacing.sm }}>
       {completion === null ? (
         <Button
           label={t("planner.actions.done")}
+          accessibilityLabel={labelFor(t("planner.actions.done"))}
           onPress={() => {
             actions.onDone(row);
           }}
@@ -38,6 +45,7 @@ export function PlannerActions(props: {
       ) : completion.by === deviceId ? (
         <Button
           label={t("planner.actions.undo")}
+          accessibilityLabel={labelFor(t("planner.actions.undo"))}
           onPress={() => {
             actions.onUndo(row);
           }}
@@ -46,6 +54,7 @@ export function PlannerActions(props: {
       {completion === null && paired && mine ? (
         <Button
           label={t("planner.actions.release")}
+          accessibilityLabel={labelFor(t("planner.actions.release"))}
           onPress={() => {
             actions.onRelease(row);
           }}

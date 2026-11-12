@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import type { StoredChore } from "./chore-repository";
 import {
   buildPlanner,
+  formatDate,
   formatMoment,
   localDate,
   type PlannerFilter,
@@ -241,5 +242,11 @@ describe("formatMoment", () => {
     expect(formatMoment(new Date(2026, 0, 2, 3, 4).getTime())).toBe(
       "02.01.2026 03:04",
     );
+  });
+});
+
+describe("formatDate", () => {
+  it("turns a calendar day into dd.mm.yyyy", () => {
+    expect(formatDate("2026-11-05")).toBe("05.11.2026");
   });
 });
