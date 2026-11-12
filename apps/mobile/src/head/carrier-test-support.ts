@@ -1,3 +1,6 @@
+import type { ContentChange } from "@parapka/protocol";
+import { createHlc, formatHlc } from "@parapka/sync";
+
 import type { ConsentCategory } from "../consent/consent-model";
 import { createMemoryDatabase } from "../data/memory-database";
 import { createPairRepository } from "../pairing/pair-repository";
@@ -6,6 +9,9 @@ import { createHandlerRegistry } from "../sync/handler-registry";
 import { createPairedDevices, type Device } from "../sync/sync-test-support";
 import { createCarrierHandler } from "./carrier-handler";
 import { createCarrierRepository } from "./carrier-repository";
+import { createHandoverHandler } from "./handover-handler";
+import { createHandoverRepository } from "./handover-repository";
+import { createHandoverService } from "./handover-service";
 import { createHeadService } from "./head-service";
 import { createItemHandler } from "./item-handler";
 import { createItemRepository } from "./item-repository";
@@ -33,8 +39,36 @@ function build(
     identity,
     clock,
   });
-  return { items, carriers, head };
+  const handovers = createHandoverRepository({ database, identity, clock });
+  const handover = createHandoverService({
+    handovers,
+    carriers,
+    head,
+    pairs,
+    identity,
+    newId: () => `${id}-r${String((ids.n += 1))}`,
+  });
+  return { items, carriers, head, handovers, handover };
 }
+
+/** A moment of the partner, for the entries that the tests take in. */
+export const AT = formatHlc(createHlc(1_800_000_000_000, 0, "device-b"));
+
+/** An upsert of an entry, every field with the HLC `hlc`. */
+export const upsertEntry = (
+  entity: string,
+  id: string,
+  values: Record<string, unknown>,
+  hlc: string = AT,
+) =>
+  ({
+    entity,
+    id,
+    op: "upsert",
+    fields: Object.fromEntries(
+      Object.entries(values).map(([name, value]) => [name, { value, hlc }]),
+    ),
+  }) as ContentChange;
 
 /** The repositories, handlers and service of a device, as the engine runs them. */
 export function withHead(
@@ -49,8 +83,10 @@ export function withHead(
   const registry = createHandlerRegistry();
   registry.register(itemHandler);
   registry.register(carrierHandler);
+  const handoverHandler = createHandoverHandler(set);
+  registry.register(handoverHandler);
   device.restart({ registry, isShared });
-  return { ...set, itemHandler, carrierHandler, time };
+  return { ...set, itemHandler, carrierHandler, handoverHandler, time };
 }
 
 /** Two paired devices with the real head repositories and handlers. */

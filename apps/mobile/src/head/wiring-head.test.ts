@@ -60,6 +60,21 @@ it("synchronizes after each local change of an item", async () => {
   await runsAfter(set, () => items.remove(id));
 });
 
+it("registers the handler of the handover requests", async () => {
+  const set = await started();
+  const { handovers, handover } = wireHead(set.platform);
+  expect(handover).toBe(wireHead(set.platform).handover);
+  await runsAfter(set, () =>
+    handovers.append({
+      requestId: "r-1",
+      itemId: "i-1",
+      requestedBy: "d-1",
+      status: "pending",
+      shared: true,
+    }),
+  );
+});
+
 it("registers the handler of the carrier entries", async () => {
   const set = await started();
   const { head } = wireHead(set.platform);

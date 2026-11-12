@@ -3,10 +3,13 @@ import { createUuid7Generator } from "@parapka/domain";
 import { wireChores } from "../chores/wiring";
 import type { Platform } from "../platform/context";
 import { createCarrierRepository } from "./carrier-repository";
+import { createHandoverRepository } from "./handover-repository";
+import { createHandoverService } from "./handover-service";
 import { createHeadService } from "./head-service";
 import { createItemRepository } from "./item-repository";
 
 export { createCarrierHandler } from "./carrier-handler";
+export { createHandoverHandler } from "./handover-handler";
 export { createItemHandler } from "./item-handler";
 
 const wired = new WeakMap<
@@ -15,6 +18,8 @@ const wired = new WeakMap<
     items: ReturnType<typeof createItemRepository>;
     carriers: ReturnType<typeof createCarrierRepository>;
     head: ReturnType<typeof createHeadService>;
+    handovers: ReturnType<typeof createHandoverRepository>;
+    handover: ReturnType<typeof createHandoverService>;
   }
 >();
 
@@ -32,7 +37,16 @@ export function wireHead(platform: Platform) {
   const items = createItemRepository({ database, pairs, clock, newId });
   const carriers = createCarrierRepository({ database, identity, clock });
   const head = createHeadService({ items, carriers, pairs, identity, clock });
-  const set = { items, carriers, head };
+  const handovers = createHandoverRepository({ database, identity, clock });
+  const handover = createHandoverService({
+    handovers,
+    carriers,
+    head,
+    pairs,
+    identity,
+    newId,
+  });
+  const set = { items, carriers, head, handovers, handover };
   wired.set(platform, set);
   return set;
 }

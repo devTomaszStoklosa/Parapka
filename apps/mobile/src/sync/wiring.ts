@@ -4,6 +4,7 @@ import { wireChores } from "../chores/wiring";
 import { wireConsent } from "../consent/wiring";
 import {
   createCarrierHandler,
+  createHandoverHandler,
   createItemHandler,
   wireHead,
 } from "../head/wiring";
@@ -88,6 +89,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createChoreCompletionHandler(deps));
   registry.register(createItemHandler(deps));
   registry.register(createCarrierHandler(deps));
+  registry.register(createHandoverHandler(deps));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");
