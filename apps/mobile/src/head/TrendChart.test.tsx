@@ -99,6 +99,21 @@ describe("the trend chart", () => {
     expect(legend?.textContent).toBe("TyOla");
   });
 
+  it("centers each legend swatch against its text", () => {
+    render(
+      <TrendChart
+        partnerName="Ola"
+        trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
+      />,
+    );
+    expect(screen.getByText("Ty").parentElement?.style.alignItems).toBe(
+      "center",
+    );
+    expect(screen.getByText("Ola").parentElement?.style.alignItems).toBe(
+      "center",
+    );
+  });
+
   it("names the partner Partner in the legend without a name", () => {
     render(
       <TrendChart

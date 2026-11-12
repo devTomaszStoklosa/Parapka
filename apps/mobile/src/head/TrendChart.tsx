@@ -103,11 +103,15 @@ function Legend({ name }: { name: string }) {
         marginTop: spacing.sm,
       }}
     >
-      <View style={{ flexDirection: "row", gap: spacing.xs }}>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}
+      >
         <View style={swatch(colors.accent, colors.accent)} />
         <AppText style={{ fontSize: 12 }}>{t("head.trend.legendMe")}</AppText>
       </View>
-      <View style={{ flexDirection: "row", gap: spacing.xs }}>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}
+      >
         <View style={swatch(colors.textMuted, colors.border)} />
         <AppText style={{ fontSize: 12 }}>{name}</AppText>
       </View>
