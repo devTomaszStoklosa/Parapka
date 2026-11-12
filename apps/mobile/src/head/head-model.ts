@@ -35,6 +35,13 @@ export const canTakeOver = (item: HeadItem, paired: boolean) =>
   item.shared &&
   (item.carrier === "partner" || item.carrier === "both");
 
+/** "Please take it over" is offered for an open, shared item that I carry. */
+export const canRequestHandover = (item: HeadItem, paired: boolean) =>
+  paired &&
+  item.status === "open" &&
+  item.shared &&
+  (item.carrier === "me" || item.carrier === "both");
+
 /** The details of an archived row: the category and the day it was closed. */
 export const archiveLines = (item: HeadItem) => [
   t(`head.categories.${item.category}`),

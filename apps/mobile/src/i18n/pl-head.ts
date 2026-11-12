@@ -24,6 +24,15 @@ export const plHead = {
     label: "{action}: {title}",
     failed: "Nie udało się. Spróbuj jeszcze raz.",
   },
+  handover: {
+    request: "Poproś o przejęcie",
+    waiting: "Czeka na odpowiedź",
+    title: "Prośby o przejęcie",
+    asks: "{name} prosi o przejęcie",
+    decline: "Nie tym razem",
+    acceptLabel: "Przyjmij prośbę: {title}",
+    declineLabel: "Odmów prośby: {title}",
+  },
   archive: {
     title: "Archiwum ({count})",
     closed: "Zamknięto {date}",

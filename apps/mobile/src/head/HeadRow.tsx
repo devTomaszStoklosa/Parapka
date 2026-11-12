@@ -4,18 +4,50 @@ import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
-import { canTakeOver, detailLines } from "./head-model";
+import { canRequestHandover, canTakeOver, detailLines } from "./head-model";
 import type { HeadItem } from "./head-service";
 import type { HeadActions } from "./use-head-actions";
+
+/** "Please take it over", or the wait for the answer to it. */
+function AskForHandover(props: {
+  item: HeadItem;
+  paired: boolean;
+  request: "incoming" | "outgoing" | null;
+  actions: HeadActions;
+}) {
+  const { item, paired, request, actions } = props;
+  if (request === "outgoing") {
+    return (
+      <AppText style={{ color: colors.textMuted }}>
+        {t("head.handover.waiting")}
+      </AppText>
+    );
+  }
+  if (request !== null || !canRequestHandover(item, paired)) return null;
+  return (
+    <Button
+      label={t("head.handover.request")}
+      accessibilityLabel={t("head.actions.label", {
+        action: t("head.handover.request"),
+        title: item.title,
+      })}
+      onPress={() => {
+        actions.onRequest(item.id);
+      }}
+    />
+  );
+}
 
 /** One open thing: the title, then category, weight, carrier and due date. */
 export function HeadRow(props: {
   item: HeadItem;
   partnerName: string | null;
   paired: boolean;
+  /** Which pending request the item has, if any. */
+  request: "incoming" | "outgoing" | null;
   actions: HeadActions;
 }) {
-  const { item, partnerName, paired, actions } = props;
+  const { item, partnerName, paired, request, actions } = props;
   const labelFor = (action: string) =>
     t("head.actions.label", { action, title: item.title });
   const details = detailLines(item, partnerName);
@@ -34,7 +66,7 @@ export function HeadRow(props: {
         {details.join(" · ")}
       </AppText>
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
-        {canTakeOver(item, paired) ? (
+        {request !== "incoming" && canTakeOver(item, paired) ? (
           <Button
             label={t("head.actions.takeOver")}
             accessibilityLabel={labelFor(t("head.actions.takeOver"))}
@@ -43,6 +75,7 @@ export function HeadRow(props: {
             }}
           />
         ) : null}
+        <AskForHandover {...props} />
         <Button
           label={t("head.actions.done")}
           accessibilityLabel={labelFor(t("head.actions.done"))}
