@@ -67,6 +67,23 @@ describe("carrier repository", () => {
     ]);
   });
 
+  it("lists the entries in the same order every time", async () => {
+    const { carriers, time } = setup();
+    for (const itemId of ["item-2", "item-1", "item-2", "item-1"]) {
+      time.now += 1;
+      await carriers.append({ itemId, carrier: "both", shared: true });
+    }
+    const first = await carriers.list();
+    expect(await carriers.list()).toEqual(first);
+    expect(first.map((e) => e.itemId)).toEqual([
+      "item-1",
+      "item-1",
+      "item-2",
+      "item-2",
+    ]);
+    expect(first[0]?.changedAt < (first[1]?.changedAt ?? "")).toBe(true);
+  });
+
   it("refuses an empty item or carrier", async () => {
     const { carriers } = setup();
     for (const change of [

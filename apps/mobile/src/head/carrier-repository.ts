@@ -168,9 +168,9 @@ export function createCarrierRepository(deps: Deps): CarrierRepository {
     list: async () => {
       const entries = (await records()).map(({ record }) => toEntry(record));
       return entries.sort((a, b) =>
-        entryId(a.itemId, a.changedAt) < entryId(b.itemId, b.changedAt)
-          ? -1
-          : 1,
+        entryId(a.itemId, a.changedAt).localeCompare(
+          entryId(b.itemId, b.changedAt),
+        ),
       );
     },
     sync: createRecordSync({
