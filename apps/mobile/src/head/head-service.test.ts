@@ -49,7 +49,13 @@ describe("head service without a pair", () => {
       return {
         items,
         carriers,
-        head: createHeadService({ items, carriers, pairs, identity }),
+        head: createHeadService({
+          items,
+          carriers,
+          pairs,
+          identity,
+          clock: { nowMs: () => 1 },
+        }),
       };
     };
 
@@ -99,7 +105,13 @@ describe("head service in a pair", () => {
     const { items, carriers } = pair.ua;
     const pairs = pair.a.pairs;
     const identity = { deviceId: () => Promise.resolve(null) };
-    const head = createHeadService({ items, carriers, pairs, identity });
+    const head = createHeadService({
+      items,
+      carriers,
+      pairs,
+      identity,
+      clock: { nowMs: () => 1 },
+    });
     await expect(head.add({ title: "Rzecz" })).rejects.toThrow(
       ChoreDeviceError,
     );
