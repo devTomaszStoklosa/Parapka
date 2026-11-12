@@ -12,7 +12,10 @@ export function SplitBar(props: { split: MentalLoadSplit; height: number }) {
     <View style={{ flexDirection: "row", height, width: "100%" }}>
       <View
         testID="split-me"
-        style={{ width: `${String(split.me)}%`, backgroundColor: colors.accent }}
+        style={{
+          width: `${String(split.me)}%`,
+          backgroundColor: colors.accent,
+        }}
       />
       <View
         testID="split-partner"
