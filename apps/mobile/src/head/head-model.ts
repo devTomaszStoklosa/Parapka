@@ -3,6 +3,7 @@ import { CHORE_TITLE_MAX_LENGTH, type MentalLoadWeight } from "@parapka/domain";
 import { t, type TranslationKey } from "../i18n";
 import { formatDate } from "../chores/planner-model";
 import type { HeadItem } from "./head-service";
+import { isValidDueDate } from "./item-codec";
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -56,13 +57,7 @@ export interface AddForm {
 }
 
 /** An empty text, or a real calendar day as `YYYY-MM-DD`. */
-function isDueDate(date: string) {
-  if (date === "") return true;
-  const time = /^\d{4}-\d{2}-\d{2}$/.test(date) ? Date.parse(date) : NaN;
-  return (
-    !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === date
-  );
-}
+const isDueDate = (date: string) => date === "" || isValidDueDate(date);
 
 /** The error of the form, or null when the title and the due date are fine. */
 export function formError(form: AddForm): TranslationKey | null {
