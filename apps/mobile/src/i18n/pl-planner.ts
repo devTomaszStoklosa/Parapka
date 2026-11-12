@@ -51,6 +51,15 @@ export const plannerEdit = {
       delete: "Nie udało się usunąć. Spróbuj jeszcze raz.",
     },
   },
+  actions: {
+    done: "Zrobione",
+    undo: "Cofnij odhaczenie",
+    release: "Nie dam rady",
+    failed: "Nie udało się. Spróbuj jeszcze raz.",
+    doneBy: "Zrobił(a): {who}, {when}",
+    you: "Ty",
+    partner: "Partner",
+  },
   undo: {
     deleted: "Usunięto: {title}",
     button: "Cofnij",

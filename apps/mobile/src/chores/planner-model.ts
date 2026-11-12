@@ -9,6 +9,7 @@ import {
   type ChoreFilter,
   type Responsible,
 } from "@parapka/domain";
+import { parseHlc } from "@parapka/sync";
 
 import type { StoredChore } from "./chore-repository";
 import type { StoredCompletion } from "./completion-repository";
@@ -21,6 +22,12 @@ const AHEAD_DAYS: Record<PlannerView, number> = { today: 0, week: 6, all: 29 };
 /** How far back the overdue occurrences are looked up. */
 const BEHIND_DAYS = 30;
 
+/** Who ticked an occurrence off (a device id) and when (ms). */
+export interface RowCompletion {
+  readonly by: string;
+  readonly at: number;
+}
+
 /** One occurrence of a chore, as one row of the list. */
 export interface PlannerRow {
   readonly key: string;
@@ -28,7 +35,8 @@ export interface PlannerRow {
   readonly title: string;
   readonly responsible: Responsible;
   readonly date: CalendarDate;
-  readonly done: boolean;
+  /** The check-off of the occurrence, or null while it is not done. */
+  readonly completion: RowCompletion | null;
 }
 
 export interface PlannerLists {
@@ -55,6 +63,14 @@ export function localDate(ms: number): CalendarDate {
   return `${year}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/** A moment as local `05.11.2026 18:05`. */
+export function formatMoment(ms: number): string {
+  const date = new Date(ms);
+  const day = [pad(date.getDate()), pad(date.getMonth() + 1)].join(".");
+  const time = [pad(date.getHours()), pad(date.getMinutes())].join(":");
+  return `${day}.${String(date.getFullYear())} ${time}`;
+}
+
 const shift = (date: CalendarDate, days: number) =>
   fromDayNumber(toDayNumber(date) + days);
 
@@ -75,7 +91,7 @@ const keep = (chore: StoredChore, filter: PlannerFilter, date: CalendarDate) =>
 
 interface Source {
   readonly chores: readonly StoredChore[];
-  readonly done: ReadonlySet<string>;
+  readonly done: ReadonlyMap<string, RowCompletion>;
   readonly filter: PlannerFilter;
 }
 
@@ -106,7 +122,7 @@ function occurrenceRows(
         title: chore.title,
         responsible,
         date,
-        done: done.has(key),
+        completion: done.get(key) ?? null,
       });
     }
   }
@@ -121,8 +137,11 @@ function occurrenceRows(
  */
 export function buildPlanner(input: PlannerInput): PlannerLists {
   const { chores, completions, today, view, filter } = input;
-  const done = new Set(
-    completions.map((c) => [c.choreId, c.occurrenceDate].join("|")),
+  const done = new Map(
+    completions.map((c) => [
+      [c.choreId, c.occurrenceDate].join("|"),
+      { by: c.completedBy, at: parseHlc(c.completedAt).physical },
+    ]),
   );
   const source = { chores, done, filter };
   const behind = occurrenceRows(
@@ -131,7 +150,7 @@ export function buildPlanner(input: PlannerInput): PlannerLists {
     shift(today, -1),
   );
   return {
-    todo: behind.filter((row) => !row.done),
+    todo: behind.filter((row) => row.completion === null),
     rows: occurrenceRows(source, today, shift(today, AHEAD_DAYS[view])),
   };
 }

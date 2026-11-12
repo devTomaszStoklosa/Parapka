@@ -185,7 +185,7 @@ describe("the planner screen", () => {
     const rule = { kind: "occasional", dueDate: "2026-11-05" } as const;
     await chores.add({ title: "Własne", rule, assignment: ME });
     await chores.add({ title: "Partnera", rule, assignment: PARTNER });
-    const done = await chores.add({ title: "Zrobione", rule, assignment: ME });
+    const done = await chores.add({ title: "Wykonane", rule, assignment: ME });
     await completions.complete(done.id, "2026-11-05");
     time.now = NOW;
     show(platform);
@@ -195,7 +195,7 @@ describe("the planner screen", () => {
     const section = heading.parentElement as HTMLElement;
     const own = within(section).getByLabelText(/^Własne/);
     const theirs = within(section).getByLabelText(/^Partnera/);
-    expect(within(section).queryByText("Zrobione")).toBeNull();
+    expect(within(section).queryByText("Wykonane")).toBeNull();
     expect(own.getAttribute("style")).toBe(theirs.getAttribute("style"));
     expect(own.children).toHaveLength(theirs.children.length);
   });
@@ -209,9 +209,11 @@ describe("the planner screen", () => {
     });
     await completions.complete(id, "2026-11-11");
     show(platform);
-    expect(await screen.findByText(pl.planner.done)).toBeTruthy();
-    expect(screen.getAllByText(pl.planner.done)).toHaveLength(1);
-    expect(screen.getByLabelText(/Odhaczone$/)).toBeTruthy();
+    expect(await screen.findByText(/^Zrobił\(a\): Ty, /)).toBeTruthy();
+    expect(screen.getAllByText(/^Zrobił\(a\)/)).toHaveLength(1);
+    expect(
+      screen.getByLabelText(/, Zrobił\(a\): Ty, .*\d\d:\d\d$/),
+    ).toBeTruthy();
   });
 
   it("says so when the chores do not load", async () => {
