@@ -8,7 +8,7 @@ import { createItemHandler } from "./item-handler";
 import { createItemRepository } from "./item-repository";
 
 /** Ids "<prefix>-1", "<prefix>-2", ... so that the lists are in order. */
-export const counter = (prefix: string) => {
+const counter = (prefix: string) => {
   let last = 0;
   return () => `${prefix}-${String((last += 1))}`;
 };

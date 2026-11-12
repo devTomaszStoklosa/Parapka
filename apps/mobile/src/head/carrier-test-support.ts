@@ -8,7 +8,6 @@ import { createCarrierHandler } from "./carrier-handler";
 import { createCarrierRepository } from "./carrier-repository";
 import { createHeadService } from "./head-service";
 import { createItemHandler } from "./item-handler";
-import { counter } from "./head-test-support";
 import { createItemRepository } from "./item-repository";
 
 function build(
@@ -17,13 +16,14 @@ function build(
   id: string,
   time: { now: number },
 ) {
+  const ids = { n: 0 };
   const identity = { deviceId: () => Promise.resolve(id) };
   const clock = { nowMs: () => time.now };
   const items = createItemRepository({
     database,
     pairs,
     clock,
-    newId: counter(id),
+    newId: () => `${id}-${String((ids.n += 1))}`,
   });
   const carriers = createCarrierRepository({ database, identity, clock });
   const head = createHeadService({ items, carriers, pairs, identity });
