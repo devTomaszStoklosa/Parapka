@@ -1,7 +1,12 @@
 import {
+  type Clock,
   ChoreValidationError,
   createMentalLoadItem,
+  mentalLoadSplit,
+  mentalLoadTrend,
   type MentalLoadCarrier,
+  type MentalLoadSnapshot,
+  type MentalLoadSplit,
 } from "@parapka/domain";
 import { currentCarriers, parseHlc } from "@parapka/sync";
 
@@ -15,6 +20,12 @@ import type {
   ItemRepository,
   StoredItem,
 } from "./item-repository";
+import {
+  currentLoad,
+  relative,
+  weekInputs,
+  type SplitEntry,
+} from "./split-model";
 
 /** A new thing with the one who carries it (`me` unless said otherwise). */
 export interface HeadInput extends ItemInput {
@@ -42,6 +53,13 @@ export interface HeadService {
   takeOver(itemId: string): Promise<void>;
   /** The items with their current carrier, as of the latest entry. */
   list(): Promise<HeadItem[]>;
+  /**
+   * The current split of the shared open items (FR-MNT-04); null when nothing
+   * is open. Private items are left out: the partner cannot see them.
+   */
+  split(): Promise<MentalLoadSplit | null>;
+  /** Weekly snapshots, oldest first, at most 12 weeks (FR-MNT-05). */
+  trend(): Promise<MentalLoadSnapshot[]>;
   subscribe(listener: () => void): () => void;
 }
 
@@ -50,6 +68,7 @@ interface Deps {
   carriers: CarrierRepository;
   pairs: Pick<PairRepository, "activePair">;
   identity: Pick<Identity, "deviceId">;
+  clock: Clock;
 }
 
 async function ownDevice({ identity }: Deps) {
@@ -80,11 +99,6 @@ async function absolute(
   return partner;
 }
 
-const relative = (carrier: string, own: string | null): MentalLoadCarrier => {
-  if (carrier === "both") return carrier;
-  return carrier === own ? "me" : "partner";
-};
-
 /** A private item is always mine; a shared one waits for its entry. */
 function carrierOf(
   item: StoredItem,
@@ -99,23 +113,46 @@ function carrierOf(
 const isOwn = (carrier: MentalLoadCarrier | null) =>
   carrier === null || carrier === "me";
 
+async function carrierEntries(carriers: CarrierRepository) {
+  return (await carriers.list()).map((entry): SplitEntry => ({
+    itemId: entry.itemId,
+    carrierId: entry.carrier,
+    hlc: parseHlc(entry.changedAt),
+  }));
+}
+
+function splitReaders(deps: Deps) {
+  const splitData = async () => ({
+    entries: await carrierEntries(deps.carriers),
+    items: await deps.items.list(),
+    own: await deps.identity.deviceId(),
+  });
+  return {
+    split: async () => {
+      const { items, entries, own } = await splitData();
+      return mentalLoadSplit(currentLoad(items, entries, own));
+    },
+    trend: async () => {
+      const { items, entries, own } = await splitData();
+      return mentalLoadTrend(
+        weekInputs(items, entries, own, deps.clock.nowMs()),
+      );
+    },
+  };
+}
+
 export function createHeadService(deps: Deps): HeadService {
   const { items, carriers } = deps;
   const list = async () => {
     const own = await deps.identity.deviceId();
-    const latest = currentCarriers(
-      (await carriers.list()).map((entry) => ({
-        itemId: entry.itemId,
-        carrierId: entry.carrier,
-        hlc: parseHlc(entry.changedAt),
-      })),
-    );
+    const latest = currentCarriers(await carrierEntries(carriers));
     return (await items.list()).map((item) => {
       const carrier = latest.get(item.id);
       return { ...item, carrier: carrierOf(item, carrier, own) };
     });
   };
   return {
+    ...splitReaders(deps),
     subscribe: (listener) => {
       const stops = [items.subscribe(listener), carriers.subscribe(listener)];
       return () => {

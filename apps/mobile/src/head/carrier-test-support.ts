@@ -26,7 +26,13 @@ function build(
     newId: () => `${id}-${String((ids.n += 1))}`,
   });
   const carriers = createCarrierRepository({ database, identity, clock });
-  const head = createHeadService({ items, carriers, pairs, identity });
+  const head = createHeadService({
+    items,
+    carriers,
+    pairs,
+    identity,
+    clock,
+  });
   return { items, carriers, head };
 }
 

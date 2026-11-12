@@ -31,7 +31,7 @@ export function wireHead(platform: Platform) {
   const newId = createUuid7Generator({ clock, random });
   const items = createItemRepository({ database, pairs, clock, newId });
   const carriers = createCarrierRepository({ database, identity, clock });
-  const head = createHeadService({ items, carriers, pairs, identity });
+  const head = createHeadService({ items, carriers, pairs, identity, clock });
   const set = { items, carriers, head };
   wired.set(platform, set);
   return set;
