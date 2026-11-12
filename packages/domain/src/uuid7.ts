@@ -25,6 +25,12 @@ export function isUuid7(value: string): boolean {
   return UUID7_PATTERN.test(value);
 }
 
+/** The timestamp in ms of a UUIDv7, or null for a value that is not one. */
+export function uuid7Timestamp(id: string): number | null {
+  if (!isUuid7(id)) return null;
+  return Number.parseInt(id.replace("-", "").slice(0, 12), 16);
+}
+
 function freshRandom(random: RandomSource): bigint {
   let value = 0n;
   for (const byte of random.bytes(10)) {

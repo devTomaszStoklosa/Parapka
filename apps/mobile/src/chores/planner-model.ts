@@ -4,6 +4,7 @@ import {
   listOccurrences,
   responsibleFor,
   toDayNumber,
+  uuid7Timestamp,
   type CalendarDate,
   type ChoreFilter,
   type Responsible,
@@ -78,6 +79,14 @@ interface Source {
   readonly filter: PlannerFilter;
 }
 
+/** The range start, not before the day the chore was created (from its id). */
+function startFrom(chore: StoredChore, from: CalendarDate): CalendarDate {
+  const created = uuid7Timestamp(chore.id);
+  if (created === null) return from;
+  const day = localDate(created);
+  return day > from ? day : from;
+}
+
 function occurrenceRows(
   { chores, done, filter }: Source,
   from: CalendarDate,
@@ -85,7 +94,9 @@ function occurrenceRows(
 ) {
   const rows: PlannerRow[] = [];
   for (const chore of chores) {
-    for (const { occurrenceDate: date } of listOccurrences(chore, from, to)) {
+    const start = startFrom(chore, from);
+    if (start > to) continue;
+    for (const { occurrenceDate: date } of listOccurrences(chore, start, to)) {
       const responsible = responsibleOn(chore, date);
       if (responsible === null || !keep(chore, filter, date)) continue;
       const key = [chore.id, date].join("|");

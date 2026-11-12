@@ -1,4 +1,8 @@
-import type { Assignment, ChoreRule } from "@parapka/domain";
+import {
+  createUuid7Generator,
+  type Assignment,
+  type ChoreRule,
+} from "@parapka/domain";
 import { describe, expect, it } from "vitest";
 
 import type { StoredChore } from "./chore-repository";
@@ -171,5 +175,52 @@ describe("the list of what is to do", () => {
     const done = [{ choreId: "d", occurrenceDate: TODAY }];
     const { rows } = lists([chore("d", daily)], "today", "all", done);
     expect(rows.map((row) => row.done)).toEqual([true]);
+  });
+});
+
+describe("the day a chore was created", () => {
+  // A UUIDv7 made at noon, `daysAgo` days before TODAY.
+  const created = (daysAgo: number) =>
+    createUuid7Generator({
+      clock: { nowMs: () => new Date(2026, 10, 11 - daysAgo, 12).getTime() },
+      random: { bytes: (length) => new Uint8Array(length).fill(1) },
+    })();
+
+  const rules: ChoreRule[] = [
+    daily,
+    { kind: "weekdays", weekdays: [1, 2, 3, 4, 5, 6, 7] },
+    { kind: "monthly", dayOfMonth: 11 },
+    { kind: "everyNDays", interval: 1, startDate: "2026-01-01" },
+  ];
+
+  it("gives a chore added today nothing overdue in any view", () => {
+    for (const rule of rules) {
+      for (const view of ["today", "week", "all"] as const) {
+        const { todo, rows } = lists([chore(created(0), rule)], view);
+        expect(todo).toEqual([]);
+        expect(dates(rows)[0]).toBe(TODAY);
+      }
+    }
+  });
+
+  it("gives a chore from 3 days ago only those 3 days, unticked", () => {
+    const id = created(3);
+    const done = [{ choreId: id, occurrenceDate: "2026-11-09" }];
+    const { todo } = lists([chore(id, daily)], "today", "all", done);
+    expect(dates(todo)).toEqual(["2026-11-08", "2026-11-10"]);
+  });
+
+  it("keeps 30 days back for an id that is not a UUIDv7", () => {
+    expect(lists([chore("d", daily)]).todo).toHaveLength(30);
+  });
+
+  it("gives the partner the same day of creation, from the id alone", () => {
+    const { todo } = lists([chore(created(1), daily)], "today");
+    expect(dates(todo)).toEqual(["2026-11-10"]);
+  });
+
+  it("does not make an overdue of a due date before the creation", () => {
+    const old = { kind: "occasional", dueDate: "2026-11-05" } as const;
+    expect(lists([chore(created(1), old)]).todo).toEqual([]);
   });
 });

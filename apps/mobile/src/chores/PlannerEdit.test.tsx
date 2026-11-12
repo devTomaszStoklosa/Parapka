@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { pl } from "../i18n/pl";
 import {
+  NOW,
   openRow,
   press,
   setup,
@@ -13,6 +14,7 @@ import {
 } from "./planner-test-support";
 
 const form = pl.planner.form;
+const DAY = 24 * 3_600_000;
 const ME = { kind: "person", person: "me" } as const;
 
 useSodium();
@@ -47,12 +49,14 @@ describe("editing a chore", () => {
   });
 
   it("changes the rule and, in a pair, who is responsible", async () => {
-    const { platform, chores } = await setup(true);
+    const { platform, chores, time } = await setup(true);
+    time.now = NOW - 40 * DAY;
     await chores.add({
       title: "Zakupy",
       rule: { kind: "weekdays", weekdays: [1, 4] },
       assignment: ME,
     });
+    time.now = NOW;
     show(platform);
     await openRow("Zakupy");
     expect(screen.getByText(form.visibilityNow.shared)).toBeTruthy();

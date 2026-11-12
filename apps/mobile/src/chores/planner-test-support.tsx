@@ -30,10 +30,12 @@ export function useSodium() {
 
 /** An in-memory platform, with a confirmed pair when `paired`. */
 export async function setup(paired: boolean) {
+  // Set `time.now` back to add a chore that is older than the screen's today.
+  const time = { now: NOW };
   const platform: Platform = {
     sodium,
     keyStore: createMemoryKeyStore(),
-    clock: { nowMs: () => NOW },
+    clock: { nowMs: () => time.now },
     database: createMemoryDatabase(),
     sha256: webSha256,
     relayUrl: "unused",
@@ -57,7 +59,7 @@ export async function setup(paired: boolean) {
     );
     await wired.pairs.confirm();
   }
-  return { platform, ...wired };
+  return { platform, time, ...wired };
 }
 
 export const show = (platform: Platform) =>

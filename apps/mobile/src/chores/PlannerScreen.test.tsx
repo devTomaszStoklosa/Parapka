@@ -35,11 +35,15 @@ beforeAll(async () => {
 
 afterEach(cleanup);
 
+const DAY = 24 * 3_600_000;
+
 async function setup(paired: boolean) {
+  // Set `time.now` back to add a chore that is older than today.
+  const time = { now: NOW };
   const platform: Platform = {
     sodium,
     keyStore: createMemoryKeyStore(),
-    clock: { nowMs: () => NOW },
+    clock: { nowMs: () => time.now },
     database: createMemoryDatabase(),
     sha256: webSha256,
     relayUrl: "unused",
@@ -63,7 +67,7 @@ async function setup(paired: boolean) {
     );
     await wired.pairs.confirm();
   }
-  return { platform, ...wired };
+  return { platform, time, ...wired };
 }
 
 const show = (platform: Platform) =>
@@ -89,12 +93,14 @@ describe("the planner screen", () => {
   });
 
   it("shows only the nearest days in today and the week views", async () => {
-    const { platform, chores } = await setup(false);
+    const { platform, chores, time } = await setup(false);
+    time.now = NOW - 40 * DAY;
     await chores.add({
       title: "Wynieść śmieci",
       rule: { kind: "weekdays", weekdays: [1, 4] },
       assignment: ME,
     });
+    time.now = NOW;
     show(platform);
     await screen.findByRole("heading", { name: pl.planner.todo });
     expect(
@@ -174,12 +180,14 @@ describe("the planner screen", () => {
   });
 
   it("puts the overdue of both people in one neutral section", async () => {
-    const { platform, chores, completions } = await setup(true);
+    const { platform, chores, completions, time } = await setup(true);
+    time.now = NOW - 40 * DAY;
     const rule = { kind: "occasional", dueDate: "2026-11-05" } as const;
     await chores.add({ title: "Własne", rule, assignment: ME });
     await chores.add({ title: "Partnera", rule, assignment: PARTNER });
     const done = await chores.add({ title: "Zrobione", rule, assignment: ME });
     await completions.complete(done.id, "2026-11-05");
+    time.now = NOW;
     show(platform);
     const heading = await screen.findByRole("heading", {
       name: pl.planner.todo,
