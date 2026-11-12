@@ -1,3 +1,4 @@
+import { createScheduleHandler, wireCheckin } from "../checkin/wiring";
 import { createChoreHandler } from "../chores/chore-handler";
 import { createChoreCompletionHandler } from "../chores/completion-handler";
 import { wireChores } from "../chores/wiring";
@@ -54,6 +55,7 @@ function createDependencies(platform: Platform) {
   return {
     ...wireChores(platform),
     ...wireHead(platform),
+    ...wireCheckin(platform),
     disconnect: createDisconnectRepository(database),
     partner: createPartnerProfileRepository(database),
     pause: createPauseRepository(database),
@@ -90,6 +92,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createItemHandler(deps));
   registry.register(createCarrierHandler(deps));
   registry.register(createHandoverHandler(deps));
+  registry.register(createScheduleHandler(deps));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");
