@@ -11,13 +11,19 @@ export function Button(props: {
   primary?: boolean;
   disabled?: boolean;
   accessibilityLabel?: string;
+  expanded?: boolean;
 }) {
-  const { label, onPress, primary, disabled, accessibilityLabel } = props;
+  const { label, onPress, primary, disabled, accessibilityLabel, expanded } =
+    props;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled: disabled === true }}
+      aria-expanded={expanded}
+      accessibilityState={{
+        disabled: disabled === true,
+        ...(expanded === undefined ? {} : { expanded }),
+      }}
       disabled={disabled}
       onPress={onPress}
       style={{

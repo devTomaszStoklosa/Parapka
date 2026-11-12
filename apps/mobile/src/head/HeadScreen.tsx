@@ -7,6 +7,8 @@ import { spacing } from "../ui/theme";
 import { archivedItems, openItems } from "./head-model";
 import { HeadArchive } from "./HeadArchive";
 import { HeadRow } from "./HeadRow";
+import { SplitCard } from "./SplitCard";
+import { TrendChart } from "./TrendChart";
 import { QuickAdd } from "./QuickAdd";
 import { useHead } from "./use-head";
 import { useHeadActions } from "./use-head-actions";
@@ -60,6 +62,12 @@ export function HeadScreen() {
           ))}
         </View>
       )}
+      {state.paired ? (
+        <SplitCard split={state.split} partnerName={state.partnerName} />
+      ) : null}
+      {state.paired ? (
+        <TrendChart trend={state.trend} partnerName={state.partnerName} />
+      ) : null}
       {archive.length === 0 ? null : <HeadArchive items={archive} />}
     </Screen>
   );

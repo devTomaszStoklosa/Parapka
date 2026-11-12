@@ -35,7 +35,10 @@ describe("the archive", () => {
     time.now += 1000;
     await head.items.complete(first.id);
     show(platform);
+    const toggle = await screen.findByRole("button", { name: "Archiwum (2)" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
     await press("Archiwum (2)");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
     const day = formatDate(localDate(time.now));
     const label = `Pierwsza, Dom, ${pl.head.archive.closed.replace("{date}", day)}`;
     expect(await screen.findByLabelText(label)).toBeTruthy();

@@ -15,6 +15,7 @@ export function HeadArchive({ items }: { items: readonly HeadItem[] }) {
     <View style={{ marginTop: spacing.md }}>
       <Button
         label={t("head.archive.title", { count: items.length })}
+        expanded={open}
         onPress={() => {
           setOpen(!open);
         }}
