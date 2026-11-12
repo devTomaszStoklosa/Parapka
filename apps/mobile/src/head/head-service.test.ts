@@ -30,10 +30,10 @@ describe("head service without a pair", () => {
     expect(await head.list()).toEqual([]);
   });
 
-  it("lists an item that has no entry as carried by me", async () => {
+  it("lists an item that has no entry as carried by nobody", async () => {
     const { head, items } = createSingleHead();
     await items.add({ title: "Stara" });
-    expect(await head.list()).toMatchObject([{ carrier: "me" }]);
+    expect(await head.list()).toMatchObject([{ carrier: null }]);
   });
 
   it("refuses to take over a private item", async () => {
@@ -90,6 +90,14 @@ describe("head service in a pair", () => {
     await expect(pair.ua.head.takeOver("unknown")).rejects.toThrow();
     await exchange(pair);
     await pair.ub.items.complete(id);
+    await expect(pair.ub.head.takeOver(id)).rejects.toThrow();
+  });
+
+  it("refuses to take over an item that has no entry yet", async () => {
+    const pair = await setupHeadPair();
+    const { id } = await pair.ua.items.add({ title: "Rzecz" });
+    await exchange(pair);
+    expect(await pair.ub.head.list()).toMatchObject([{ id, carrier: null }]);
     await expect(pair.ub.head.takeOver(id)).rejects.toThrow();
   });
 

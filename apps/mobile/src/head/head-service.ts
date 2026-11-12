@@ -21,9 +21,12 @@ export interface HeadInput extends ItemInput {
   readonly carrier?: MentalLoadCarrier;
 }
 
-/** A thing to remember with its current carrier, as the screens see it. */
+/**
+ * A thing to remember with its current carrier, as the screens see it. The
+ * carrier is null while the item has no entry (it may come after the item).
+ */
 export interface HeadItem extends StoredItem {
-  readonly carrier: MentalLoadCarrier;
+  readonly carrier: MentalLoadCarrier | null;
 }
 
 export interface HeadService {
@@ -32,7 +35,10 @@ export interface HeadService {
    * allowed, and so for a private item. Throws on invalid input.
    */
   add(input: HeadInput, options?: AddOptions): Promise<HeadItem>;
-  /** "I take it" (FR-MNT-02): an open, shared item of the partner or of both. */
+  /**
+   * "I take it" (FR-MNT-02): an open, shared item of the partner or of both;
+   * an item that has no carrier yet is refused.
+   */
   takeOver(itemId: string): Promise<void>;
   /** The items with their current carrier, as of the latest entry. */
   list(): Promise<HeadItem[]>;
@@ -76,6 +82,10 @@ const relative = (carrier: string, own: string): MentalLoadCarrier => {
   return carrier === own ? "me" : "partner";
 };
 
+/** Nothing to take over: it is mine, or nobody is known to carry it. */
+const isOwn = (carrier: MentalLoadCarrier | null) =>
+  carrier === null || carrier === "me";
+
 export function createHeadService(deps: Deps): HeadService {
   const { items, carriers } = deps;
   const list = async () => {
@@ -91,7 +101,7 @@ export function createHeadService(deps: Deps): HeadService {
       const carrier = latest.get(item.id);
       return {
         ...item,
-        carrier: carrier === undefined ? "me" : relative(carrier, own),
+        carrier: carrier === undefined ? null : relative(carrier, own),
       };
     });
   };
@@ -115,7 +125,7 @@ export function createHeadService(deps: Deps): HeadService {
     takeOver: async (itemId) => {
       const item = (await list()).find(({ id }) => id === itemId);
       if (item === undefined) throw new ChoreValidationError("unknown item");
-      if (item.status !== "open" || !item.shared || item.carrier === "me") {
+      if (item.status !== "open" || !item.shared || isOwn(item.carrier)) {
         throw new ChoreValidationError("this item cannot be taken over");
       }
       await carriers.append({
