@@ -4,10 +4,12 @@ import { t } from "../i18n";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
 import { spacing } from "../ui/theme";
-import { openItems } from "./head-model";
+import { archivedItems, openItems } from "./head-model";
+import { HeadArchive } from "./HeadArchive";
 import { HeadRow } from "./HeadRow";
 import { QuickAdd } from "./QuickAdd";
 import { useHead } from "./use-head";
+import { useHeadActions } from "./use-head-actions";
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
@@ -24,7 +26,9 @@ function Screen({ children }: { children: React.ReactNode }) {
 }
 
 export function HeadScreen() {
-  const state = useHead(usePlatform());
+  const platform = usePlatform();
+  const state = useHead(platform);
+  const { actions, failed } = useHeadActions(platform);
   if (state === null) return <Screen>{null}</Screen>;
   if (state === "failed") {
     return (
@@ -34,9 +38,13 @@ export function HeadScreen() {
     );
   }
   const items = openItems(state.items);
+  const archive = archivedItems(state.items);
   return (
     <Screen>
       <QuickAdd paired={state.paired} partnerName={state.partnerName} />
+      {failed ? (
+        <AppText accessibilityRole="alert">{t("head.actions.failed")}</AppText>
+      ) : null}
       {items.length === 0 ? (
         <AppText style={{ marginTop: spacing.md }}>{t("head.empty")}</AppText>
       ) : (
@@ -46,10 +54,13 @@ export function HeadScreen() {
               key={item.id}
               item={item}
               partnerName={state.partnerName}
+              paired={state.paired}
+              actions={actions}
             />
           ))}
         </View>
       )}
+      {archive.length === 0 ? null : <HeadArchive items={archive} />}
     </Screen>
   );
 }

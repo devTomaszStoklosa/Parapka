@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { pl } from "../i18n/pl";
 import {
+  archiveLines,
+  archivedItems,
+  canTakeOver,
   carrierText,
   detailLines,
   formError,
@@ -89,5 +92,42 @@ describe("the check of the quick add form", () => {
         "head.add.errors.dueDate",
       );
     }
+  });
+});
+
+describe("the archive and taking over", () => {
+  it("orders the done items from the latest closed, then the newest", () => {
+    const list = archivedItems([
+      item("1", { status: "done", doneAt: 10 }),
+      item("2", { status: "done", doneAt: 30 }),
+      item("3", { status: "done", doneAt: 10 }),
+      item("4", { status: "done", doneAt: null }),
+      item("5"),
+    ]);
+    expect(list.map(({ id }) => id)).toEqual(["2", "3", "1", "4"]);
+    expect(archivedItems([item("1")])).toEqual([]);
+  });
+
+  it("describes an archived row by the category and the day", () => {
+    const closed = item("1", {
+      status: "done",
+      doneAt: Date.UTC(2026, 10, 5, 12),
+    });
+    expect(archiveLines(closed)).toEqual(["Inne", "Zamknięto 05.11.2026"]);
+    expect(archiveLines(item("2", { status: "done" }))).toEqual(["Inne"]);
+  });
+
+  it("offers taking over only for an open, shared item of the partner or both", () => {
+    expect(canTakeOver(item("1", { carrier: "partner" }), true)).toBe(true);
+    expect(canTakeOver(item("1", { carrier: "both" }), true)).toBe(true);
+    expect(canTakeOver(item("1", { carrier: "partner" }), false)).toBe(false);
+    expect(canTakeOver(item("1", { carrier: "me" }), true)).toBe(false);
+    expect(canTakeOver(item("1", { carrier: null }), true)).toBe(false);
+    expect(
+      canTakeOver(item("1", { carrier: "partner", shared: false }), true),
+    ).toBe(false);
+    expect(
+      canTakeOver(item("1", { carrier: "partner", status: "done" }), true),
+    ).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 import { CHORE_TITLE_MAX_LENGTH, type MentalLoadWeight } from "@parapka/domain";
 
 import { t, type TranslationKey } from "../i18n";
-import { formatDate } from "../chores/planner-model";
+import { formatDate, localDate } from "../chores/planner-model";
 import type { HeadItem } from "./head-service";
 import { isValidDueDate } from "./item-codec";
 
@@ -19,6 +19,29 @@ export function openItems(items: readonly HeadItem[]): HeadItem[] {
   const rest = open.filter((item) => item.dueDate === null).sort(newest);
   return [...dated, ...rest];
 }
+
+/** The done items, the latest closed first. */
+export function archivedItems(items: readonly HeadItem[]): HeadItem[] {
+  const closed = (item: HeadItem) => item.doneAt ?? 0;
+  return items
+    .filter((item) => item.status === "done")
+    .sort((a, b) => closed(b) - closed(a) || compare(b.id, a.id));
+}
+
+/** "I take it" is offered for an open, shared item of the partner or of both. */
+export const canTakeOver = (item: HeadItem, paired: boolean) =>
+  paired &&
+  item.status === "open" &&
+  item.shared &&
+  (item.carrier === "partner" || item.carrier === "both");
+
+/** The details of an archived row: the category and the day it was closed. */
+export const archiveLines = (item: HeadItem) => [
+  t(`head.categories.${item.category}`),
+  ...(item.doneAt === null
+    ? []
+    : [t("head.archive.closed", { date: formatDate(localDate(item.doneAt)) })]),
+];
 
 const WEIGHT_KEYS = {
   1: "head.weights.1",

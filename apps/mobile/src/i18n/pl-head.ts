@@ -18,6 +18,16 @@ export const plHead = {
     none: "Bez przypisania",
   },
   due: "Termin {date}",
+  actions: {
+    takeOver: "Przejmuję",
+    done: "Załatwione",
+    label: "{action}: {title}",
+    failed: "Nie udało się. Spróbuj jeszcze raz.",
+  },
+  archive: {
+    title: "Archiwum ({count})",
+    closed: "Zamknięto {date}",
+  },
   add: {
     title: "Co masz w głowie?",
     submit: "Dodaj",
