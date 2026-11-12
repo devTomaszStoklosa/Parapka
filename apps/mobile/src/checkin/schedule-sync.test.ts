@@ -6,7 +6,7 @@ import { sendRaw } from "../sync/sync-test-support";
 import { exchange, setupSchedulePair } from "./checkin-test-support";
 
 const SUNDAY: CheckinSchedule = { weekday: 7, hour: 19, minute: 0 };
-const STAMP = "000000000000001-00000-device-a";
+const STAMP = "999999999999999-00000-device-a";
 
 const content = (...changes: unknown[]) =>
   JSON.stringify({ schemaVersion: 1, changes });
@@ -46,15 +46,17 @@ describe("schedule sync", () => {
 
   it("lets the later of two offline changes of the day win on both", async () => {
     const pair = await setupSchedulePair();
+    pair.a.restart({
+      registry: pair.ua.registry,
+      clock: { nowMs: () => 1_900_000_000_000 },
+    });
     await pair.sa.set({ ...SUNDAY, weekday: 2 });
     await pair.sb.set({ ...SUNDAY, weekday: 5 });
-    await pair.a.engine.sync();
-    await pair.b.engine.sync();
     await exchange(pair);
     await exchange(pair);
-    const a = await pair.sa.get();
-    expect(a).toEqual(await pair.sb.get());
-    expect([2, 5]).toContain(a.weekday);
+    const later = { ...SUNDAY, weekday: 2 };
+    expect(await pair.sa.get()).toEqual(later);
+    expect(await pair.sb.get()).toEqual(later);
   });
 
   it("skips the invalid fields of the partner", async () => {
