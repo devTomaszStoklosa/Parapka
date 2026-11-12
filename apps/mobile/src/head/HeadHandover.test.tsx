@@ -41,7 +41,9 @@ describe("asking the partner to take over", () => {
     const item = await head.add({ title: "Dentysta", carrier: "me" });
     show(platform);
     await press(`${request}: Dentysta`);
-    await screen.findByText(waiting);
+    const wait = await screen.findByText(waiting);
+    const done = screen.getByRole("button", { name: /Załatwione/ });
+    expect(wait.parentElement).not.toBe(done.parentElement);
     expect(requestButton("Dentysta")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
     const out = await wireHead(platform).handover.outgoing();

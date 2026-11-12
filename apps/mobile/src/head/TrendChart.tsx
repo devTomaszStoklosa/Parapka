@@ -10,6 +10,7 @@ import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
 
 const BAR_HEIGHT = 72;
+const MAX_WEEKS = MENTAL_LOAD_TREND_MAX_WEEKS;
 
 /** The number of the week from `YYYY-Www`, without the leading zero. */
 const weekNumber = (week: string) => String(Number(week.slice(6)));
@@ -18,12 +19,17 @@ const weekNumber = (week: string) => String(Number(week.slice(6)));
 function Bar({ split }: { split: MentalLoadSplit }) {
   return (
     <View testID="trend-bar" style={{ height: "100%" }}>
-      <View
-        style={{
-          height: `${String(split.partner)}%`,
-          backgroundColor: colors.textMuted,
-        }}
-      />
+      {split.partner === 0 ? null : (
+        <View
+          testID="trend-partner"
+          style={{
+            height: `${String(split.partner)}%`,
+            backgroundColor: colors.textMuted,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        />
+      )}
       <View
         style={{
           height: `${String(split.me)}%`,
@@ -51,8 +57,15 @@ function Column(props: { snapshot: MentalLoadSnapshot; name: string }) {
     <View
       accessible
       accessibilityLabel={label}
-      style={{ flex: 1, alignItems: "center", marginHorizontal: 1 }}
+      style={{
+        width: `${String(100 / MAX_WEEKS)}%`,
+        paddingHorizontal: 1,
+        alignItems: "center",
+      }}
     >
+      <AppText style={{ color: colors.accent, fontSize: 10 }}>
+        {split === null ? " " : t("head.trend.share", { me: split.me })}
+      </AppText>
       <View
         style={{
           width: "100%",
@@ -71,6 +84,41 @@ function Column(props: { snapshot: MentalLoadSnapshot; name: string }) {
   );
 }
 
+/** What the two colors of a bar mean; the bar labels already say it. */
+function Legend({ name }: { name: string }) {
+  const swatch = (color: string, border: string) => ({
+    width: 12,
+    height: 12,
+    backgroundColor: color,
+    borderWidth: 1,
+    borderColor: border,
+  });
+  return (
+    <View
+      aria-hidden
+      importantForAccessibility="no-hide-descendants"
+      style={{
+        flexDirection: "row",
+        gap: spacing.md,
+        marginTop: spacing.sm,
+      }}
+    >
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}
+      >
+        <View style={swatch(colors.accent, colors.accent)} />
+        <AppText style={{ fontSize: 12 }}>{t("head.trend.legendMe")}</AppText>
+      </View>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}
+      >
+        <View style={swatch(colors.textMuted, colors.border)} />
+        <AppText style={{ fontSize: 12 }}>{name}</AppText>
+      </View>
+    </View>
+  );
+}
+
 /** Bars of the last weeks, one per week, made of plain views. */
 export function TrendChart(props: {
   trend: readonly MentalLoadSnapshot[];
@@ -85,10 +133,11 @@ export function TrendChart(props: {
         {t("head.trend.title")}
       </AppText>
       <View style={{ flexDirection: "row", marginTop: spacing.sm }}>
-        {trend.slice(-MENTAL_LOAD_TREND_MAX_WEEKS).map((snapshot) => (
+        {trend.slice(-MAX_WEEKS).map((snapshot) => (
           <Column key={snapshot.week} snapshot={snapshot} name={name} />
         ))}
       </View>
+      <Legend name={name} />
     </View>
   );
 }
