@@ -4,6 +4,7 @@ import { cleanup, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { pl } from "../i18n/pl";
+import { colors, contrastRatio } from "../ui/theme";
 import {
   NOW,
   action,
@@ -98,6 +99,19 @@ describe("ticking off an occurrence", () => {
       screen.getByRole("button", { name: `${done}: Śmieci, 16.11.2026` }),
     ).toBeTruthy();
     expect(screen.getAllByText(done)).toHaveLength(2);
+  });
+
+  it("draws the action buttons with a border that sets them apart", async () => {
+    const { platform, chores } = await setup(false);
+    await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
+    show(platform);
+    const button = await screen.findByRole("button", {
+      name: action(pl.planner.actions.done),
+    });
+    const style = getComputedStyle(button);
+    expect(style.borderTopWidth).toBe("1px");
+    expect(style.borderTopColor).not.toBe("");
+    expect(contrastRatio(colors.border, colors.surface)).toBeGreaterThan(3);
   });
 
   it("labels the undo button with the title and the date", async () => {
