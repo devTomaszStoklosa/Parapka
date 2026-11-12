@@ -81,7 +81,9 @@ describe("carrier repository", () => {
       "item-2",
       "item-2",
     ]);
-    expect(first[0]?.changedAt < (first[1]?.changedAt ?? "")).toBe(true);
+    expect((first[0]?.changedAt ?? "") < (first[1]?.changedAt ?? "")).toBe(
+      true,
+    );
   });
 
   it("refuses an empty item or carrier", async () => {
