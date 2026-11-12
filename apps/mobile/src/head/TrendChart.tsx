@@ -19,14 +19,17 @@ const weekNumber = (week: string) => String(Number(week.slice(6)));
 function Bar({ split }: { split: MentalLoadSplit }) {
   return (
     <View testID="trend-bar" style={{ height: "100%" }}>
-      <View
-        style={{
-          height: `${String(split.partner)}%`,
-          backgroundColor: colors.textMuted,
-          borderWidth: 1,
-          borderColor: colors.border,
-        }}
-      />
+      {split.partner === 0 ? null : (
+        <View
+          testID="trend-partner"
+          style={{
+            height: `${String(split.partner)}%`,
+            backgroundColor: colors.textMuted,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        />
+      )}
       <View
         style={{
           height: `${String(split.me)}%`,
@@ -54,7 +57,11 @@ function Column(props: { snapshot: MentalLoadSnapshot; name: string }) {
     <View
       accessible
       accessibilityLabel={label}
-      style={{ width: `${String(100 / MAX_WEEKS)}%`, alignItems: "center" }}
+      style={{
+        width: `${String(100 / MAX_WEEKS)}%`,
+        paddingHorizontal: 1,
+        alignItems: "center",
+      }}
     >
       <AppText style={{ color: colors.accent, fontSize: 10 }}>
         {split === null ? " " : t("head.trend.share", { me: split.me })}

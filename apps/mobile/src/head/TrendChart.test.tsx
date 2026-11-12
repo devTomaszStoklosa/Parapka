@@ -66,6 +66,27 @@ describe("the trend chart", () => {
     expect(screen.getByText("56%")).toBeTruthy();
   });
 
+  it("keeps a gap between columns", () => {
+    render(
+      <TrendChart
+        partnerName="Ola"
+        trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
+      />,
+    );
+    const column = screen.getByLabelText("Tydzień 46: Ty 56%, Ola 44%");
+    expect(column.style.paddingLeft).toBe("1px");
+  });
+
+  it("draws no partner part, nor its border, at 0%", () => {
+    render(
+      <TrendChart
+        partnerName="Ola"
+        trend={[{ week: week(46), split: { me: 100, partner: 0 } }]}
+      />,
+    );
+    expect(screen.queryByTestId("trend-partner")).toBeNull();
+  });
+
   it("explains the colors in a legend hidden from readers", () => {
     render(
       <TrendChart
