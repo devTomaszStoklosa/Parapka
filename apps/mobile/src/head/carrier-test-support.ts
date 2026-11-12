@@ -8,13 +8,8 @@ import { createCarrierHandler } from "./carrier-handler";
 import { createCarrierRepository } from "./carrier-repository";
 import { createHeadService } from "./head-service";
 import { createItemHandler } from "./item-handler";
+import { counter } from "./head-test-support";
 import { createItemRepository } from "./item-repository";
-
-/** Ids "<prefix>-1", "<prefix>-2", ... so that the lists are in order. */
-const counter = (prefix: string) => {
-  let last = 0;
-  return () => `${prefix}-${String((last += 1))}`;
-};
 
 function build(
   database: Device["database"],
