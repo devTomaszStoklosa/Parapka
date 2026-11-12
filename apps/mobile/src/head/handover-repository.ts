@@ -35,6 +35,8 @@ export interface HandoverRepository extends Omit<
     requestedBy: string;
     status: HandoverStatus;
     shared: boolean;
+    /** An HLC (text form) that the entry must be later than. */
+    after?: string;
   }) => Promise<void>;
 }
 
@@ -56,6 +58,6 @@ export function createHandoverRepository(
   return {
     ...rest,
     list: () => rest.list() as unknown as Promise<StoredHandoverRequest[]>,
-    append: ({ shared, ...values }) => append(values, shared),
+    append: ({ shared, after, ...values }) => append(values, shared, after),
   };
 }

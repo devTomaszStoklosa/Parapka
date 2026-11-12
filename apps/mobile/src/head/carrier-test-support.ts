@@ -1,3 +1,6 @@
+import type { ContentChange } from "@parapka/protocol";
+import { createHlc, formatHlc } from "@parapka/sync";
+
 import type { ConsentCategory } from "../consent/consent-model";
 import { createMemoryDatabase } from "../data/memory-database";
 import { createPairRepository } from "../pairing/pair-repository";
@@ -47,6 +50,25 @@ function build(
   });
   return { items, carriers, head, handovers, handover };
 }
+
+/** A moment of the partner, for the entries that the tests take in. */
+export const AT = formatHlc(createHlc(1_800_000_000_000, 0, "device-b"));
+
+/** An upsert of an entry, every field with the HLC `hlc`. */
+export const upsertEntry = (
+  entity: string,
+  id: string,
+  values: Record<string, unknown>,
+  hlc: string = AT,
+) =>
+  ({
+    entity,
+    id,
+    op: "upsert",
+    fields: Object.fromEntries(
+      Object.entries(values).map(([name, value]) => [name, { value, hlc }]),
+    ),
+  }) as ContentChange;
 
 /** The repositories, handlers and service of a device, as the engine runs them. */
 export function withHead(

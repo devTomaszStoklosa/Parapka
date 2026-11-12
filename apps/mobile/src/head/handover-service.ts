@@ -1,5 +1,5 @@
 import { ChoreValidationError } from "@parapka/domain";
-import { currentHandoverRequests, parseHlc } from "@parapka/sync";
+import { compareHlc, currentHandoverRequests, parseHlc } from "@parapka/sync";
 
 import { ChoreDeviceError } from "../chores/chore-codec";
 import type { Identity } from "../identity/identity";
@@ -48,6 +48,15 @@ async function ownDevice({ identity }: Deps) {
   return deviceId;
 }
 
+/** The latest of the HLCs (text form), by order and not by text. */
+const latest = (times: string[]) =>
+  times.reduce((a, b) => (compareHlc(parseHlc(a), parseHlc(b)) > 0 ? a : b));
+
+const timesOf = async (deps: Deps, requestId: string) =>
+  (await deps.handovers.list())
+    .filter((e) => e.requestId === requestId)
+    .map((e) => e.changedAt);
+
 /** The pending requests of open, shared items; the rest is gone. */
 async function pending(deps: Deps): Promise<HandoverView[]> {
   const entries = await deps.handovers.list();
@@ -83,12 +92,17 @@ async function answer(
     requestedBy: view.requestedBy,
     status,
     shared: true,
+    after: latest(await timesOf(deps, requestId)),
   });
   if (status === "accepted") {
+    const carried = (await deps.carriers.list())
+      .filter((e) => e.itemId === view.item.id)
+      .map((e) => e.changedAt);
     await deps.carriers.append({
       itemId: view.item.id,
       carrier: own,
       shared: true,
+      after: latest([...(await timesOf(deps, requestId)), ...carried]),
     });
   }
 }

@@ -1,9 +1,9 @@
 import { ChoreValidationError, type Clock } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
 import {
-  createHlc,
   emptyEntityState,
   formatHlc,
+  HybridLogicalClock,
   parseHlc,
   type Change,
   type EntityState,
@@ -53,9 +53,14 @@ export type Entry = Record<string, string> & { readonly changedAt: string };
 export interface AppendEntryRepository {
   /**
    * Adds an entry made by this device now. It is shared or private as the item
-   * is; `shared` tells which. Throws on invalid input.
+   * is; `shared` tells which. With `after` (an HLC in text form) the entry is
+   * later than it, even when this clock is behind. Throws on invalid input.
    */
-  append: (values: Record<string, string>, shared: boolean) => Promise<void>;
+  append: (
+    values: Record<string, string>,
+    shared: boolean,
+    after?: string,
+  ) => Promise<void>;
   /** Every entry, ordered by key and moment. */
   list(): Promise<Entry[]>;
   subscribe(listener: () => void): () => void;
@@ -163,14 +168,17 @@ export function createAppendEntryRepository(
 
   return {
     subscribe: changes.subscribe,
-    append: async (values, shared) => {
+    append: async (values, shared, after) => {
       const given = fields.filter((name) => name !== deviceField);
       if (!given.every((name) => isValid(name, values[name]))) {
         throw new ChoreValidationError(config.invalidMessage);
       }
       const deviceId = await identity.deviceId();
       if (deviceId === null) throw new ChoreDeviceError();
-      const changedAt = formatHlc(createHlc(clock.nowMs(), 0, deviceId));
+      const hlc = new HybridLogicalClock(clock, deviceId);
+      const changedAt = formatHlc(
+        after === undefined ? hlc.now() : hlc.receive(parseHlc(after)),
+      );
       const id = entryId(values[keyField] as string, changedAt);
       const record = emptyRecord(id, shared);
       const device =

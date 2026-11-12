@@ -17,7 +17,6 @@ async function requested(carrier?: "me" | "both") {
   const pair = await setupHeadPair();
   const { id } = await pair.ua.head.add({ title: "Szczepienie", carrier });
   await exchange(pair);
-  pair.ub.time.now += 1000;
   const requestId = await pair.ua.handover.requestHandover(id);
   await exchange(pair);
   return { pair, id, requestId };
@@ -105,5 +104,37 @@ describe("handover sync (FR-MNT-03)", () => {
     const { pair } = await requested();
     await pair.ub.handoverHandler.disconnected?.();
     expect(await pair.ub.handovers.sync.collect(() => "x")).toEqual([]);
+  });
+
+  describe("with the clock of B 1000 ms behind A", () => {
+    const behind = async () => {
+      const made = await requested();
+      made.pair.ub.time.now -= 1000;
+      return made;
+    };
+
+    it("removes a declined request from both phones", async () => {
+      const { pair, requestId } = await behind();
+      await pair.ub.handover.declineHandover(requestId);
+      await exchange(pair);
+      await exchange(pair);
+      expect(await counts(pair, "ua")).toEqual([0, 0]);
+      expect(await counts(pair, "ub")).toEqual([0, 0]);
+      expect(await carriers(pair, "ua")).toEqual(["me"]);
+    });
+
+    it("makes B the carrier on both phones once, when B accepts", async () => {
+      const { pair, requestId } = await behind();
+      await pair.ub.handover.acceptHandover(requestId);
+      await exchange(pair);
+      await exchange(pair);
+      expect(await carriers(pair, "ua")).toEqual(["partner"]);
+      expect(await carriers(pair, "ub")).toEqual(["me"]);
+      expect(await counts(pair, "ua")).toEqual([0, 0]);
+      expect(await counts(pair, "ub")).toEqual([0, 0]);
+      await expect(
+        pair.ub.handover.acceptHandover(requestId),
+      ).rejects.toThrow();
+    });
   });
 });

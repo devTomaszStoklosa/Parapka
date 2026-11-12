@@ -29,6 +29,8 @@ export interface CarrierRepository extends Omit<
     itemId: string;
     carrier: string;
     shared: boolean;
+    /** An HLC (text form) that the entry must be later than. */
+    after?: string;
   }) => Promise<void>;
 }
 
@@ -50,7 +52,7 @@ export function createCarrierRepository(
   return {
     ...rest,
     list: () => rest.list() as unknown as Promise<StoredCarrierChange[]>,
-    append: ({ itemId, carrier, shared }) =>
-      append({ itemId, carrier }, shared),
+    append: ({ itemId, carrier, shared, after }) =>
+      append({ itemId, carrier }, shared, after),
   };
 }

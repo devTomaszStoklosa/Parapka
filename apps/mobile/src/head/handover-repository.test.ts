@@ -1,12 +1,10 @@
-import type { ContentChange } from "@parapka/protocol";
-import { createHlc, formatHlc } from "@parapka/sync";
+import { compareHlc, createHlc, formatHlc, parseHlc } from "@parapka/sync";
 import { describe, expect, it } from "vitest";
 
 import { ChoreDeviceError } from "../chores/chore-codec";
 import { createMemoryDatabase } from "../data/memory-database";
+import { AT, upsertEntry } from "./carrier-test-support";
 import { createHandoverRepository } from "./handover-repository";
-
-const AT = formatHlc(createHlc(1_800_000_000_000, 0, "device-b"));
 
 function setup(deviceId: string | null = "device-a") {
   const handovers = createHandoverRepository({
@@ -34,14 +32,7 @@ const entry = (changedAt: string) => ({
 });
 
 const upsert = (id: string, values: Record<string, unknown>) =>
-  ({
-    entity: "HandoverRequest",
-    id,
-    op: "upsert",
-    fields: Object.fromEntries(
-      Object.entries(values).map(([name, value]) => [name, { value, hlc: AT }]),
-    ),
-  }) as ContentChange;
+  upsertEntry("HandoverRequest", id, values);
 
 describe("handover repository", () => {
   it("adds an entry with the HLC of the moment", async () => {
@@ -118,5 +109,15 @@ describe("handover repository", () => {
       upsert(`req-1|${changedAt}`, { ...entry(changedAt), itemId: "x" }),
     );
     expect(await handovers.list()).toMatchObject([{ itemId: "item-1" }]);
+  });
+
+  it("adds an entry later than `after`, even when the clock is behind", async () => {
+    const { handovers } = setup();
+    const after = formatHlc(createHlc(1_800_000_005_000, 3, "device-b"));
+    await handovers.append({ ...request, after });
+    const [first] = await handovers.list();
+    expect(compareHlc(parseHlc(first?.changedAt ?? ""), parseHlc(after))).toBe(
+      1,
+    );
   });
 });

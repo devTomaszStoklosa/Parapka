@@ -1,12 +1,10 @@
-import type { ContentChange } from "@parapka/protocol";
-import { createHlc, formatHlc } from "@parapka/sync";
+import { createHlc, formatHlc, parseHlc, compareHlc } from "@parapka/sync";
 import { describe, expect, it } from "vitest";
 
 import { ChoreDeviceError } from "../chores/chore-codec";
 import { createMemoryDatabase } from "../data/memory-database";
 import { createCarrierRepository } from "./carrier-repository";
-
-const AT = formatHlc(createHlc(1_800_000_000_000, 0, "device-b"));
+import { AT, upsertEntry } from "./carrier-test-support";
 
 function setup(deviceId: string | null = "device-a") {
   const database = createMemoryDatabase();
@@ -27,14 +25,7 @@ const entry = (changedAt: string, itemId = "item-1") => ({
 });
 
 const upsert = (id: string, values: Record<string, unknown>) =>
-  ({
-    entity: "CarrierChange",
-    id,
-    op: "upsert",
-    fields: Object.fromEntries(
-      Object.entries(values).map(([name, value]) => [name, { value, hlc: AT }]),
-    ),
-  }) as ContentChange;
+  upsertEntry("CarrierChange", id, values);
 
 describe("carrier repository", () => {
   it("adds an entry with the device and the HLC of the moment", async () => {
@@ -149,5 +140,20 @@ describe("carrier repository", () => {
       upsert(`item-1|${changedAt}`, { ...entry(changedAt), carrier: "x" }),
     );
     expect(await carriers.list()).toMatchObject([{ carrier: "both" }]);
+  });
+
+  it("adds an entry later than `after`, even when the clock is behind", async () => {
+    const { carriers } = setup();
+    const after = formatHlc(createHlc(1_800_000_005_000, 3, "device-b"));
+    await carriers.append({
+      itemId: "item-1",
+      carrier: "both",
+      shared: true,
+      after,
+    });
+    const [first] = await carriers.list();
+    expect(compareHlc(parseHlc(first?.changedAt ?? ""), parseHlc(after))).toBe(
+      1,
+    );
   });
 });
