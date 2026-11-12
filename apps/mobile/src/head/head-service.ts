@@ -20,7 +20,12 @@ import type {
   ItemRepository,
   StoredItem,
 } from "./item-repository";
-import { currentLoad, weekInputs, type SplitEntry } from "./split-model";
+import {
+  currentLoad,
+  relative,
+  weekInputs,
+  type SplitEntry,
+} from "./split-model";
 
 /** A new thing with the one who carries it (`me` unless said otherwise). */
 export interface HeadInput extends ItemInput {
@@ -94,11 +99,6 @@ async function absolute(
   return partner;
 }
 
-const relative = (carrier: string, own: string | null): MentalLoadCarrier => {
-  if (carrier === "both") return carrier;
-  return carrier === own ? "me" : "partner";
-};
-
 /** A private item is always mine; a shared one waits for its entry. */
 function carrierOf(
   item: StoredItem,
@@ -113,7 +113,7 @@ function carrierOf(
 const isOwn = (carrier: MentalLoadCarrier | null) =>
   carrier === null || carrier === "me";
 
-async function splitEntries(carriers: CarrierRepository) {
+async function carrierEntries(carriers: CarrierRepository) {
   return (await carriers.list()).map((entry): SplitEntry => ({
     itemId: entry.itemId,
     carrierId: entry.carrier,
@@ -123,7 +123,7 @@ async function splitEntries(carriers: CarrierRepository) {
 
 function splitReaders(deps: Deps) {
   const splitData = async () => ({
-    entries: await splitEntries(deps.carriers),
+    entries: await carrierEntries(deps.carriers),
     items: await deps.items.list(),
     own: await deps.identity.deviceId(),
   });
@@ -145,13 +145,7 @@ export function createHeadService(deps: Deps): HeadService {
   const { items, carriers } = deps;
   const list = async () => {
     const own = await deps.identity.deviceId();
-    const latest = currentCarriers(
-      (await carriers.list()).map((entry) => ({
-        itemId: entry.itemId,
-        carrierId: entry.carrier,
-        hlc: parseHlc(entry.changedAt),
-      })),
-    );
+    const latest = currentCarriers(await carrierEntries(carriers));
     return (await items.list()).map((item) => {
       const carrier = latest.get(item.id);
       return { ...item, carrier: carrierOf(item, carrier, own) };

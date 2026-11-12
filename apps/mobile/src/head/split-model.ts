@@ -52,7 +52,11 @@ function weekLabel(start: Date): string {
 /** ISO week (`YYYY-Www`) of a moment, in local time. */
 export const isoWeek = (ms: number): string => weekLabel(weekStart(ms));
 
-const relative = (carrier: string, own: string | null): MentalLoadCarrier => {
+/** A stored carrier as seen from the own device: `me`, `partner` or `both`. */
+export const relative = (
+  carrier: string,
+  own: string | null,
+): MentalLoadCarrier => {
   if (carrier === "both") return carrier;
   return carrier === own ? "me" : "partner";
 };
