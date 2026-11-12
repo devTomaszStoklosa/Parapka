@@ -53,4 +53,38 @@ describe("the trend chart", () => {
     expect(screen.queryByText("t. 2")).toBeNull();
     expect(screen.getByText("t. 3")).toBeTruthy();
   });
+
+  it("gives a column a fixed share of the chart and the share of me", () => {
+    render(
+      <TrendChart
+        partnerName="Ola"
+        trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
+      />,
+    );
+    const column = screen.getByLabelText("Tydzień 46: Ty 56%, Ola 44%");
+    expect(column.style.width).toBe("8.33333%");
+    expect(screen.getByText("56%")).toBeTruthy();
+  });
+
+  it("explains the colors in a legend hidden from readers", () => {
+    render(
+      <TrendChart
+        partnerName="Ola"
+        trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
+      />,
+    );
+    const legend = screen.getByText("Ola").parentElement?.parentElement;
+    expect(legend?.getAttribute("aria-hidden")).toBe("true");
+    expect(legend?.textContent).toBe("TyOla");
+  });
+
+  it("names the partner Partner in the legend without a name", () => {
+    render(
+      <TrendChart
+        partnerName={null}
+        trend={[{ week: week(46), split: null }]}
+      />,
+    );
+    expect(screen.getByText("Partner")).toBeTruthy();
+  });
 });

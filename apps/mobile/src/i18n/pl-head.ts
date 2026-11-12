@@ -49,6 +49,8 @@ export const plHead = {
     title: "Ostatnie tygodnie",
     week: "t. {number}",
     none: "brak",
+    legendMe: "Ty",
+    share: "{me}%",
     bar: "Tydzień {number}: Ty {me}%, {name} {partner}%",
     barEmpty: "Tydzień {number}: brak rzeczy",
   },
