@@ -5,6 +5,7 @@ import { createChoreRepository } from "../chores/chore-repository";
 import { createChoreCompletionHandler } from "../chores/completion-handler";
 import { createCompletionRepository } from "../chores/completion-repository";
 import { wireConsent } from "../consent/wiring";
+import { createItemHandler, wireHead } from "../head/wiring";
 import { createIdentity } from "../identity/identity";
 import { createRelayClient, type DeviceCredentials } from "../net/relay-client";
 import { clearPairLocally } from "../pairing/clear-pair";
@@ -92,6 +93,7 @@ function createDependencies(platform: Platform) {
   const { database } = platform;
   return {
     ...wireChores(platform),
+    ...wireHead(platform),
     disconnect: createDisconnectRepository(database),
     partner: createPartnerProfileRepository(database),
     pause: createPauseRepository(database),
@@ -120,14 +122,12 @@ function delegating(current: () => SyncTransport): SyncTransport {
  */
 function createEngine(platform: Platform, deps: Dependencies) {
   const { database, sodium, clock } = platform;
-  const { consent, profiles, partner, pairs, identity, pause } = deps;
-  const { chores, completions } = deps;
+  const { consent, pairs, identity, pause } = deps;
   const registry = createHandlerRegistry();
-  registry.register(
-    createProfileHandler({ database, profiles, partner, consent }),
-  );
-  registry.register(createChoreHandler({ chores }));
-  registry.register(createChoreCompletionHandler({ completions }));
+  registry.register(createProfileHandler({ database, ...deps }));
+  registry.register(createChoreHandler(deps));
+  registry.register(createChoreCompletionHandler(deps));
+  registry.register(createItemHandler(deps));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");
