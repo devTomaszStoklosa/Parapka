@@ -1,3 +1,4 @@
+import { plHead } from "./pl-head";
 import { plannerEdit } from "./pl-planner";
 
 export const pl = {
@@ -52,6 +53,7 @@ export const pl = {
     },
     failed: "Nie udało się wczytać obowiązków. Spróbuj ponownie później.",
   },
+  head: plHead,
   pairing: {
     title: "Para",
     invite: "Zaproś partnera",

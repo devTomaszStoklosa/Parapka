@@ -42,13 +42,33 @@ describe("head service without a pair", () => {
     await expect(head.takeOver(id)).rejects.toThrow();
   });
 
-  it("needs the device of this phone", async () => {
-    const { items, carriers, pairs } = createSingleHead();
-    const identity = { deviceId: () => Promise.resolve(null) };
-    const head = createHeadService({ items, carriers, pairs, identity });
-    await expect(head.add({ title: "Rzecz" })).rejects.toThrow(
-      ChoreDeviceError,
-    );
+  describe("on a device that is not registered yet", () => {
+    const withoutDevice = () => {
+      const { items, carriers, pairs } = createSingleHead();
+      const identity = { deviceId: () => Promise.resolve(null) };
+      return {
+        items,
+        carriers,
+        head: createHeadService({ items, carriers, pairs, identity }),
+      };
+    };
+
+    it("lists and adds a private item carried by me", async () => {
+      const { head, carriers } = withoutDevice();
+      expect(await head.list()).toEqual([]);
+      expect(await head.add({ title: "Rzecz" })).toMatchObject({
+        carrier: "me",
+      });
+      expect(await head.list()).toMatchObject([{ carrier: "me" }]);
+      expect(await carriers.list()).toEqual([]);
+    });
+
+    it("refuses the partner and both", async () => {
+      const { head } = withoutDevice();
+      for (const carrier of ["partner", "both"] as const) {
+        await expect(head.add({ title: "Rzecz", carrier })).rejects.toThrow();
+      }
+    });
   });
 
   it("tells the listeners about a change", async () => {
@@ -74,6 +94,17 @@ describe("head service in a pair", () => {
     ).rejects.toThrow();
   });
 
+  it("needs the device of this phone for a shared item", async () => {
+    const pair = await setupHeadPair();
+    const { items, carriers } = pair.ua;
+    const pairs = pair.a.pairs;
+    const identity = { deviceId: () => Promise.resolve(null) };
+    const head = createHeadService({ items, carriers, pairs, identity });
+    await expect(head.add({ title: "Rzecz" })).rejects.toThrow(
+      ChoreDeviceError,
+    );
+  });
+
   it("refuses a carrier other than me for a private item", async () => {
     const pair = await setupHeadPair();
     for (const carrier of ["partner", "both"] as const) {
@@ -90,6 +121,14 @@ describe("head service in a pair", () => {
     await expect(pair.ua.head.takeOver("unknown")).rejects.toThrow();
     await exchange(pair);
     await pair.ub.items.complete(id);
+    await expect(pair.ub.head.takeOver(id)).rejects.toThrow();
+  });
+
+  it("refuses to take over an item that has no entry yet", async () => {
+    const pair = await setupHeadPair();
+    const { id } = await pair.ua.items.add({ title: "Rzecz" });
+    await exchange(pair);
+    expect(await pair.ub.head.list()).toMatchObject([{ id, carrier: null }]);
     await expect(pair.ub.head.takeOver(id)).rejects.toThrow();
   });
 
