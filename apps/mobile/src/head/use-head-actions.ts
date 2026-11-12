@@ -14,7 +14,10 @@ export interface HeadActions {
 
 /** The row buttons call the services; a rejection only sets `failed`. */
 export function useHeadActions(platform: Platform) {
-  const { head, items, handover } = useMemo(() => wireHead(platform), [platform]);
+  const { head, items, handover } = useMemo(
+    () => wireHead(platform),
+    [platform],
+  );
   const [failed, setFailed] = useState(false);
   // The list reloads by itself through the subscriptions.
   const attempt = (action: Promise<unknown>) => {
