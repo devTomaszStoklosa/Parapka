@@ -79,7 +79,7 @@ describe("chore handler", () => {
     const { chores, handler } = createSingleDevice();
     await handler.apply(upsert("p-1", valid));
     expect(await chores.list()).toEqual([
-      { id: "p-1", ...valid, shared: true },
+      { id: "p-1", ...valid, note: null, reminder: null, shared: true },
     ]);
   });
 

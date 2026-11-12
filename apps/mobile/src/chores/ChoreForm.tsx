@@ -14,6 +14,7 @@ import {
   type Who,
 } from "./chore-form-model";
 import type { ChoreInput, StoredChore } from "./chore-repository";
+import { ChoreNoteFields } from "./ChoreNoteFields";
 import { ChoreRuleFields } from "./ChoreRuleFields";
 
 const WHO: readonly Who[] = ["me", "partner", "both", "alternating", "anyone"];
@@ -157,6 +158,7 @@ export function ChoreForm(props: ChoreFormProps) {
       />
       <AppText>{t("planner.form.kind")}</AppText>
       <ChoreRuleFields state={state} onChange={change} />
+      <ChoreNoteFields state={state} onChange={change} />
       {paired ? (
         <PairFields
           state={state}

@@ -16,7 +16,13 @@ describe("chore repository", () => {
   it("adds a private chore without a pair and lists it", async () => {
     const { chores } = createSingleDevice();
     const added = await chores.add(input);
-    expect(added).toEqual({ id: "solo-1", ...input, shared: false });
+    expect(added).toEqual({
+      id: "solo-1",
+      ...input,
+      note: null,
+      reminder: null,
+      shared: false,
+    });
     expect(await chores.list()).toEqual([added]);
   });
 

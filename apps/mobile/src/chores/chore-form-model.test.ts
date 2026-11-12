@@ -24,8 +24,68 @@ describe("the form model", () => {
         title: "Zmywanie",
         rule: { kind: "occasional" },
         assignment: { kind: "person", person: "me" },
+        note: null,
+        reminder: null,
       },
     });
+  });
+
+  it("turns the note and the reminder into null when empty", () => {
+    expect(input({ note: "  ", reminder: " " })).toMatchObject({
+      input: { note: null, reminder: null },
+    });
+    expect(input({ note: "Dwa razy", reminder: " 08:30 " })).toMatchObject({
+      input: { note: "Dwa razy", reminder: "08:30" },
+    });
+  });
+
+  it("says what is wrong with the note and the reminder", () => {
+    expect(input({ note: "x".repeat(501) })).toEqual({
+      error: "planner.form.errors.noteTooLong",
+    });
+    expect(input({ note: "x".repeat(500) })).toHaveProperty("input");
+    for (const reminder of ["24:00", "8:30", "12:60", "rano"]) {
+      expect(input({ reminder })).toEqual({
+        error: "planner.form.errors.reminder",
+      });
+    }
+  });
+
+  it("fills the form with the note and the reminder of a chore", () => {
+    const chore: StoredChore = {
+      id: "c",
+      title: "T",
+      rule: { kind: "daily" },
+      assignment: { kind: "person", person: "me" },
+      note: "Notka",
+      reminder: "07:15",
+      shared: true,
+    };
+    expect(formStateOf(chore, TODAY)).toMatchObject({
+      note: "Notka",
+      reminder: "07:15",
+    });
+    expect(
+      formStateOf({ ...chore, note: null, reminder: null }, TODAY),
+    ).toMatchObject({
+      note: "",
+      reminder: "",
+    });
+  });
+
+  it("saves only the note or the reminder that changed", () => {
+    const chore = {
+      title: "T",
+      rule: { kind: "daily" } as const,
+      assignment: { kind: "anyone" } as const,
+    };
+    expect(changedFields(chore, { ...chore, note: null })).toEqual({});
+    expect(
+      changedFields(
+        { ...chore, note: "a", reminder: null },
+        { ...chore, note: null, reminder: "08:00" },
+      ),
+    ).toEqual({ note: null, reminder: "08:00" });
   });
 
   it("says what is wrong with the title", () => {
@@ -121,6 +181,8 @@ describe("the form model", () => {
           title: chore.title,
           rule: chore.rule,
           assignment: chore.assignment,
+          note: null,
+          reminder: null,
         },
       });
     }

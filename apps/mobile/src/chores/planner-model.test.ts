@@ -28,6 +28,8 @@ const chore = (
   title: `Obowiązek ${id}`,
   rule,
   assignment,
+  note: null,
+  reminder: null,
   shared: true,
 });
 
@@ -92,6 +94,25 @@ describe("the windows of the views", () => {
   it("orders the rows by day and title", () => {
     const { rows } = lists([chore("b", daily), chore("a", daily)], "today");
     expect(rows.map((row) => row.choreId)).toEqual(["a", "b"]);
+  });
+
+  it("orders the titles naturally, ignoring case", () => {
+    const { rows } = lists(
+      [
+        { ...chore("x", daily), title: "Obowiązek 10" },
+        { ...chore("y", daily), title: "obowiązek 2" },
+      ],
+      "today",
+    );
+    expect(rows.map((row) => row.choreId)).toEqual(["y", "x"]);
+  });
+
+  it("carries the note and the reminder of the chore to the row", () => {
+    const { rows } = lists(
+      [{ ...chore("n", daily), note: "Dwa razy", reminder: "08:30" }],
+      "today",
+    );
+    expect(rows[0]).toMatchObject({ note: "Dwa razy", reminder: "08:30" });
   });
 });
 
