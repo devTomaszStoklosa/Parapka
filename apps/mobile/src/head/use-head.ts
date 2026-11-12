@@ -1,3 +1,4 @@
+import type { MentalLoadSnapshot, MentalLoadSplit } from "@parapka/domain";
 import { useEffect, useMemo, useState } from "react";
 
 import { wireChores } from "../chores/wiring";
@@ -11,6 +12,10 @@ export interface HeadData {
   readonly paired: boolean;
   /** The name from the profile of the partner; null until it arrives. */
   readonly partnerName: string | null;
+  /** The split of the open shared things; null when there are none. */
+  readonly split: MentalLoadSplit | null;
+  /** The weekly snapshots, the oldest first; empty without shared things. */
+  readonly trend: readonly MentalLoadSnapshot[];
 }
 
 /** The data of the screen: null while loading, "failed" when it did not load. */
@@ -37,12 +42,20 @@ export function useHead(platform: Platform): HeadState {
       const settle = (next: HeadState) => {
         if (active && issued === latest) setState(next);
       };
-      Promise.all([head.list(), pairs.activePair(), profile.get()])
-        .then(([items, pair, partner]) => {
+      Promise.all([
+        head.list(),
+        pairs.activePair(),
+        profile.get(),
+        head.split(),
+        head.trend(),
+      ])
+        .then(([items, pair, partner, split, trend]) => {
           settle({
             items,
             paired: pair !== null,
             partnerName: partner?.name ?? null,
+            split,
+            trend,
           });
         })
         .catch(() => {

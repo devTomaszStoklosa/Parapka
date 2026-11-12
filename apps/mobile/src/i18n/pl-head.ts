@@ -28,6 +28,21 @@ export const plHead = {
     title: "Archiwum ({count})",
     closed: "Zamknięto {date}",
   },
+  split: {
+    title: "Jak to się rozkłada między Wami",
+    basis:
+      "Liczone z otwartych rzeczy wspólnych, ważone wagą; rzecz „oboje” liczy się po połowie.",
+    empty: "Na razie nie ma otwartych rzeczy wspólnych.",
+    me: "Ty {percent}%",
+    partner: "{name} {percent}%",
+  },
+  trend: {
+    title: "Ostatnie tygodnie",
+    week: "t. {number}",
+    none: "brak",
+    bar: "Tydzień {number}: Ty {me}%, {name} {partner}%",
+    barEmpty: "Tydzień {number}: brak rzeczy",
+  },
   add: {
     title: "Co masz w głowie?",
     submit: "Dodaj",
