@@ -10,11 +10,13 @@ export function Button(props: {
   onPress: () => void;
   primary?: boolean;
   disabled?: boolean;
+  accessibilityLabel?: string;
 }) {
-  const { label, onPress, primary, disabled } = props;
+  const { label, onPress, primary, disabled, accessibilityLabel } = props;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: disabled === true }}
       disabled={disabled}
       onPress={onPress}
@@ -24,6 +26,8 @@ export function Button(props: {
         paddingHorizontal: spacing.md,
         justifyContent: "center",
         alignItems: "center",
+        borderWidth: 1,
+        borderColor: primary ? colors.accent : colors.border,
         backgroundColor: primary ? colors.accent : colors.surface,
         opacity: disabled ? 0.5 : 1,
       }}

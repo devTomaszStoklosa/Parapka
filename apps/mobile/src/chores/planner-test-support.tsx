@@ -82,7 +82,10 @@ export async function receiveProfile(platform: Platform, name: string) {
   });
 }
 
-export const press = async (name: string, role = "button") => {
+/** The name of an action button: its label, then the title and the date. */
+export const action = (label: string) => new RegExp(`^${label}: `);
+
+export const press = async (name: string | RegExp, role = "button") => {
   fireEvent.click(await screen.findByRole(role, { name }));
 };
 

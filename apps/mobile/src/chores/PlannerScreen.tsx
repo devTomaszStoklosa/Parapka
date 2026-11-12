@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 
 import { t } from "../i18n";
@@ -174,6 +174,22 @@ function ChoreEditor(props: {
   );
 }
 
+/** The scrolling part with the title; the Undo bar stays below it. */
+function Screen({ children }: { children: ReactNode }) {
+  return (
+    <ScrollView
+      testID="planner-scroll"
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: spacing.md }}
+    >
+      <AppText variant="title" accessibilityRole="header">
+        {t("screens.planner.title")}
+      </AppText>
+      {children}
+    </ScrollView>
+  );
+}
+
 function Content({ data }: { data: PlannerData }) {
   const platform = usePlatform();
   const { chores } = useMemo(() => wireChores(platform), [platform]);
@@ -189,22 +205,24 @@ function Content({ data }: { data: PlannerData }) {
     setMode(data.chores.find((chore) => chore.id === choreId) ?? null);
   };
   return (
-    <>
-      {mode !== null ? (
-        <ChoreEditor
-          key={mode === "add" ? "add" : mode.id}
-          data={data}
-          mode={mode}
-          onClose={() => {
-            setMode(null);
-          }}
-          onDeleted={setDeleted}
-        />
-      ) : data.chores.length === 0 ? (
-        <EmptyState onAdd={add} />
-      ) : (
-        <Lists data={data} onOpen={onOpen} onAdd={add} />
-      )}
+    <View style={{ flex: 1 }}>
+      <Screen>
+        {mode !== null ? (
+          <ChoreEditor
+            key={mode === "add" ? "add" : mode.id}
+            data={data}
+            mode={mode}
+            onClose={() => {
+              setMode(null);
+            }}
+            onDeleted={setDeleted}
+          />
+        ) : data.chores.length === 0 ? (
+          <EmptyState onAdd={add} />
+        ) : (
+          <Lists data={data} onOpen={onOpen} onAdd={add} />
+        )}
+      </Screen>
       {deleted === null ? null : (
         <UndoBar
           key={deleted.id}
@@ -213,22 +231,19 @@ function Content({ data }: { data: PlannerData }) {
           onUndo={() => chores.restore(deleted.id)}
         />
       )}
-    </>
+    </View>
   );
 }
 
 export function PlannerScreen() {
   const state = usePlanner(usePlatform());
-  return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md }}>
-      <AppText variant="title" accessibilityRole="header">
-        {t("screens.planner.title")}
-      </AppText>
-      {state === null ? null : state === "failed" ? (
+  if (state === null) return <Screen>{null}</Screen>;
+  if (state === "failed") {
+    return (
+      <Screen>
         <AppText>{t("planner.failed")}</AppText>
-      ) : (
-        <Content data={state} />
-      )}
-    </ScrollView>
-  );
+      </Screen>
+    );
+  }
+  return <Content data={state} />;
 }

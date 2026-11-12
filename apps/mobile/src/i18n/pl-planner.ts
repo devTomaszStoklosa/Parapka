@@ -55,6 +55,7 @@ export const plannerEdit = {
     done: "Zrobione",
     undo: "Cofnij odhaczenie",
     release: "Nie dam rady",
+    label: "{action}: {title}, {date}",
     failed: "Nie udało się. Spróbuj jeszcze raz.",
     doneBy: "Zrobił(a): {who}, {when}",
     you: "Ty",

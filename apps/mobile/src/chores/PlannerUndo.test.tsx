@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { pl } from "../i18n/pl";
+import { colors, contrastRatio } from "../ui/theme";
 import { openRow, setup, show, useSodium } from "./planner-test-support";
 
 const form = pl.planner.form;
@@ -48,6 +49,24 @@ describe("deleting a chore", () => {
     });
     expect(screen.queryByText(DELETED)).toBeNull();
     expect(await chores.list()).toEqual([]);
+  });
+
+  it("keeps the bar outside the scrolling content", async () => {
+    const { platform, chores } = await setup(false);
+    await chores.add(chore);
+    show(platform);
+    await deleteIt();
+    const bar = screen.getByRole("alert");
+    expect(screen.getByTestId("planner-scroll").contains(bar)).toBe(false);
+    expect(bar.style.backgroundColor).not.toBe("");
+    expect(bar.style.borderTopWidth).toBe("1px");
+  });
+
+  it("uses colors that set it apart and stay readable", () => {
+    expect(colors.background).not.toBe(colors.surface);
+    expect(contrastRatio(colors.text, colors.background)).toBeGreaterThan(4.5);
+    expect(contrastRatio(colors.border, colors.background)).toBeGreaterThan(3);
+    expect(contrastRatio(colors.border, colors.surface)).toBeGreaterThan(3);
   });
 
   it("gives every deletion its own ten seconds", async () => {
