@@ -53,45 +53,34 @@ export interface CarrierRepository {
   /** Every entry, ordered by item and moment. */
   list(): Promise<StoredCarrierChange[]>;
   subscribe(listener: () => void): () => void;
-  /** For the sync handler. */
-  readonly sync: {
-    /** Stamps the pending entries of the shared items. */
-    collect(nextHlc: NextHlc): Promise<ContentChange[]>;
-    /** Merges the collected entries into the state and drops them from pending. */
-    commit(changes: readonly ContentChange[]): Promise<void>;
-    /** Takes in an entry of the partner; invalid ones are skipped. */
-    merge(change: ContentChange): Promise<void>;
-    /** Marks every entry as private; the copies stay. */
-    makePrivate(): Promise<void>;
-  };
+  /** For the sync handler: collect, commit, merge and makePrivate. */
+  readonly sync: ReturnType<typeof createRecordSync>;
 }
 
 interface Deps {
-  database: LocalDatabase;
-  identity: Pick<Identity, "deviceId">;
   clock: Pick<Clock, "nowMs">;
+  identity: Pick<Identity, "deviceId">;
+  database: LocalDatabase;
 }
 
-const emptyRecord = (id: string, shared: boolean): CarrierRecord => ({
-  shared,
-  state: emptyEntityState(MERGE_ENTITY, id),
-  pending: { fields: null },
-});
+const emptyRecord = (id: string, shared: boolean): CarrierRecord => {
+  const pending = { fields: null };
+  return { pending, shared, state: emptyEntityState(MERGE_ENTITY, id) };
+};
 
 const isText = (value: unknown): value is string =>
   typeof value === "string" && value !== "";
 
-const isHlcText = (value: unknown) => {
+const isValidField = (name: string, value: unknown) => {
+  if (!isText(value)) return false;
+  if (name !== "changedAt") return true;
   try {
-    parseHlc(value as string);
-    return true;
+    parseHlc(value);
   } catch {
     return false;
   }
+  return true;
 };
-
-const isValidField = (name: string, value: unknown) =>
-  name === "changedAt" ? isHlcText(value) : isText(value);
 
 const entryId = (itemId: string, changedAt: string) => `${itemId}|${changedAt}`;
 
@@ -137,19 +126,21 @@ function toEntry(record: CarrierRecord): StoredCarrierChange {
 
 function createAccess({ database }: Deps) {
   const changes = changeChannel(database, COLLECTION);
+  const toRecord = (value: JsonValue) => value as unknown as CarrierRecord;
   return {
     changes,
-    read: async (id: string) =>
-      (await database.get(COLLECTION, id)) as unknown as CarrierRecord | null,
+    read: async (id: string) => {
+      const value = await database.get(COLLECTION, id);
+      return value === null ? null : toRecord(value);
+    },
     write: async (id: string, record: CarrierRecord) => {
       await database.put(COLLECTION, id, record as unknown as JsonValue);
       changes.notify();
     },
-    records: async () =>
-      (await database.list(COLLECTION)).map(({ id, value }) => ({
-        id,
-        record: value as unknown as CarrierRecord,
-      })),
+    records: async () => {
+      const rows = await database.list(COLLECTION);
+      return rows.map((row) => ({ id: row.id, record: toRecord(row.value) }));
+    },
   };
 }
 
