@@ -65,7 +65,10 @@ async function absolute(
   shared: boolean,
 ) {
   createMentalLoadItem({ category: "other", carrier });
-  if (carrier === "me") return ownDevice(deps);
+  if (carrier === "me") {
+    // A private item is mine even on a device that is not registered yet.
+    return shared ? ownDevice(deps) : deps.identity.deviceId();
+  }
   if (carrier === "both") {
     if (!shared) throw new ChoreValidationError("a private item is only mine");
     return carrier;
@@ -77,10 +80,20 @@ async function absolute(
   return partner;
 }
 
-const relative = (carrier: string, own: string): MentalLoadCarrier => {
+const relative = (carrier: string, own: string | null): MentalLoadCarrier => {
   if (carrier === "both") return carrier;
   return carrier === own ? "me" : "partner";
 };
+
+/** A private item is always mine; a shared one waits for its entry. */
+function carrierOf(
+  item: StoredItem,
+  entry: string | undefined,
+  own: string | null,
+): MentalLoadCarrier | null {
+  if (entry !== undefined) return relative(entry, own);
+  return item.shared ? null : "me";
+}
 
 /** Nothing to take over: it is mine, or nobody is known to carry it. */
 const isOwn = (carrier: MentalLoadCarrier | null) =>
@@ -89,7 +102,7 @@ const isOwn = (carrier: MentalLoadCarrier | null) =>
 export function createHeadService(deps: Deps): HeadService {
   const { items, carriers } = deps;
   const list = async () => {
-    const own = await ownDevice(deps);
+    const own = await deps.identity.deviceId();
     const latest = currentCarriers(
       (await carriers.list()).map((entry) => ({
         itemId: entry.itemId,
@@ -99,10 +112,7 @@ export function createHeadService(deps: Deps): HeadService {
     );
     return (await items.list()).map((item) => {
       const carrier = latest.get(item.id);
-      return {
-        ...item,
-        carrier: carrier === undefined ? null : relative(carrier, own),
-      };
+      return { ...item, carrier: carrierOf(item, carrier, own) };
     });
   };
   return {
@@ -119,7 +129,9 @@ export function createHeadService(deps: Deps): HeadService {
       const shared = paired && options?.private !== true;
       const stored = await absolute(deps, carrier, shared);
       const item = await items.add(rest, options);
-      await carriers.append({ itemId: item.id, carrier: stored, shared });
+      if (stored !== null) {
+        await carriers.append({ itemId: item.id, carrier: stored, shared });
+      }
       return { ...item, carrier };
     },
     takeOver: async (itemId) => {

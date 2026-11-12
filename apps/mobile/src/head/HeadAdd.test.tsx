@@ -44,6 +44,23 @@ describe("quick add", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("adds on a device that is not registered yet", async () => {
+    const { platform, time } = await setup(false);
+    await platform.database.put("identity", "device", {
+      signingPublicKey: "s",
+      agreementPublicKey: "a",
+      deviceId: null,
+    });
+    const { head } = headOf(platform, time);
+    show(platform);
+    await screen.findByText(pl.head.empty);
+    typeInto(add.title, "Bez urządzenia");
+    await press(add.submit);
+    expect(await screen.findByText("Bez urządzenia")).toBeTruthy();
+    expect(await head.list()).toMatchObject([{ carrier: "me" }]);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("adds on Enter", async () => {
     const { platform, time } = await setup(false);
     const { head } = headOf(platform, time);

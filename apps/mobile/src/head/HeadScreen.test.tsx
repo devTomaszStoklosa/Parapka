@@ -92,6 +92,21 @@ describe("the list of the head", () => {
     expect(screen.queryByText(pl.head.empty)).toBeNull();
   });
 
+  it("works on a device that is not registered yet", async () => {
+    const { platform, time } = await setup(false);
+    await platform.database.put("identity", "device", {
+      signingPublicKey: "s",
+      agreementPublicKey: "a",
+      deviceId: null,
+    });
+    await headOf(platform, time).add({ title: "Prywatna" });
+    show(platform);
+    expect(
+      await screen.findByLabelText("Prywatna, Inne, Średnia, Ty"),
+    ).toBeTruthy();
+    expect(screen.queryByText(pl.head.failed)).toBeNull();
+  });
+
   it("shows a message instead of the list when it does not load", async () => {
     const { platform, time } = await setup(false);
     const { head } = headOf(platform, time);
