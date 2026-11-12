@@ -10,6 +10,8 @@ export interface PlannerData {
   readonly chores: readonly StoredChore[];
   readonly completions: readonly StoredCompletion[];
   readonly paired: boolean;
+  /** The id of this device; null before the identity exists. */
+  readonly deviceId: string | null;
   /** The name from the profile of the partner; null until it arrives. */
   readonly partnerName: string | null;
 }
@@ -22,7 +24,7 @@ export type PlannerState = PlannerData | "failed" | null;
  * every change, also one made by the synchronization.
  */
 export function usePlanner(platform: Platform): PlannerState {
-  const { chores, completions, pairs } = useMemo(
+  const { chores, completions, pairs, identity } = useMemo(
     () => wireChores(platform),
     [platform],
   );
@@ -45,12 +47,14 @@ export function usePlanner(platform: Platform): PlannerState {
         completions.list(),
         pairs.activePair(),
         profile.get(),
+        identity.deviceId(),
       ])
-        .then(([list, done, pair, partner]) => {
+        .then(([list, done, pair, partner, deviceId]) => {
           settle({
             chores: list,
             completions: done,
             paired: pair !== null,
+            deviceId,
             partnerName: partner?.name ?? null,
           });
         })

@@ -3,11 +3,13 @@ import {
   type Assignment,
   type ChoreRule,
 } from "@parapka/domain";
+import { formatHlc } from "@parapka/sync";
 import { describe, expect, it } from "vitest";
 
 import type { StoredChore } from "./chore-repository";
 import {
   buildPlanner,
+  formatMoment,
   localDate,
   type PlannerFilter,
   type PlannerView,
@@ -42,7 +44,11 @@ function lists(
     completions: completions.map((c) => ({
       ...c,
       completedBy: "device",
-      completedAt: "hlc",
+      completedAt: formatHlc({
+        physical: 5000,
+        counter: 0,
+        deviceId: "device",
+      }),
     })),
     today: TODAY,
     view,
@@ -160,7 +166,7 @@ describe("the list of what is to do", () => {
     );
     const [mine] = lists([own]).todo;
     const [partners] = lists([theirs]).todo;
-    expect(mine).toMatchObject({ date: "2026-11-05", done: false });
+    expect(mine).toMatchObject({ date: "2026-11-05", completion: null });
     expect(Object.keys(partners ?? {})).toEqual(Object.keys(mine ?? {}));
     expect(partners).toEqual({ ...mine, responsible: "partner" });
   });
@@ -174,7 +180,9 @@ describe("the list of what is to do", () => {
   it("marks the ticked off occurrences of the window", () => {
     const done = [{ choreId: "d", occurrenceDate: TODAY }];
     const { rows } = lists([chore("d", daily)], "today", "all", done);
-    expect(rows.map((row) => row.done)).toEqual([true]);
+    expect(rows.map((row) => row.completion)).toEqual([
+      { by: "device", at: 5000 },
+    ]);
   });
 });
 
@@ -222,5 +230,16 @@ describe("the day a chore was created", () => {
   it("does not make an overdue of a due date before the creation", () => {
     const old = { kind: "occasional", dueDate: "2026-11-05" } as const;
     expect(lists([chore(created(1), old)]).todo).toEqual([]);
+  });
+});
+
+describe("formatMoment", () => {
+  it("gives the local day and time with leading zeros", () => {
+    expect(formatMoment(new Date(2026, 10, 12, 18, 5).getTime())).toBe(
+      "12.11.2026 18:05",
+    );
+    expect(formatMoment(new Date(2026, 0, 2, 3, 4).getTime())).toBe(
+      "02.01.2026 03:04",
+    );
   });
 });

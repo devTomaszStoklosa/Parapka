@@ -64,11 +64,11 @@ it("shows a check-off that the synchronization took in", async () => {
   const { chores, completions } = await setup();
   const { id } = await chores.add({ title: "Zmywanie", rule, assignment: me });
   await screen.findAllByText("Zmywanie");
-  expect(screen.queryByText("Odhaczone")).toBeNull();
+  expect(screen.queryByText(/^Zrobił\(a\)/)).toBeNull();
   await act(async () => {
     await completions.complete(id, "2026-11-11");
   });
-  expect(await screen.findByText("Odhaczone")).toBeTruthy();
+  expect(await screen.findByText(/^Zrobił\(a\): Ty, /)).toBeTruthy();
 });
 
 it("shows the filter when the pair appears", async () => {

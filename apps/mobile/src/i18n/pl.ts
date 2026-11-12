@@ -39,7 +39,6 @@ export const pl = {
     },
     todo: "Do zrobienia",
     upcoming: "Najbliższe",
-    done: "Odhaczone",
     responsible: {
       me: "Ty",
       partner: "Partner",

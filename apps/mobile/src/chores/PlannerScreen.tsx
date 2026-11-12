@@ -18,12 +18,16 @@ import { changedFields } from "./chore-form-model";
 import type { StoredChore } from "./chore-repository";
 import { ChoreForm } from "./ChoreForm";
 import { PlannerControls } from "./PlannerControls";
+import type { RowActions } from "./PlannerActions";
 import { PlannerRow } from "./PlannerRow";
 import { UndoBar } from "./UndoBar";
 import { usePlanner, type PlannerData } from "./use-planner";
 
 interface Open {
   readonly partnerName: string | null;
+  readonly deviceId: string | null;
+  readonly paired: boolean;
+  readonly actions: RowActions;
   readonly onOpen: (choreId: string) => void;
 }
 
@@ -52,8 +56,48 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-function Lists(props: Open & { data: PlannerData; onAdd: () => void }) {
-  const { data, onAdd, ...open } = props;
+/** The row buttons call the repositories; a rejection only sets `failed`. */
+function useRowActions() {
+  const platform = usePlatform();
+  const { chores, completions } = useMemo(
+    () => wireChores(platform),
+    [platform],
+  );
+  const [failed, setFailed] = useState(false);
+  // The list reloads by itself through the subscriptions.
+  const attempt = (action: Promise<void>) => {
+    action.then(
+      () => {
+        setFailed(false);
+      },
+      () => {
+        setFailed(true);
+      },
+    );
+  };
+  const actions: RowActions = {
+    onDone: (row) => {
+      attempt(completions.complete(row.choreId, row.date));
+    },
+    onUndo: (row) => {
+      attempt(completions.undo(row.choreId, row.date));
+    },
+    onRelease: (row) => {
+      attempt(chores.release(row.choreId));
+    },
+  };
+  return { actions, failed };
+}
+
+function Lists(props: {
+  data: PlannerData;
+  onOpen: (choreId: string) => void;
+  onAdd: () => void;
+}) {
+  const { data, onAdd, onOpen } = props;
+  const { actions, failed } = useRowActions();
+  const { partnerName, deviceId, paired } = data;
+  const open = { partnerName, deviceId, paired, actions, onOpen };
   const { clock } = usePlatform();
   const [view, setView] = useState<PlannerView>("today");
   const [chosen, setChosen] = useState<PlannerFilter>("all");
@@ -75,6 +119,11 @@ function Lists(props: Open & { data: PlannerData; onAdd: () => void }) {
         onView={setView}
         onFilter={setChosen}
       />
+      {failed ? (
+        <AppText accessibilityRole="alert">
+          {t("planner.actions.failed")}
+        </AppText>
+      ) : null}
       {todo.length > 0 ? (
         <Section title={t("planner.todo")} rows={todo} {...open} />
       ) : null}
@@ -154,12 +203,7 @@ function Content({ data }: { data: PlannerData }) {
       ) : data.chores.length === 0 ? (
         <EmptyState onAdd={add} />
       ) : (
-        <Lists
-          data={data}
-          partnerName={data.partnerName}
-          onOpen={onOpen}
-          onAdd={add}
-        />
+        <Lists data={data} onOpen={onOpen} onAdd={add} />
       )}
       {deleted === null ? null : (
         <UndoBar
