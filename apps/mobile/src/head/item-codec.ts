@@ -1,15 +1,7 @@
-import {
-  MENTAL_LOAD_CATEGORIES,
-  validateChoreTitle,
-} from "@parapka/domain";
+import { MENTAL_LOAD_CATEGORIES, validateChoreTitle } from "@parapka/domain";
 
 export type ItemField =
-  | "title"
-  | "category"
-  | "weight"
-  | "dueDate"
-  | "status"
-  | "doneAt";
+  "title" | "category" | "weight" | "dueDate" | "status" | "doneAt";
 
 const DUE_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 

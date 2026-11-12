@@ -54,9 +54,4 @@ export async function setupItemPair(isShared?: () => boolean) {
   return { ...devices, ia: ua.items, ib: ub.items, ua, ub };
 }
 
-/** A sends, B takes it in and answers, A takes in the answer. */
-export async function exchange({ a, b }: { a: Device; b: Device }) {
-  await a.engine.sync();
-  await b.engine.sync();
-  await a.engine.sync();
-}
+export { exchange } from "../chores/chore-test-support";

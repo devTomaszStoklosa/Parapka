@@ -23,8 +23,8 @@ it("shares one repository per platform", async () => {
 
 it("synchronizes after each local change of an item", async () => {
   const set = await setup();
-  await set.pair();
   await set.consent.save(defaultConsent(profile));
+  await set.pair();
   start(set.controller);
   await vi.waitFor(() => {
     expect(set.syncs()).toBeGreaterThan(0);
