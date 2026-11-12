@@ -49,3 +49,24 @@ it("synchronizes after each local change of an item", async () => {
   await runsAfter(() => items.complete(id));
   await runsAfter(() => items.remove(id));
 });
+
+it("registers the handler of the carrier entries", async () => {
+  const set = await setup();
+  await set.consent.save(defaultConsent(profile));
+  await set.pair();
+  start(set.controller);
+  await vi.waitFor(() => {
+    expect(set.syncs()).toBeGreaterThan(0);
+  });
+  await tick();
+  const { head } = wireHead(set.platform);
+  const before = set.syncs();
+  await head.add({ title: "Rzecz" });
+  await vi.waitFor(
+    () => {
+      expect(set.syncs()).toBeGreaterThan(before);
+    },
+    { timeout: 3000 },
+  );
+  expect(wireHead(set.platform).carriers).toBe(wireHead(set.platform).carriers);
+});

@@ -177,7 +177,8 @@ function validateItem(item: {
   dueDate: string | null;
 }) {
   validateChoreTitle(item.title);
-  // The carrier arrives with #186; it is not stored yet.
+  // The carrier is not a field of the item: its entries are checked and kept
+  // by the head service, so any valid one stands in here.
   createMentalLoadItem({
     category: item.category,
     carrier: "me",
