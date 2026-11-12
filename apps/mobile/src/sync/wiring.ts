@@ -1,20 +1,18 @@
-import { createUuid7Generator } from "@parapka/domain";
-
 import { createChoreHandler } from "../chores/chore-handler";
-import { createChoreRepository } from "../chores/chore-repository";
 import { createChoreCompletionHandler } from "../chores/completion-handler";
-import { createCompletionRepository } from "../chores/completion-repository";
+import { wireChores } from "../chores/wiring";
 import { wireConsent } from "../consent/wiring";
-import { createItemHandler, wireHead } from "../head/wiring";
-import { createIdentity } from "../identity/identity";
-import { createRelayClient, type DeviceCredentials } from "../net/relay-client";
+import {
+  createCarrierHandler,
+  createItemHandler,
+  wireHead,
+} from "../head/wiring";
 import { clearPairLocally } from "../pairing/clear-pair";
 import {
   disconnect as disconnectPair,
   finishClosing,
 } from "../pairing/disconnect";
 import { createDisconnectRepository } from "../pairing/disconnect-repository";
-import { createPairRepository } from "../pairing/pair-repository";
 import type { Platform } from "../platform/context";
 import { createClosingRetry } from "./closing-retry";
 import {
@@ -46,48 +44,9 @@ export interface SyncController {
   disconnect(): Promise<void>;
 }
 
+export { wireChores };
+
 const wired = new WeakMap<Platform, SyncController>();
-
-function buildChores(platform: Platform) {
-  const { database, sodium, sha256, keyStore, clock } = platform;
-  const client = (credentials?: DeviceCredentials) =>
-    createRelayClient({
-      baseUrl: platform.relayUrl,
-      fetch: (url, init) => globalThis.fetch(url, init),
-      sodium,
-      sha256,
-      ...(credentials ? { credentials } : {}),
-    });
-  const identity = createIdentity({
-    sodium,
-    keyStore,
-    database,
-    relay: client,
-  });
-  const pairs = createPairRepository(database, keyStore);
-  const random = { bytes: (length: number) => sodium.randomBytes(length) };
-  const newId = createUuid7Generator({ clock, random });
-  const chores = createChoreRepository({ database, pairs, identity, newId });
-  const completions = createCompletionRepository({
-    database,
-    chores,
-    identity,
-    clock,
-  });
-  return { client, identity, pairs, chores, completions };
-}
-
-const wiredChores = new WeakMap<Platform, ReturnType<typeof buildChores>>();
-
-/**
- * The identity, pair, chore and check-off repositories of the platform: one set
- * per platform, so the screens and the synchronization share the instances.
- */
-export function wireChores(platform: Platform) {
-  const set = wiredChores.get(platform) ?? buildChores(platform);
-  wiredChores.set(platform, set);
-  return set;
-}
 
 function createDependencies(platform: Platform) {
   const { database } = platform;
@@ -128,6 +87,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createChoreHandler(deps));
   registry.register(createChoreCompletionHandler(deps));
   registry.register(createItemHandler(deps));
+  registry.register(createCarrierHandler(deps));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");
