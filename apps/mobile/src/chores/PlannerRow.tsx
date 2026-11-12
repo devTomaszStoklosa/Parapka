@@ -16,6 +16,22 @@ const whoText = (row: Row, partnerName: string | null) =>
     ? partnerName
     : t(`planner.responsible.${row.responsible}`);
 
+/** The reminder and the note of the row, as lines of the muted text. */
+const extraLines = (row: Row) => [
+  ...(row.reminder === null
+    ? []
+    : [t("planner.actions.reminder", { time: row.reminder })]),
+  ...(row.note === null ? [] : [row.note]),
+];
+
+function ExtraLines({ row }: { row: Row }) {
+  return extraLines(row).map((line) => (
+    <AppText key={line} style={{ color: colors.textMuted }}>
+      {line}
+    </AppText>
+  ));
+}
+
 /** Who ticked the occurrence off and when, or null while it is open. */
 function doneText(
   row: Row,
@@ -65,6 +81,7 @@ export function PlannerRow(props: {
           row.title,
           who,
           formatDate(row.date),
+          ...extraLines(row),
           ...(doneBy === null ? [] : [doneBy]),
         ].join(", ")}
       >
@@ -72,6 +89,7 @@ export function PlannerRow(props: {
         <AppText style={{ color: colors.textMuted }}>
           {`${who} · ${formatDate(row.date)}`}
         </AppText>
+        <ExtraLines row={row} />
         {doneBy === null ? null : (
           <AppText style={{ color: colors.textMuted }}>{doneBy}</AppText>
         )}

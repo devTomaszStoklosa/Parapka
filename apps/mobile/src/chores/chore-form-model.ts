@@ -10,6 +10,11 @@ import {
 } from "@parapka/domain";
 
 import type { TranslationKey } from "../i18n";
+import {
+  isValidNote,
+  isValidReminder,
+  normalizeReminder,
+} from "./chore-extras";
 import type { ChoreInput, StoredChore } from "./chore-repository";
 
 export type RuleKind = ChoreRule["kind"];
@@ -30,6 +35,9 @@ export interface FormState {
   readonly alternatingFirst: Person;
   readonly alternatingStart: string;
   readonly visibility: Visibility;
+  /** The note and the reminder time `HH:MM` as typed; empty means none. */
+  readonly note: string;
+  readonly reminder: string;
 }
 
 export const defaultFormState = (today: CalendarDate): FormState => ({
@@ -44,6 +52,8 @@ export const defaultFormState = (today: CalendarDate): FormState => ({
   alternatingFirst: "me",
   alternatingStart: today,
   visibility: "shared",
+  note: "",
+  reminder: "",
 });
 
 function whoOf(assignment: Assignment): Who {
@@ -76,6 +86,8 @@ export function formStateOf(
     ...defaultFormState(today),
     ...ruleFields(rule),
     title: chore.title,
+    note: chore.note ?? "",
+    reminder: chore.reminder ?? "",
     kind: rule.kind,
     who: whoOf(assignment),
     visibility: chore.shared ? "shared" : "private",
@@ -140,6 +152,15 @@ function titleError(title: string): TranslationKey | null {
   }
 }
 
+function extrasOf(state: FormState) {
+  const note = state.note.trim() === "" ? null : state.note;
+  const reminder = normalizeReminder(state.reminder);
+  if (!isValidNote(note)) return "planner.form.errors.noteTooLong" as const;
+  if (!isValidReminder(reminder))
+    return "planner.form.errors.reminder" as const;
+  return { note, reminder };
+}
+
 /** The chore of the form, or the key of the text that says what is wrong. */
 export function toChoreInput(state: FormState): FormResult {
   const error = titleError(state.title);
@@ -152,7 +173,9 @@ export function toChoreInput(state: FormState): FormResult {
   } catch {
     return { error: "planner.form.errors.rule" };
   }
-  return { input: { title: state.title, rule, assignment } };
+  const extras = extrasOf(state);
+  if (typeof extras === "string") return { error: extras };
+  return { input: { title: state.title, rule, assignment, ...extras } };
 }
 
 /** The fields of `next` that differ from the chore: only they are saved. */
@@ -161,8 +184,16 @@ export function changedFields(
   next: ChoreInput,
 ): Partial<ChoreInput> {
   const patch: Partial<Record<keyof ChoreInput, unknown>> = {};
-  for (const name of ["title", "rule", "assignment"] as const) {
-    if (JSON.stringify(chore[name]) !== JSON.stringify(next[name])) {
+  for (const name of [
+    "title",
+    "rule",
+    "assignment",
+    "note",
+    "reminder",
+  ] as const) {
+    if (
+      JSON.stringify(chore[name] ?? null) !== JSON.stringify(next[name] ?? null)
+    ) {
       patch[name] = next[name];
     }
   }

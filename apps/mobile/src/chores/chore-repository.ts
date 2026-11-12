@@ -20,6 +20,7 @@ import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
 import type { PairRepository } from "../pairing/pair-repository";
 import type { NextHlc } from "../sync/handler-registry";
+import { validateExtras } from "./chore-extras";
 import {
   decodeAssignment,
   encodeAssignment,
@@ -38,12 +39,17 @@ export interface StoredChore extends Chore {
   readonly assignment: Assignment;
   /** False for a chore that stays on this device (no pair, or the pair ended). */
   readonly shared: boolean;
+  readonly note: string | null;
+  /** The time of the reminder, `HH:MM`; nothing is scheduled yet. */
+  readonly reminder: string | null;
 }
 
 export interface ChoreInput {
   readonly title: string;
   readonly rule: ChoreRule;
   readonly assignment: Assignment;
+  readonly note?: string | null;
+  readonly reminder?: string | null;
 }
 
 export interface AddOptions {
@@ -150,7 +156,7 @@ function currentFields({ state, pending }: ChoreRecord) {
 
 function toChore(id: string, record: ChoreRecord, devices: Devices) {
   if (!isAliveNow(record)) return null;
-  const { title, rule, assignment } = currentFields(record);
+  const { title, rule, assignment, note, reminder } = currentFields(record);
   if (title === undefined || rule === undefined || assignment === undefined) {
     return null;
   }
@@ -159,6 +165,8 @@ function toChore(id: string, record: ChoreRecord, devices: Devices) {
     title,
     rule,
     assignment: decodeAssignment(assignment as StoredAssignment, devices),
+    note: note ?? null,
+    reminder: reminder ?? null,
     shared: record.shared,
   } as StoredChore;
 }
@@ -207,6 +215,12 @@ function createAccess({ database, pairs, identity }: Deps) {
 
 type Access = ReturnType<typeof createAccess>;
 
+const newRecord = (id: string, shared: boolean): ChoreRecord => ({
+  shared,
+  state: emptyEntityState(ENTITY, id),
+  pending: emptyPending(),
+});
+
 function createSyncAccess(access: Access): ChoreRepository["sync"] {
   return createRecordSync({
     records: access.records,
@@ -216,13 +230,15 @@ function createSyncAccess(access: Access): ChoreRepository["sync"] {
     settle,
     sanitize,
     toMerge: (change) => change as Change,
-    emptyRecord: (id, shared) => ({
-      shared,
-      state: emptyEntityState(ENTITY, id),
-      pending: emptyPending(),
-    }),
+    emptyRecord: newRecord,
   });
 }
+
+/** The note and the reminder of an input, null when it has none. */
+const extrasOf = (input: ChoreInput) => ({
+  note: input.note ?? null,
+  reminder: input.reminder ?? null,
+});
 
 export function createChoreRepository(deps: Deps): ChoreRepository {
   const access = createAccess(deps);
@@ -237,6 +253,7 @@ export function createChoreRepository(deps: Deps): ChoreRepository {
   ) => {
     validateChore({ id, title: whole.title, rule: whole.rule });
     validateAssignment(whole.assignment);
+    validateExtras(whole);
     const { assignment, ...plain } = patch;
     Object.assign(record.pending.fields, plain);
     if (assignment !== undefined) {
@@ -251,9 +268,9 @@ export function createChoreRepository(deps: Deps): ChoreRepository {
       const id = deps.newId();
       const paired = (await deps.pairs.activePair()) !== null;
       const shared = paired && options?.private !== true;
-      const state = emptyEntityState(ENTITY, id);
-      await save(id, input, input, { shared, state, pending: emptyPending() });
-      return { id, ...input, shared };
+      const full = { ...input, ...extrasOf(input) };
+      await save(id, full, input, newRecord(id, shared));
+      return { id, ...full, shared };
     },
     edit: async (id, patch) => {
       const record = await load(id);

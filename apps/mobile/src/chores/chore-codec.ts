@@ -7,7 +7,9 @@ import {
   type Person,
 } from "@parapka/domain";
 
-export type ChoreField = "title" | "rule" | "assignment";
+import { isValidNote, isValidReminder } from "./chore-extras";
+
+export type ChoreField = "title" | "rule" | "assignment" | "note" | "reminder";
 
 /** The ids of the two devices, to turn a `Person` into a device and back. */
 export interface Devices {
@@ -109,7 +111,11 @@ const passes = (check: () => void): boolean => {
 };
 
 export const isChoreField = (name: string): name is ChoreField =>
-  name === "title" || name === "rule" || name === "assignment";
+  name === "title" ||
+  name === "rule" ||
+  name === "assignment" ||
+  name === "note" ||
+  name === "reminder";
 
 /** True when a value that came from the partner may be kept as the field. */
 export function isValidField(name: ChoreField, value: unknown): boolean {
@@ -121,6 +127,10 @@ export function isValidField(name: ChoreField, value: unknown): boolean {
           validateChoreTitle(value);
         })
       );
+    case "note":
+      return isValidNote(value);
+    case "reminder":
+      return isValidReminder(value);
     case "rule":
       return (
         isObject(value) &&

@@ -35,6 +35,9 @@ export interface PlannerRow {
   readonly title: string;
   readonly responsible: Responsible;
   readonly date: CalendarDate;
+  readonly note: string | null;
+  /** The time `HH:MM` of the reminder of the chore. */
+  readonly reminder: string | null;
   /** The check-off of the occurrence, or null while it is not done. */
   readonly completion: RowCompletion | null;
 }
@@ -125,12 +128,19 @@ function occurrenceRows(
         title: chore.title,
         responsible,
         date,
+        note: chore.note,
+        reminder: chore.reminder,
         completion: done.get(key) ?? null,
       });
     }
   }
   return rows.sort(
-    (a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title),
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.title.localeCompare(b.title, "pl", {
+        numeric: true,
+        sensitivity: "base",
+      }),
   );
 }
 
