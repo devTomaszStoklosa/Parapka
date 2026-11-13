@@ -111,3 +111,48 @@ it("rejects a late version of A for a week that is over", async () => {
   const kept = await rows<SealedRecord>(b, "checkin-sealed");
   expect(kept).toEqual([]);
 });
+
+const HLC = "000000000000001-00000-device-b";
+
+it("sends no new key of the week that is over from B after the end", async () => {
+  const { a, b, ua, ub, moveTo } = await setup();
+  await ua.service.submit(answersA);
+  await a.engine.sync();
+  await b.engine.sync();
+  moveTo("2026-11-15T19:00");
+  await ub.service.current();
+  await ub.service.submit(answersB);
+  expect(await ub.keys.sync.collect(() => HLC)).toEqual([]);
+  expect(await ua.keys.sync.collect(() => HLC)).toEqual([]);
+});
+
+/** A fills in; B does or does not fill in, then the window ends. */
+async function endWith(partnerFilled: boolean) {
+  const { a, b, ua, ub, moveTo } = await setup();
+  await ua.service.submit(answersA);
+  if (partnerFilled) await ub.service.submit(answersB);
+  await a.engine.sync();
+  await b.engine.sync();
+  moveTo("2026-11-15T19:00");
+  await b.engine.sync();
+  await a.engine.sync();
+  return {
+    filler: {
+      history: await ua.service.history(5),
+      current: await ua.service.current(),
+    },
+    other: await ub.service.current(),
+  };
+}
+
+it("shows the same state after the end whether or not the partner filled in", async () => {
+  const filled = await endWith(true);
+  const notFilled = await endWith(false);
+  expect(filled.filler).toEqual(notFilled.filler);
+  expect(filled.other).toEqual(notFilled.other);
+});
+
+it("starts the new week as open for who did not fill in", async () => {
+  const { other } = await endWith(false);
+  expect(other).toMatchObject({ status: "open", own: null, partner: null });
+});

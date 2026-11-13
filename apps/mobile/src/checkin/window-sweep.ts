@@ -9,11 +9,10 @@ import type { ContentChange } from "@parapka/protocol";
 import type { LocalDatabase } from "../data/local-database";
 import type { KeyRepository } from "./key-repository";
 import { toLocalDateTime } from "./local-time";
+import { REVEALED_COLLECTION } from "./reveal";
 import { weekOfCheckinId } from "./record-store";
 import type { ScheduleRepository } from "./schedule-repository";
 import type { SealedRepository } from "./sealed-repository";
-
-const REVEALED = "checkin-revealed";
 
 /** The window that the clock and the schedule give now. */
 export const currentWindowOf = async (
@@ -58,7 +57,7 @@ export function createWindowEnd(deps: Deps): WindowEnd {
   const closed = async (week: IsoWeek) => {
     const { week: now } = await currentWindowOf(clock, schedule);
     if (now <= week) return false;
-    if ((await database.get(REVEALED, week)) !== null) return false;
+    if ((await database.get(REVEALED_COLLECTION, week)) !== null) return false;
     return !(await keys.ownSent(week));
   };
   return {

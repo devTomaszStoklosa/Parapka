@@ -1,3 +1,4 @@
+import { DEFAULT_CHECKIN_SCHEDULE, type Clock } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
 import { expect, it } from "vitest";
 
@@ -5,7 +6,8 @@ import { createMemoryDatabase } from "../data/memory-database";
 import type { Pair } from "../pairing/pair-repository";
 import { base64Encode } from "../sync/base64";
 import { createKeyRepository } from "./key-repository";
-import { weekOfChange } from "./window-sweep";
+import { REVEALED_COLLECTION } from "./reveal";
+import { createWindowEnd, weekOfChange } from "./window-sweep";
 
 type Upsert = Extract<ContentChange, { op: "upsert" }>;
 
@@ -78,4 +80,91 @@ it("lists the weeks, and drops received and unsent keys of one week only", async
   expect(await keys.partnerKey("2026-W46:partner", 1)).not.toBeNull();
   expect(await keys.weeks()).toEqual(["2026-W46"]);
   expect(await keys.ownSent("2026-W46")).toBe(true);
+});
+
+const at = (local: string) => new Date(local).getTime();
+
+/** A window end over real keys, a fake sealed store and a clock to move. */
+function windowEnd() {
+  const database = createMemoryDatabase();
+  const keys = createKeyRepository({
+    database,
+    pairs: {
+      activePair: () =>
+        Promise.resolve({ deviceId: "partner" } as unknown as Pair),
+    },
+  });
+  const sealedWeeks = new Set(["2026-W45", "2026-W46"]);
+  const dropped: string[] = [];
+  let now = at("2026-11-12T12:00");
+  const clock: Clock = { nowMs: () => now };
+  const end = createWindowEnd({
+    clock,
+    schedule: { get: () => Promise.resolve(DEFAULT_CHECKIN_SCHEDULE) },
+    database,
+    keys,
+    sealed: {
+      weeks: () => Promise.resolve([...sealedWeeks]),
+      dropReceived: (week) => {
+        dropped.push(week);
+        return Promise.resolve();
+      },
+    },
+  });
+  return {
+    end,
+    keys,
+    database,
+    dropped,
+    moveTo: (local: string) => {
+      now = at(local);
+    },
+  };
+}
+
+const sendOwn = async (
+  keys: ReturnType<typeof createKeyRepository>,
+  id: string,
+) =>
+  keys.sync.commit(
+    (await keys.sync.collect(() => hlc)).filter((item) => item.id === id),
+  );
+
+it("is not closed for the current week, a revealed week or a sent key", async () => {
+  const { end, keys, database, moveTo } = windowEnd();
+  expect(await end.closed("2026-W45")).toBe(false);
+  moveTo("2026-11-15T19:00");
+  expect(await end.closed("2026-W46")).toBe(false);
+  expect(await end.closed("2026-W45")).toBe(true);
+  await database.put(REVEALED_COLLECTION, "2026-W45", {});
+  expect(await end.closed("2026-W45")).toBe(false);
+  await database.delete(REVEALED_COLLECTION, "2026-W45");
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await sendOwn(keys, "2026-W45:me|1");
+  expect(await end.closed("2026-W45")).toBe(false);
+});
+
+it("keeps a revealed week whose own key is not sent", async () => {
+  const { end, keys, database, dropped, moveTo } = windowEnd();
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await keys.sync.merge(received("2026-W45:partner"));
+  await database.put(REVEALED_COLLECTION, "2026-W45", {});
+  moveTo("2026-11-15T19:00");
+  await end.sweep();
+  expect(dropped).toEqual([]);
+  expect(await keys.partnerKey("2026-W45:partner", 1)).not.toBeNull();
+  expect((await keys.sync.collect(() => hlc)).map((i) => i.id)).toEqual([
+    "2026-W45:me|1",
+  ]);
+});
+
+it("drops the queued own key and the data of the partner of a closed week", async () => {
+  const { end, keys, dropped, moveTo } = windowEnd();
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await keys.sync.merge(received("2026-W45:partner"));
+  moveTo("2026-11-15T19:00");
+  await end.sweep();
+  expect(dropped).toEqual(["2026-W45"]);
+  expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
+  expect(await keys.sync.collect(() => hlc)).toEqual([]);
 });
