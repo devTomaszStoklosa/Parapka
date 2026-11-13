@@ -2,6 +2,24 @@ import { decryptEnvelope, unsealCheckin } from "@parapka/crypto";
 import type { Envelope } from "@parapka/protocol";
 import { expect, it, vi } from "vitest";
 
+const touched = vi.hoisted(() => new Set<string>());
+
+vi.mock("../data/memory-database", async (original) => {
+  const module = await original<typeof import("../data/memory-database")>();
+  return {
+    ...module,
+    createMemoryDatabase: () => {
+      const database = module.createMemoryDatabase();
+      const put = database.put.bind(database);
+      database.put = (collection, id, value) => {
+        touched.add(collection);
+        return put(collection, id, value);
+      };
+      return database;
+    },
+  };
+});
+
 import { base64Decode } from "../sync/base64";
 import { sendRaw } from "../sync/sync-test-support";
 import { setupCheckinPair } from "./checkin-test-support";
@@ -23,12 +41,6 @@ async function records(device: { database: Parameters<typeof dump>[0] }) {
 
 it("gives B the ciphertext only, which only the key of A opens (FR-CHK-03)", async () => {
   const { a, b, ua, ub, sodium } = await setupCheckinPair();
-  const written = new Set(["pair", "pair-closing"]);
-  const put = b.database.put.bind(b.database);
-  vi.spyOn(b.database, "put").mockImplementation((collection, id, value) => {
-    written.add(collection);
-    return put(collection, id, value);
-  });
   await ua.service.submit(answers);
   await a.engine.sync();
   await b.engine.sync();
@@ -36,9 +48,7 @@ it("gives B the ciphertext only, which only the key of A opens (FR-CHK-03)", asy
   const [received] = await records(b);
   expect(received).toMatchObject({ version: 1, own: false, sealKey: null });
   const everything = JSON.stringify(
-    await Promise.all(
-      [...written].map((name) => b.database.list(name)),
-    ),
+    await Promise.all([...touched].map((name) => b.database.list(name))),
   );
   expect(everything).not.toContain(NEED);
   expect(everything).not.toContain(own?.sealKey);
