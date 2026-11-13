@@ -1,3 +1,4 @@
+import type { IsoWeek } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
 
 import { changeChannel } from "../data/change-listeners";
@@ -16,7 +17,10 @@ import {
   commitSent,
   createRecordStore,
   forgetReceived,
+  removeWhere,
   takeIn,
+  weekOfCheckinId,
+  type RecordStore,
 } from "./record-store";
 import { recordIdOf } from "./sealed-codec";
 
@@ -28,6 +32,14 @@ export interface KeyRepository {
   sync: RecordHandlerSync;
   subscribe(listener: () => void): () => void;
   forgetReceived(): Promise<void>;
+  /** The weeks that have a key, own or of the partner. */
+  weeks(): Promise<IsoWeek[]>;
+  /** True when the own key of the week has been sent. */
+  ownSent(week: IsoWeek): Promise<boolean>;
+  /** Removes the keys of the partner for the week. */
+  dropReceived(week: IsoWeek): Promise<void>;
+  /** Removes the own keys of the week that wait to be sent. */
+  dropUnsent(week: IsoWeek): Promise<void>;
 }
 
 interface Deps {
@@ -55,13 +67,49 @@ const toChange =
     };
   };
 
+/** Removes the keys of the week that match; tells the listeners of a change. */
+const dropper =
+  (store: RecordStore<KeyRecord>, notify: () => void) =>
+  async (week: IsoWeek, matches: (record: KeyRecord) => boolean) => {
+    const removed = await removeWhere(
+      store,
+      (record) => weekOfCheckinId(record.checkinId) === week && matches(record),
+    );
+    if (removed > 0) notify();
+  };
+
+/** The reads of the keys by week that the clean-up needs. */
+const weekReaders = (store: RecordStore<KeyRecord>) => ({
+  weeks: async () => [
+    ...new Set(
+      (await store.all()).flatMap(({ checkinId }) => {
+        const week = weekOfCheckinId(checkinId);
+        return week === null ? [] : [week];
+      }),
+    ),
+  ],
+  ownSent: async (week: IsoWeek) =>
+    (await store.all()).some(
+      (record) =>
+        record.own &&
+        record.sent &&
+        weekOfCheckinId(record.checkinId) === week,
+    ),
+});
+
 /** The keys of the own versions, which leave the device once the check-in is locked, and the keys of the partner. */
 export function createKeyRepository(deps: Deps): KeyRepository {
   const { database, pairs } = deps;
   const changes = changeChannel(database, KEY_COLLECTION);
   const store = createRecordStore<KeyRecord>(database, KEY_COLLECTION);
+  const drop = dropper(store, changes.notify);
+  const readers = weekReaders(store);
   return {
     subscribe: changes.subscribe,
+    weeks: readers.weeks,
+    ownSent: readers.ownSent,
+    dropReceived: (week) => drop(week, (record) => !record.own),
+    dropUnsent: (week) => drop(week, (record) => record.own && !record.sent),
     addOwn: async (checkinId, version, key) => {
       const known = (await store.all()).some(
         (record) =>

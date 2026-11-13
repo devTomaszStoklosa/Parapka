@@ -11,6 +11,7 @@ import { createAnswersRepository } from "./answers-repository";
 import { createCheckinService } from "./checkin-service";
 import { createKeyRepository } from "./key-repository";
 import { createReveal } from "./reveal";
+import { createWindowEnd } from "./window-sweep";
 import { createScheduleRepository } from "./schedule-repository";
 import { createSealedRepository } from "./sealed-repository";
 
@@ -38,7 +39,20 @@ async function setup(paired = true) {
     database,
     pairs: partnerPairs,
   });
-  const reveal = createReveal({ database, sodium, sealed, keys });
+  const windowEnd = createWindowEnd({
+    clock,
+    schedule,
+    database,
+    keys,
+    sealed,
+  });
+  const reveal = createReveal({
+    database,
+    sodium,
+    sealed,
+    keys,
+    window: windowEnd,
+  });
   const service = createCheckinService({
     clock,
     pairs,
@@ -46,6 +60,7 @@ async function setup(paired = true) {
     answers,
     sealed,
     reveal,
+    windowEnd,
   });
   return {
     service,

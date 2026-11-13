@@ -10,6 +10,7 @@ import type { JsonValue, LocalDatabase } from "../data/local-database";
 import { base64Decode } from "../sync/base64";
 import type { KeyRecord } from "./key-codec";
 import type { KeyRepository } from "./key-repository";
+import type { WindowEnd } from "./window-sweep";
 import type { PartnerSealed, SealedRepository } from "./sealed-repository";
 
 export const REVEALED_COLLECTION = "checkin-revealed";
@@ -32,6 +33,7 @@ interface Deps {
   sodium: Sodium;
   sealed: Pick<SealedRepository, "weeks" | "latestOwn" | "partnerVersions">;
   keys: Pick<KeyRepository, "addOwn" | "partnerKey">;
+  window: Pick<WindowEnd, "closed">;
 }
 
 /** The answers in the version, or null when the key or the data are wrong. */
@@ -58,7 +60,7 @@ function open(
 
 /** The lock and the reveal of the check-ins (FR-CHK-04, spec 7.4 point 3). */
 export function createReveal(deps: Deps): Reveal {
-  const { database, sodium, sealed, keys } = deps;
+  const { database, sodium, sealed, keys, window } = deps;
   const changes = changeChannel(database, REVEALED_COLLECTION);
   const get = async (week: IsoWeek) => {
     const row = (await database.get(REVEALED_COLLECTION, week)) as {
@@ -72,6 +74,7 @@ export function createReveal(deps: Deps): Reveal {
       await sealed.partnerVersions(week),
     ];
     if (own === null || versions.length === 0) return;
+    if (await window.closed(week)) return;
     await keys.addOwn(own.checkinId, own.version, own.sealKey);
     if ((await get(week)) !== null) return;
     for (const partner of versions) {
