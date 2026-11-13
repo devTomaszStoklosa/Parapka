@@ -10,6 +10,7 @@ import { createScheduleRepository } from "./schedule-repository";
 import { createSealedRepository } from "./sealed-repository";
 import { createKeyRepository } from "./key-repository";
 import { createReveal } from "./reveal";
+import { createWindowEnd } from "./window-sweep";
 import {
   createCheckinHandler,
   createCheckinKeyHandler,
@@ -60,15 +61,23 @@ export function withCheckin(
     database: device.database,
     pairs: device.pairs,
   });
+  const schedule = createScheduleRepository({
+    database: device.database,
+    pairs: device.pairs,
+  });
+  const windowEnd = createWindowEnd({
+    clock,
+    schedule,
+    database: device.database,
+    keys,
+    sealed,
+  });
   const reveal = createReveal({
     database: device.database,
     sodium,
     sealed,
     keys,
-  });
-  const schedule = createScheduleRepository({
-    database: device.database,
-    pairs: device.pairs,
+    window: windowEnd,
   });
   const service = createCheckinService({
     clock,
@@ -77,12 +86,13 @@ export function withCheckin(
     answers: createAnswersRepository(device.database),
     sealed,
     reveal,
+    windowEnd,
   });
   const registry = createHandlerRegistry();
-  registry.register(createCheckinHandler({ sealed, reveal }));
-  registry.register(createCheckinKeyHandler({ keys, reveal }));
+  registry.register(createCheckinHandler({ sealed, reveal, windowEnd }));
+  registry.register(createCheckinKeyHandler({ keys, reveal, windowEnd }));
   device.restart({ registry, ...gates });
-  return { sealed, keys, reveal, service, registry };
+  return { sealed, keys, reveal, service, registry, windowEnd };
 }
 
 /** Two paired devices with the check-in services, the CHECKIN consent given. */

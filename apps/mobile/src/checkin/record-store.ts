@@ -1,3 +1,4 @@
+import type { IsoWeek } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
 
 import type { JsonValue, LocalDatabase } from "../data/local-database";
@@ -87,11 +88,27 @@ export async function takeIn<R extends VersionedRecord>(
   return true;
 }
 
+/** Removes the records that match; how many went. */
+export async function removeWhere<R extends VersionedRecord>(
+  store: RecordStore<R>,
+  matches: (record: R) => boolean,
+) {
+  let removed = 0;
+  for (const record of await store.all()) {
+    if (!matches(record)) continue;
+    await store.remove(record);
+    removed += 1;
+  }
+  return removed;
+}
+
 /** Removes the records of the partner; the own ones stay. */
 export async function forgetReceived<R extends VersionedRecord>(
   store: RecordStore<R>,
 ) {
-  for (const record of await store.all()) {
-    if (!record.own) await store.remove(record);
-  }
+  await removeWhere(store, (record) => !record.own);
 }
+
+/** The week that the id of a check-in starts with, or null. */
+export const weekOfCheckinId = (checkinId: string): IsoWeek | null =>
+  /^(\d{4}-W\d{2}):/.exec(checkinId)?.[1] ?? null;

@@ -1,7 +1,6 @@
 import {
   ChoreValidationError,
   createCheckinAnswers,
-  currentCheckinWindow,
   editCheckinAnswers,
   type CheckinAnswers,
   type CheckinWindow,
@@ -12,10 +11,10 @@ import {
 
 import type { PairRepository } from "../pairing/pair-repository";
 import type { AnswersRepository, StoredAnswers } from "./answers-repository";
-import { toLocalDateTime } from "./local-time";
 import type { ScheduleRepository } from "./schedule-repository";
 import type { Reveal } from "./reveal";
 import type { SealedRepository } from "./sealed-repository";
+import { currentWindowOf, type WindowEnd } from "./window-sweep";
 
 export type CheckinStatus = "open" | "filled" | "locked" | "revealed";
 
@@ -52,6 +51,7 @@ interface Deps {
   answers: AnswersRepository;
   sealed: Pick<SealedRepository, "submit" | "partnerFilled" | "subscribe">;
   reveal: Pick<Reveal, "settle" | "get" | "subscribe">;
+  windowEnd: Pick<WindowEnd, "sweep">;
 }
 
 const pad = (value: number, length = 2) => String(value).padStart(length, "0");
@@ -97,10 +97,10 @@ async function statusOf(
 }
 
 export function createCheckinService(deps: Deps): CheckinService {
-  const { clock, pairs, schedule, answers, sealed, reveal } = deps;
-  const currentWindow = async () =>
-    currentCheckinWindow(toLocalDateTime(clock.nowMs()), await schedule.get());
+  const { clock, pairs, schedule, answers, sealed, reveal, windowEnd } = deps;
+  const currentWindow = () => currentWindowOf(clock, schedule);
   const view = async (): Promise<CheckinView> => {
+    await windowEnd.sweep();
     const window = await currentWindow();
     const stored = await answers.get(window.week);
     const own = stored?.answers ?? null;

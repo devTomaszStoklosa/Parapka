@@ -16,6 +16,7 @@ import {
   createRecordStore,
   forgetReceived,
   newest,
+  removeWhere,
   takeIn,
   type RecordStore,
 } from "./record-store";
@@ -59,6 +60,8 @@ export interface SealedRepository {
   sync: RecordHandlerSync;
   subscribe(listener: () => void): () => void;
   forgetReceived(): Promise<void>;
+  /** Removes the versions of the partner for the week. */
+  dropReceived(week: IsoWeek): Promise<void>;
 }
 
 interface Deps {
@@ -172,6 +175,13 @@ export function createSealedRepository(deps: Deps): SealedRepository {
     forgetReceived: async () => {
       await forgetReceived(store);
       changes.notify();
+    },
+    dropReceived: async (week) => {
+      const removed = await removeWhere(
+        store,
+        (record) => !record.own && record.week === week,
+      );
+      if (removed > 0) changes.notify();
     },
     sync: {
       collect: (nextHlc) => collectOwn(store, toChange(nextHlc)),

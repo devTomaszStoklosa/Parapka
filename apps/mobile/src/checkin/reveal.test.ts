@@ -23,6 +23,7 @@ async function setup(plain: string, version = 1) {
   const partner: PartnerSealed = { ...fields, version, ...made.sealed };
   const added: string[] = [];
   const state = {
+    closed: false,
     own: own as typeof own | null,
     key: {
       checkinId: fields.checkinId,
@@ -33,6 +34,7 @@ async function setup(plain: string, version = 1) {
     } as KeyRecord | null,
   };
   const reveal = createReveal({
+    window: { closed: () => Promise.resolve(state.closed) },
     database,
     sodium,
     sealed: {
@@ -92,4 +94,12 @@ it("opens nothing with a wrong key or answers that are not valid", async () => {
   const invalid = await setup(JSON.stringify({ mood: 9 }));
   await invalid.reveal.settle();
   expect(await invalid.reveal.get(WEEK)).toBeNull();
+});
+
+it("queues no key and opens nothing for a week that is closed", async () => {
+  const { reveal, state, added } = await setup(good);
+  state.closed = true;
+  await reveal.settle();
+  expect(added).toEqual([]);
+  expect(await reveal.get(WEEK)).toBeNull();
 });
