@@ -14,9 +14,9 @@ import type { PairRepository } from "../pairing/pair-repository";
 import type { AnswersRepository, StoredAnswers } from "./answers-repository";
 import { toLocalDateTime } from "./local-time";
 import type { ScheduleRepository } from "./schedule-repository";
+import type { Reveal } from "./reveal";
 import type { SealedRepository } from "./sealed-repository";
 
-/** "locked" and "revealed" come with the exchange of the answers. */
 export type CheckinStatus = "open" | "filled" | "locked" | "revealed";
 
 export interface CheckinView {
@@ -50,28 +50,22 @@ interface Deps {
   pairs: Pick<PairRepository, "activePair">;
   schedule: Pick<ScheduleRepository, "get" | "subscribe">;
   answers: AnswersRepository;
-  sealed: Pick<SealedRepository, "submit">;
+  sealed: Pick<SealedRepository, "submit" | "partnerFilled" | "subscribe">;
+  reveal: Pick<Reveal, "settle" | "get" | "subscribe">;
 }
-
-/** Whether the partner has filled in the week; the exchange will tell. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- the week is for the exchange
-const isLocked = (_week: IsoWeek): boolean => false;
 
 const pad = (value: number, length = 2) => String(value).padStart(length, "0");
 
 /** The first answers of the week, or an edit of the saved ones. */
 async function save(
   answers: AnswersRepository,
-  week: IsoWeek,
-  created: CheckinAnswers,
-  submittedAt: number,
+  { week, answers: created, submittedAt }: StoredAnswers,
+  partnerFilled: boolean,
 ) {
   const stored = await answers.get(week);
   const next = stored
-    ? editCheckinAnswers(
-        { answers: stored.answers, partnerFilled: isLocked(week) },
-        created,
-      ).answers
+    ? editCheckinAnswers({ answers: stored.answers, partnerFilled }, created)
+        .answers
     : created;
   await answers.put({ week, answers: next, submittedAt });
   return next;
@@ -88,21 +82,33 @@ const plaintextOf = ({ mood, energy, closeness, need }: CheckinAnswers) =>
     }),
   );
 
+/**
+ * What the view shows once the own answers are saved; before, it must not
+ * depend on the partner (ZP-2).
+ */
+async function statusOf(
+  { sealed, reveal }: Pick<Deps, "sealed" | "reveal">,
+  week: IsoWeek,
+): Promise<Pick<CheckinView, "status" | "partner">> {
+  const partner = await reveal.get(week);
+  if (partner !== null) return { status: "revealed", partner };
+  const locked = await sealed.partnerFilled(week);
+  return { status: locked ? "locked" : "filled", partner: null };
+}
+
 export function createCheckinService(deps: Deps): CheckinService {
-  const { clock, pairs, schedule, answers, sealed } = deps;
+  const { clock, pairs, schedule, answers, sealed, reveal } = deps;
   const currentWindow = async () =>
     currentCheckinWindow(toLocalDateTime(clock.nowMs()), await schedule.get());
   const view = async (): Promise<CheckinView> => {
     const window = await currentWindow();
     const stored = await answers.get(window.week);
     const own = stored?.answers ?? null;
-    return {
-      window,
-      paired: (await pairs.activePair()) !== null,
-      own,
-      status: own === null ? "open" : "filled",
-      partner: null,
-    };
+    const paired = (await pairs.activePair()) !== null;
+    if (own === null) {
+      return { window, paired, own, status: "open", partner: null };
+    }
+    return { window, paired, own, ...(await statusOf(deps, window.week)) };
   };
   return {
     current: view,
@@ -112,8 +118,11 @@ export function createCheckinService(deps: Deps): CheckinService {
       }
       const { week } = await currentWindow();
       const created = createCheckinAnswers(input);
-      const saved = await save(answers, week, created, clock.nowMs());
+      const locked = await sealed.partnerFilled(week);
+      const entry = { week, answers: created, submittedAt: clock.nowMs() };
+      const saved = await save(answers, entry, locked);
       await sealed.submit(week, plaintextOf(saved));
+      await reveal.settle();
     },
     history: async (limit) => (await answers.list()).slice(0, limit),
     hintCheckin: async () => {
@@ -126,7 +135,9 @@ export function createCheckinService(deps: Deps): CheckinService {
       };
     },
     subscribe: (listener) => {
-      const stops = [answers.subscribe(listener), schedule.subscribe(listener)];
+      const stops = [answers, schedule, sealed, reveal].map((source) =>
+        source.subscribe(listener),
+      );
       return () => {
         for (const stop of stops) stop();
       };

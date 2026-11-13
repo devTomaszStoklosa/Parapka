@@ -11,7 +11,7 @@ import {
 } from "../sync/wiring-test-support";
 import { base64Encode } from "../sync/base64";
 import { createWebSodium } from "../platform/web-sodium";
-import { wireCheckin } from "./wiring";
+import { createCheckinKeyHandler, wireCheckin } from "./wiring";
 
 afterEach(() => {
   for (const stop of stoppers.splice(0)) stop();
@@ -83,4 +83,11 @@ it("registers the handler of the sealed check-ins in the engine", async () => {
     },
     { timeout: 4000 },
   );
+});
+
+it("makes the handler of the keys of the check-ins for the consent of CHECKIN", async () => {
+  const { platform } = await setup();
+  const handler = createCheckinKeyHandler(wireCheckin(platform));
+  expect(handler).toMatchObject({ entity: "CheckInKey", category: "CHECKIN" });
+  await handler.forgetReceived?.();
 });

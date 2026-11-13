@@ -49,3 +49,19 @@ it("collects nothing when there is nothing to send, and ignores a delete", async
   await sealed.sync.makePrivate();
   expect(await sealed.partnerFilled("2026-W45")).toBe(false);
 });
+
+it("lists the weeks and the newest own version with its key", async () => {
+  const { sealed, database } = await setup();
+  expect(await sealed.latestOwn("2026-W45")).toBeNull();
+  await sealed.submit("2026-W45", new Uint8Array([1]));
+  await sealed.submit("2026-W45", new Uint8Array([2]));
+  await sealed.submit("2026-W46", new Uint8Array([3]));
+  expect(await sealed.weeks()).toEqual(["2026-W45", "2026-W46"]);
+  const rows = await database.list("checkin-sealed");
+  const second = rows[1]?.value as { sealKey: string };
+  expect(await sealed.latestOwn("2026-W45")).toEqual({
+    checkinId: "2026-W45:device-a",
+    version: 2,
+    sealKey: second.sealKey,
+  });
+});

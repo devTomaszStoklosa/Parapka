@@ -1,8 +1,12 @@
 import { wireChores } from "../chores/wiring";
 import type { Platform } from "../platform/context";
+import type { RecordHandlerSync } from "../sync/record-handler";
 import { createRecordHandler } from "../sync/record-handler";
 import { createAnswersRepository } from "./answers-repository";
 import { createCheckinService, type CheckinService } from "./checkin-service";
+import { KEY_ENTITY } from "./key-codec";
+import { createKeyRepository, type KeyRepository } from "./key-repository";
+import { createReveal, type Reveal } from "./reveal";
 import { ENTITY } from "./schedule-codec";
 import { SEALED_ENTITY } from "./sealed-codec";
 import {
@@ -19,6 +23,8 @@ const wired = new WeakMap<
   {
     schedule: ScheduleRepository;
     sealed: SealedRepository;
+    keys: KeyRepository;
+    reveal: Reveal;
     checkin: CheckinService;
   }
 >();
@@ -40,20 +46,52 @@ export function createScheduleHandler(deps: {
   });
 }
 
+/** The sync that settles the lock and the reveal after each merge. */
+const settling = (sync: RecordHandlerSync, reveal: Pick<Reveal, "settle">) => ({
+  ...sync,
+  merge: async (change: Parameters<RecordHandlerSync["merge"]>[0]) => {
+    await sync.merge(change);
+    await reveal.settle();
+  },
+});
+
 /**
  * Sync of the sealed versions of the check-ins (FR-CHK-03): the ciphertext
  * only, with the consent of CHECKIN. The pair that ends takes the received ones.
  */
 export function createCheckinHandler(deps: {
   sealed: Pick<SealedRepository, "sync" | "subscribe" | "forgetReceived">;
+  reveal: Pick<Reveal, "settle">;
 }) {
   const { sync, subscribe, forgetReceived } = deps.sealed;
   return createRecordHandler({
     entity: SEALED_ENTITY,
     category: "CHECKIN",
-    sync,
+    sync: settling(sync, deps.reveal),
     subscribe,
     forget: forgetReceived,
+  });
+}
+
+/**
+ * Sync of the keys of the sealed versions, sent once the check-in is locked
+ * (spec 7.4 point 3), with the consent of CHECKIN. The pair that ends takes
+ * the received keys and the revealed answers.
+ */
+export function createCheckinKeyHandler(deps: {
+  keys: Pick<KeyRepository, "sync" | "subscribe" | "forgetReceived">;
+  reveal: Pick<Reveal, "settle" | "forgetReceived">;
+}) {
+  const { sync, subscribe, forgetReceived } = deps.keys;
+  return createRecordHandler({
+    entity: KEY_ENTITY,
+    category: "CHECKIN",
+    sync: settling(sync, deps.reveal),
+    subscribe,
+    forget: async () => {
+      await forgetReceived();
+      await deps.reveal.forgetReceived();
+    },
   });
 }
 
@@ -71,14 +109,22 @@ export function wireCheckin(platform: Platform) {
     identity,
     sodium: platform.sodium,
   });
+  const keys = createKeyRepository({ database: platform.database, identity });
+  const reveal = createReveal({
+    database: platform.database,
+    sodium: platform.sodium,
+    sealed,
+    keys,
+  });
   const checkin = createCheckinService({
     clock: platform.clock,
     pairs,
     schedule,
     answers: createAnswersRepository(platform.database),
     sealed,
+    reveal,
   });
-  const set = { schedule, sealed, checkin };
+  const set = { schedule, sealed, keys, reveal, checkin };
   wired.set(platform, set);
   return set;
 }
