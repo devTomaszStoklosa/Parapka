@@ -3,7 +3,7 @@ import type { IsoWeekday } from "@parapka/domain";
 
 import { wireChores } from "../chores/wiring";
 import { t, type TranslationKey } from "../i18n";
-import { Option } from "../onboarding/controls";
+import { Button, Option } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
 import { spacing } from "../ui/theme";
@@ -23,7 +23,7 @@ const DAYS: Record<IsoWeekday, TranslationKey> = {
   7: "checkin.days.sunday",
 };
 const WEEKDAYS: readonly IsoWeekday[] = [1, 2, 3, 4, 5, 6, 7];
-const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+const HOURS_PER_DAY = 24;
 const MINUTES = [0, 15, 30, 45];
 
 const pad = (value: number) => String(value).padStart(2, "0");
@@ -57,6 +57,35 @@ function Choices(props: {
   );
 }
 
+/** The hour as "−" hour "+": one tap steps by an hour and saves, 23 wraps to 0. */
+function HourStepper(props: { hour: number; onPick: (hour: number) => void }) {
+  const { hour, onPick } = props;
+  return (
+    <View
+      accessibilityLabel={t("checkin.hourGroup")}
+      style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}
+    >
+      <Button
+        label="−"
+        accessibilityLabel={t("checkin.hourEarlier")}
+        onPress={() => {
+          onPick((hour + HOURS_PER_DAY - 1) % HOURS_PER_DAY);
+        }}
+      />
+      <AppText accessibilityLabel={t("checkin.hour", { hour: pad(hour) })}>
+        {pad(hour)}
+      </AppText>
+      <Button
+        label="+"
+        accessibilityLabel={t("checkin.hourLater")}
+        onPress={() => {
+          onPick((hour + 1) % HOURS_PER_DAY);
+        }}
+      />
+    </View>
+  );
+}
+
 /** The check-in day and time of the pair; nothing without a pair. */
 export function CheckinScheduleSettings(props: ScheduleSource) {
   const { current, failed, change } = useCheckinSchedule(props);
@@ -80,11 +109,8 @@ export function CheckinScheduleSettings(props: ScheduleSource) {
           change({ weekday: weekday as IsoWeekday });
         }}
       />
-      <Choices
-        label={t("checkin.hourGroup")}
-        values={HOURS}
-        labelOf={(hour) => t("checkin.hour", { hour: pad(hour) })}
-        selected={current.hour}
+      <HourStepper
+        hour={current.hour}
         onPick={(hour) => {
           change({ hour });
         }}

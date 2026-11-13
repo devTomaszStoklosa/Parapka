@@ -105,41 +105,61 @@ it("offers the days from Monday and the hours and minutes as radios", async () =
     "Sobota",
     "Niedziela",
   ]);
-  expect(screen.getAllByRole("radio", { checked: true })).toHaveLength(3);
+  expect(screen.getAllByRole("radio", { checked: true })).toHaveLength(2);
   expect(
     screen
       .getByRole("radio", { name: "Niedziela" })
       .getAttribute("aria-checked"),
   ).toBe("true");
-  expect(
-    screen
-      .getByRole("radio", { name: "Godzina 19" })
-      .getAttribute("aria-checked"),
-  ).toBe("true");
+  expect(screen.getByLabelText("Godzina 19")).toBeTruthy();
   expect(
     screen
       .getByRole("radio", { name: "Minuta 00" })
       .getAttribute("aria-checked"),
   ).toBe("true");
-  expect(screen.getAllByRole("radio", { name: /^Godzina / })).toHaveLength(24);
   expect(screen.getAllByRole("radio", { name: /^Minuta / })).toHaveLength(4);
 });
 
 it.each([
   ["Wtorek", { weekday: 2, hour: 19, minute: 0 }, "wtorek, 19:00"],
-  ["Godzina 07", { weekday: 7, hour: 7, minute: 0 }, "niedziela, 07:00"],
+  [
+    "Wcześniejsza godzina",
+    { weekday: 7, hour: 18, minute: 0 },
+    "niedziela, 18:00",
+  ],
+  [
+    "Późniejsza godzina",
+    { weekday: 7, hour: 20, minute: 0 },
+    "niedziela, 20:00",
+  ],
   ["Minuta 45", { weekday: 7, hour: 19, minute: 45 }, "niedziela, 19:45"],
 ])(
   "saves %s with one tap and shows the new value",
   async (name, saved, shown) => {
     const { set } = await open();
-    fireEvent.click(screen.getByRole("radio", { name }));
+    fireEvent.click(
+      screen.getByRole(name.includes("godzina") ? "button" : "radio", { name }),
+    );
     await flush();
+    expect(set).toHaveBeenCalledTimes(1);
     expect(set).toHaveBeenCalledWith(saved);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByText(`Check-in: ${shown}`)).toBeTruthy();
   },
 );
+
+it.each([
+  ["Późniejsza godzina", 23, 0],
+  ["Wcześniejsza godzina", 0, 23],
+])("wraps the hour with %s", async (name, from, to) => {
+  const { set, state, emit } = await open();
+  state.schedule = { weekday: 7, hour: from, minute: 0 };
+  emit();
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name }));
+  await flush();
+  expect(set).toHaveBeenCalledWith({ weekday: 7, hour: to, minute: 0 });
+});
 
 it("shows nothing without a pair", async () => {
   const { view } = await open({ paired: false });
@@ -156,7 +176,7 @@ it("reloads when the partner changes the schedule or the pair appears", async ()
 
 it("says that saving failed and keeps the screen", async () => {
   const { set } = await open({ setFails: true });
-  fireEvent.click(screen.getByRole("radio", { name: "Wtorek" }));
+  fireEvent.click(screen.getByRole("button", { name: "Późniejsza godzina" }));
   await flush();
   expect(screen.getByRole("alert").textContent).toBe(c.failed);
   expect(screen.getByText("Check-in: niedziela, 19:00")).toBeTruthy();

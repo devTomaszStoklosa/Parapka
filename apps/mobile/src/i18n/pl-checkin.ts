@@ -8,6 +8,8 @@ export const plCheckin = {
   hourGroup: "Godzina check-inu",
   minuteGroup: "Minuty check-inu",
   hour: "Godzina {hour}",
+  hourEarlier: "Wcześniejsza godzina",
+  hourLater: "Późniejsza godzina",
   minute: "Minuta {minute}",
   days: {
     monday: "Poniedziałek",
