@@ -19,6 +19,7 @@ afterEach(() => {
 it("shares one repository per platform", async () => {
   const { platform } = await setup();
   expect(wireCheckin(platform)).toBe(wireCheckin(platform));
+  expect(wireCheckin(platform).checkin).toBeDefined();
 });
 
 it("synchronizes after each change of the schedule", async () => {
