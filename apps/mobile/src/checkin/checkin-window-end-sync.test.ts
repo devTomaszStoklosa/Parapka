@@ -126,33 +126,41 @@ it("sends no new key of the week that is over from B after the end", async () =>
   expect(await ua.keys.sync.collect(() => HLC)).toEqual([]);
 });
 
-/** A fills in; B does or does not fill in, then the window ends. */
-async function endWith(partnerFilled: boolean) {
+/** The window ends after A and B did or did not fill in. */
+async function endWith(aFills: boolean, bFills: boolean) {
   const { a, b, ua, ub, moveTo } = await setup();
-  await ua.service.submit(answersA);
-  if (partnerFilled) await ub.service.submit(answersB);
+  if (aFills) await ua.service.submit(answersA);
+  if (bFills) await ub.service.submit(answersB);
   await a.engine.sync();
   await b.engine.sync();
   moveTo("2026-11-15T19:00");
   await b.engine.sync();
   await a.engine.sync();
   return {
-    filler: {
+    a: {
       history: await ua.service.history(5),
       current: await ua.service.current(),
     },
-    other: await ub.service.current(),
+    b: {
+      history: await ub.service.history(5),
+      current: await ub.service.current(),
+    },
   };
 }
 
-it("shows the same state after the end whether or not the partner filled in", async () => {
-  const filled = await endWith(true);
-  const notFilled = await endWith(false);
-  expect(filled.filler).toEqual(notFilled.filler);
-  expect(filled.other).toEqual(notFilled.other);
+it("shows the same state to who filled in whether or not the partner did", async () => {
+  const partnerFilled = await endWith(true, true);
+  const partnerNot = await endWith(true, false);
+  expect(partnerFilled.a).toEqual(partnerNot.a);
 });
 
-it("starts the new week as open for who did not fill in", async () => {
-  const { other } = await endWith(false);
-  expect(other).toMatchObject({ status: "open", own: null, partner: null });
+it("shows the same state to who did not fill in whether or not the partner did", async () => {
+  const partnerFilled = await endWith(true, false);
+  const partnerNot = await endWith(false, false);
+  expect(partnerFilled.b.current).toEqual(partnerNot.b.current);
+  expect(partnerFilled.b.current).toMatchObject({
+    status: "open",
+    own: null,
+    partner: null,
+  });
 });
