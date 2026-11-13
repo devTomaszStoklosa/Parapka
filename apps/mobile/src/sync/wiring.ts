@@ -1,5 +1,6 @@
 import {
   createCheckinHandler,
+  createCheckinKeyHandler,
   createScheduleHandler,
   wireCheckin,
 } from "../checkin/wiring";
@@ -98,6 +99,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createHandoverHandler(deps));
   registry.register(createScheduleHandler(deps));
   registry.register(createCheckinHandler(deps));
+  registry.register(createCheckinKeyHandler(deps));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");

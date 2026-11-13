@@ -1,10 +1,15 @@
 import { ChoreValidationError, type Clock } from "@parapka/domain";
+import { sealCheckin } from "@parapka/crypto";
+import type { ContentChange } from "@parapka/protocol";
 import { expect, it, vi } from "vitest";
 
 import { createMemoryDatabase } from "../data/memory-database";
 import { createPairedDevices } from "../sync/sync-test-support";
+import { base64Encode } from "../sync/base64";
 import { createAnswersRepository } from "./answers-repository";
 import { createCheckinService } from "./checkin-service";
+import { createKeyRepository } from "./key-repository";
+import { createReveal } from "./reveal";
 import { createScheduleRepository } from "./schedule-repository";
 import { createSealedRepository } from "./sealed-repository";
 
@@ -24,15 +29,25 @@ async function setup(paired = true) {
     identity: { deviceId: () => Promise.resolve(a.id) },
     sodium,
   });
+  const keys = createKeyRepository({
+    database,
+    identity: { deviceId: () => Promise.resolve(a.id) },
+  });
+  const reveal = createReveal({ database, sodium, sealed, keys });
   const service = createCheckinService({
     clock,
     pairs,
     schedule,
     answers,
     sealed,
+    reveal,
   });
   return {
     service,
+    sealed,
+    reveal,
+    keys,
+    sodium,
     database,
     schedule,
     at: (ms: number) => {
@@ -141,10 +156,10 @@ it("notifies about answers and schedule until unsubscribed", async () => {
   const stop = service.subscribe(listener);
   await service.submit(input);
   await schedule.set({ weekday: 3, hour: 20, minute: 30 });
-  expect(listener).toHaveBeenCalledTimes(2);
+  expect(listener).toHaveBeenCalledTimes(3);
   stop();
   await service.submit(input);
-  expect(listener).toHaveBeenCalledTimes(2);
+  expect(listener).toHaveBeenCalledTimes(3);
 });
 
 it("seals every submit as a new version without the answers in the clear", async () => {
@@ -159,4 +174,67 @@ it("seals every submit as a new version without the answers in the clear", async
   const keys = rows.map((row) => (row.value as { sealKey: string }).sealKey);
   expect(new Set(keys).size).toBe(2);
   expect(JSON.stringify(rows)).not.toContain("Spaceru");
+});
+
+const field = (value: unknown) => ({ value, hlc: "000000000000001-00000-p" });
+
+/** The sealed version and the key of the partner for the week, as sent. */
+function fromPartner(sodium: Parameters<typeof sealCheckin>[0]) {
+  const checkin = {
+    checkinId: "2026-W45:partner",
+    authorId: "partner",
+    version: 1,
+  };
+  const plain = JSON.stringify({ mood: 1, energy: 2, closeness: 3 });
+  const made = sealCheckin(sodium, checkin, new TextEncoder().encode(plain));
+  const version: ContentChange = {
+    entity: "CheckIn",
+    id: "2026-W45:partner|1",
+    op: "upsert",
+    fields: {
+      checkinId: field(checkin.checkinId),
+      week: field("2026-W45"),
+      authorId: field(checkin.authorId),
+      version: field(1),
+      nonce: field(base64Encode(made.sealed.nonce)),
+      ciphertext: field(base64Encode(made.sealed.ciphertext)),
+    },
+  };
+  const keyChange: ContentChange = {
+    entity: "CheckInKey",
+    id: "2026-W45:partner|1",
+    op: "upsert",
+    fields: {
+      checkinId: field(checkin.checkinId),
+      version: field(1),
+      key: field(base64Encode(made.key)),
+    },
+  };
+  return { version, keyChange };
+}
+
+it("locks the first answers at once when the partner has filled in", async () => {
+  const { service, sealed, sodium } = await setup();
+  await sealed.sync.merge(fromPartner(sodium).version);
+  await service.submit(input);
+  expect(await service.current()).toMatchObject({
+    status: "locked",
+    partner: null,
+  });
+  await expect(service.submit({ ...input, mood: 1 })).rejects.toThrow(
+    ChoreValidationError,
+  );
+});
+
+it("reveals the answers of the partner once the key is here", async () => {
+  const { service, sealed, keys, reveal, sodium } = await setup();
+  const { version, keyChange } = fromPartner(sodium);
+  await service.submit(input);
+  await sealed.sync.merge(version);
+  await keys.sync.merge(keyChange);
+  await reveal.settle();
+  expect(await service.current()).toMatchObject({
+    status: "revealed",
+    partner: { mood: 1, energy: 2, closeness: 3 },
+  });
 });

@@ -8,7 +8,13 @@ import { createAnswersRepository } from "./answers-repository";
 import { createCheckinService } from "./checkin-service";
 import { createScheduleRepository } from "./schedule-repository";
 import { createSealedRepository } from "./sealed-repository";
-import { createCheckinHandler, createScheduleHandler } from "./wiring";
+import { createKeyRepository } from "./key-repository";
+import { createReveal } from "./reveal";
+import {
+  createCheckinHandler,
+  createCheckinKeyHandler,
+  createScheduleHandler,
+} from "./wiring";
 
 export { exchange } from "../chores/chore-test-support";
 
@@ -37,7 +43,7 @@ export async function setupSchedulePair(gates: Gates = {}) {
   return { ...devices, sa: ua.schedule, sb: ub.schedule, ua, ub };
 }
 
-/** The sealed repository, the handler and the service of a device. */
+/** The repositories, the handlers and the service of a device. */
 export function withCheckin(
   device: Device,
   sodium: Sodium,
@@ -49,6 +55,16 @@ export function withCheckin(
     identity: { deviceId: () => Promise.resolve(device.id) },
     sodium,
   });
+  const keys = createKeyRepository({
+    database: device.database,
+    identity: { deviceId: () => Promise.resolve(device.id) },
+  });
+  const reveal = createReveal({
+    database: device.database,
+    sodium,
+    sealed,
+    keys,
+  });
   const schedule = createScheduleRepository({
     database: device.database,
     pairs: device.pairs,
@@ -59,11 +75,13 @@ export function withCheckin(
     schedule,
     answers: createAnswersRepository(device.database),
     sealed,
+    reveal,
   });
   const registry = createHandlerRegistry();
-  registry.register(createCheckinHandler({ sealed }));
+  registry.register(createCheckinHandler({ sealed, reveal }));
+  registry.register(createCheckinKeyHandler({ keys, reveal }));
   device.restart({ registry, ...gates });
-  return { sealed, service, registry };
+  return { sealed, keys, reveal, service, registry };
 }
 
 /** Two paired devices with the check-in services, the CHECKIN consent given. */
