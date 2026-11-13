@@ -1,5 +1,6 @@
 import { View } from "react-native";
 
+import { CheckinScheduleEntry } from "../checkin/CheckinScheduleSettings";
 import { t } from "../i18n";
 import { PrivacySettings } from "../consent/PrivacySettings";
 import { useConsentWiring } from "../consent/wiring";
@@ -19,6 +20,7 @@ export function SettingsScreen() {
         {t("pairing.title")}
       </AppText>
       <PairingEntry />
+      <CheckinScheduleEntry />
       <PrivacySettings consent={consent} profiles={profiles} />
     </View>
   );
