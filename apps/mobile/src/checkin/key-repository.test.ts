@@ -84,3 +84,38 @@ it("keeps the key of each version of the partner, and forgets it", async () => {
   await keys.forgetReceived();
   expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
 });
+
+it("forgets only the keys of the partner that are not newer than the command", async () => {
+  const { keys } = setup();
+  const at = (stamp: string) => ({
+    ...change(good),
+    fields: Object.fromEntries(
+      Object.keys(good).map((name) => [
+        name,
+        { value: good[name as keyof typeof good], hlc: stamp },
+      ]),
+    ),
+  });
+  await keys.sync.merge(at("000000000000009-00000-partner"));
+  await keys.forgetReceived("000000000000005-00000-partner");
+  expect(await keys.partnerKey(good.checkinId, 1)).toMatchObject({
+    hlc: "000000000000009-00000-partner",
+  });
+  await keys.forgetReceived("000000000000009-00000-partner");
+  expect(await keys.partnerKey(good.checkinId, 1)).toBeNull();
+});
+
+it("sends the newest own key of the week again", async () => {
+  const { keys } = setup();
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await keys.addOwn("2026-W45:me", 2, KEY);
+  await keys.addOwn("2026-W44:me", 1, KEY);
+  const sendAll = async () => {
+    const sent = await keys.sync.collect(() => hlc);
+    await keys.sync.commit(sent);
+  };
+  await sendAll();
+  await keys.resendWeek("2026-W45");
+  const again = await keys.sync.collect(() => hlc);
+  expect(again.map((c) => c.id)).toEqual(["2026-W45:me|2"]);
+});

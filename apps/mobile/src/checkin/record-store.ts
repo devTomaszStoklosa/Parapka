@@ -1,5 +1,6 @@
 import type { IsoWeek } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
+import { compareHlc, parseHlc } from "@parapka/sync";
 
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import { recordIdOf } from "./sealed-codec";
@@ -10,6 +11,8 @@ export interface VersionedRecord {
   version: number;
   own: boolean;
   sent: boolean;
+  /** The highest HLC of the change that brought a received record. */
+  hlc?: string;
 }
 
 export interface RecordStore<R extends VersionedRecord> {
@@ -102,11 +105,33 @@ export async function removeWhere<R extends VersionedRecord>(
   return removed;
 }
 
-/** Removes the records of the partner; the own ones stay. */
+/**
+ * Removes the records of the partner; the own ones stay. With `until`, a record
+ * that arrived with a newer HLC stays too.
+ */
 export async function forgetReceived<R extends VersionedRecord>(
   store: RecordStore<R>,
+  until?: string,
 ) {
-  await removeWhere(store, (record) => !record.own);
+  const newer = (record: R) =>
+    until !== undefined &&
+    record.hlc !== undefined &&
+    compareHlc(parseHlc(record.hlc), parseHlc(until)) > 0;
+  await removeWhere(store, (record) => !record.own && !newer(record));
+}
+
+/** Marks the newest own record of each check-in of the week as not sent. */
+export async function resendWeek<R extends VersionedRecord>(
+  store: RecordStore<R>,
+  week: IsoWeek,
+) {
+  const own = (await store.all()).filter(
+    (record) => record.own && weekOfCheckinId(record.checkinId) === week,
+  );
+  for (const id of new Set(own.map((record) => record.checkinId))) {
+    const latest = newest(own.filter((record) => record.checkinId === id));
+    if (latest !== null) await store.write({ ...latest, sent: false });
+  }
 }
 
 /** The week that the id of a check-in starts with, or null. */

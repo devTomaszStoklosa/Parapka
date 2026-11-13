@@ -1,5 +1,6 @@
 import type { IsoWeek } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
+import { compareHlc, parseHlc } from "@parapka/sync";
 
 import { base64Decode } from "../sync/base64";
 
@@ -23,6 +24,7 @@ export interface SealedRecord {
   own: boolean;
   sent: boolean;
   sealKey: string | null;
+  hlc?: string;
 }
 
 /** The check-in of one author in one week. */
@@ -31,6 +33,16 @@ export const checkinIdOf = (week: IsoWeek, authorId: string) =>
 
 export const recordIdOf = (checkinId: string, version: number) =>
   `${checkinId}|${String(version)}`;
+
+type UpsertChange = Extract<ContentChange, { op: "upsert" }>;
+
+/** The highest HLC of the fields of a change. */
+export const changeHlc = (change: UpsertChange) =>
+  Object.values(change.fields)
+    .map((field) => field.hlc)
+    .reduce((best, hlc) =>
+      compareHlc(parseHlc(hlc), parseHlc(best)) > 0 ? hlc : best,
+    );
 
 const isText = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
@@ -95,5 +107,6 @@ export function parseSealed(
     own: false,
     sent: true,
     sealKey: null,
+    hlc: changeHlc(change),
   };
 }

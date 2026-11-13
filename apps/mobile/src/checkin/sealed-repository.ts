@@ -17,6 +17,7 @@ import {
   forgetReceived,
   newest,
   removeWhere,
+  resendWeek,
   takeIn,
   type RecordStore,
 } from "./record-store";
@@ -59,7 +60,10 @@ export interface SealedRepository {
   latestOwn(week: IsoWeek): Promise<OwnSealed | null>;
   sync: RecordHandlerSync;
   subscribe(listener: () => void): () => void;
-  forgetReceived(): Promise<void>;
+  /** Removes what the partner sent; with `until`, not what is newer than it. */
+  forgetReceived(until?: string): Promise<void>;
+  /** Marks the newest own version of the week to be sent again. */
+  resendWeek(week: IsoWeek): Promise<void>;
   /** Removes the versions of the partner for the week. */
   dropReceived(week: IsoWeek): Promise<void>;
 }
@@ -172,10 +176,11 @@ export function createSealedRepository(deps: Deps): SealedRepository {
       await sealOwn(store, { sodium, authorId }, week, plaintext);
       changes.notify();
     },
-    forgetReceived: async () => {
-      await forgetReceived(store);
+    forgetReceived: async (until) => {
+      await forgetReceived(store, until);
       changes.notify();
     },
+    resendWeek: (week) => resendWeek(store, week),
     dropReceived: async (week) => {
       const removed = await removeWhere(
         store,
