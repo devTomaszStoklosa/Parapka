@@ -69,18 +69,20 @@ export async function commitSent<R extends VersionedRecord>(
   }
 }
 
-/** Takes in the record of the partner; false when there is nothing newer. */
+/**
+ * Takes in the record of the partner; false when its version is known. A known
+ * version is replaced only when `differs` says that the new record is another.
+ */
 export async function takeIn<R extends VersionedRecord>(
   store: RecordStore<R>,
   incoming: R,
+  differs: (known: R, incoming: R) => boolean = () => false,
 ) {
-  const known = newest(
-    (await store.all()).filter(
-      (record) => !record.own && record.checkinId === incoming.checkinId,
-    ),
+  const id = store.idOf(incoming);
+  const known = (await store.all()).find(
+    (record) => !record.own && store.idOf(record) === id,
   );
-  if (known !== null && known.version >= incoming.version) return false;
-  if (known !== null) await store.remove(known);
+  if (known !== undefined && !differs(known, incoming)) return false;
   await store.write(incoming);
   return true;
 }

@@ -3,6 +3,7 @@ import { sealCheckin } from "@parapka/crypto";
 import type { ContentChange } from "@parapka/protocol";
 import { expect, it, vi } from "vitest";
 
+import type { Pair } from "../pairing/pair-repository";
 import { createMemoryDatabase } from "../data/memory-database";
 import { createPairedDevices } from "../sync/sync-test-support";
 import { base64Encode } from "../sync/base64";
@@ -22,16 +23,20 @@ async function setup(paired = true) {
   const pairs = paired ? a.pairs : { activePair: () => Promise.resolve(null) };
   let now = at("2026-11-12T12:00");
   const clock: Clock = { nowMs: () => now };
+  const partnerPairs = {
+    activePair: () => Promise.resolve({ deviceId: "partner" } as Pair),
+  };
   const schedule = createScheduleRepository({ database, pairs });
   const answers = createAnswersRepository(database);
   const sealed = createSealedRepository({
     database,
     identity: { deviceId: () => Promise.resolve(a.id) },
+    pairs: partnerPairs,
     sodium,
   });
   const keys = createKeyRepository({
     database,
-    identity: { deviceId: () => Promise.resolve(a.id) },
+    pairs: partnerPairs,
   });
   const reveal = createReveal({ database, sodium, sealed, keys });
   const service = createCheckinService({

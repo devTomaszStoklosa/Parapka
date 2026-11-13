@@ -6,6 +6,7 @@ import { ChoreDeviceError } from "../chores/chore-codec";
 import { changeChannel } from "../data/change-listeners";
 import type { LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
+import type { PairRepository } from "../pairing/pair-repository";
 import { base64Decode, base64Encode } from "../sync/base64";
 import type { NextHlc } from "../sync/handler-registry";
 import type { RecordHandlerSync } from "../sync/record-handler";
@@ -46,6 +47,8 @@ export interface OwnSealed {
 export interface SealedRepository {
   /** Seals the answers as the next version of the own check-in of the week. */
   submit(week: IsoWeek, plaintext: Uint8Array): Promise<void>;
+  /** The sealed versions of the partner for the week, the newest first. */
+  partnerVersions(week: IsoWeek): Promise<PartnerSealed[]>;
   /** The newest sealed version of the partner for the week, or null. */
   latestPartner(week: IsoWeek): Promise<PartnerSealed | null>;
   partnerFilled(week: IsoWeek): Promise<boolean>;
@@ -61,6 +64,7 @@ export interface SealedRepository {
 interface Deps {
   database: LocalDatabase;
   identity: Pick<Identity, "deviceId">;
+  pairs: Pick<PairRepository, "activePair">;
   sodium: Sodium;
 }
 
@@ -115,21 +119,24 @@ async function sealOwn(
 function createReaders(store: RecordStore<SealedRecord>) {
   const newestOf = async (own: boolean, week: IsoWeek) =>
     newest((await store.all()).filter((r) => r.own === own && r.week === week));
+  const partnerVersions = async (week: IsoWeek): Promise<PartnerSealed[]> =>
+    (await store.all())
+      .filter((r) => !r.own && r.week === week)
+      .sort((x, y) => y.version - x.version)
+      .map((r) => ({
+        checkinId: r.checkinId,
+        authorId: r.authorId,
+        version: r.version,
+        nonce: base64Decode(r.nonce),
+        ciphertext: base64Decode(r.ciphertext),
+      }));
   return {
     weeks: async () => [
       ...new Set((await store.all()).map((record) => record.week)),
     ],
-    latestPartner: async (week: IsoWeek): Promise<PartnerSealed | null> => {
-      const best = await newestOf(false, week);
-      if (best === null) return null;
-      return {
-        checkinId: best.checkinId,
-        authorId: best.authorId,
-        version: best.version,
-        nonce: base64Decode(best.nonce),
-        ciphertext: base64Decode(best.ciphertext),
-      };
-    },
+    partnerVersions,
+    latestPartner: async (week: IsoWeek) =>
+      (await partnerVersions(week))[0] ?? null,
     latestOwn: async (week: IsoWeek): Promise<OwnSealed | null> => {
       const best = await newestOf(true, week);
       if (best === null) return null;
@@ -144,13 +151,15 @@ function createReaders(store: RecordStore<SealedRecord>) {
  * ones with their key, which never leaves the device, and the received ones.
  */
 export function createSealedRepository(deps: Deps): SealedRepository {
-  const { database, identity, sodium } = deps;
+  const { database, identity, pairs, sodium } = deps;
   const changes = changeChannel(database, SEALED_COLLECTION);
   const store = createRecordStore<SealedRecord>(database, SEALED_COLLECTION);
-  const { latestPartner, latestOwn, weeks } = createReaders(store);
+  const { latestPartner, latestOwn, weeks, partnerVersions } =
+    createReaders(store);
   return {
     subscribe: changes.subscribe,
     latestPartner,
+    partnerVersions,
     partnerFilled: async (week) => (await latestPartner(week)) !== null,
     weeks,
     latestOwn,
@@ -160,12 +169,18 @@ export function createSealedRepository(deps: Deps): SealedRepository {
       await sealOwn(store, { sodium, authorId }, week, plaintext);
       changes.notify();
     },
-    forgetReceived: () => forgetReceived(store),
+    forgetReceived: async () => {
+      await forgetReceived(store);
+      changes.notify();
+    },
     sync: {
       collect: (nextHlc) => collectOwn(store, toChange(nextHlc)),
       commit: (sent) => commitSent(store, sent),
       merge: async (change) => {
-        const incoming = parseSealed(change, await identity.deviceId());
+        const incoming = parseSealed(
+          change,
+          (await pairs.activePair())?.deviceId ?? null,
+        );
         if (incoming !== null && (await takeIn(store, incoming))) {
           changes.notify();
         }

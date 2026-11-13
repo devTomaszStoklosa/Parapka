@@ -107,9 +107,10 @@ export function wireCheckin(platform: Platform) {
   const sealed = createSealedRepository({
     database: platform.database,
     identity,
+    pairs,
     sodium: platform.sodium,
   });
-  const keys = createKeyRepository({ database: platform.database, identity });
+  const keys = createKeyRepository({ database: platform.database, pairs });
   const reveal = createReveal({
     database: platform.database,
     sodium: platform.sodium,

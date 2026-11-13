@@ -1,7 +1,7 @@
 import type { ContentChange } from "@parapka/protocol";
 
 import { base64Decode } from "../sync/base64";
-import { recordIdOf } from "./sealed-codec";
+import { MAX_VERSION, recordIdOf } from "./sealed-codec";
 
 export const KEY_COLLECTION = "checkin-keys";
 export const KEY_ENTITY = "CheckInKey";
@@ -28,12 +28,15 @@ const decodesKey = (value: unknown) => {
 };
 
 const isVersion = (value: unknown): value is number =>
-  typeof value === "number" && Number.isInteger(value) && value >= 1;
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= 1 &&
+  value <= MAX_VERSION;
 
-/** The key of a change of the partner, or null when it is invalid. */
+/** The key of a change of the partner, or null when it is invalid or not his. */
 export function parseKey(
   change: ContentChange,
-  deviceId: string | null,
+  partnerId: string | null,
 ): KeyRecord | null {
   if (change.op !== "upsert") return null;
   const value = (name: string) =>
@@ -46,7 +49,8 @@ export function parseKey(
   const bound =
     decodesKey(key) &&
     author !== undefined &&
-    author !== deviceId &&
+    partnerId !== null &&
+    author === partnerId &&
     change.id === recordIdOf(checkinId, version);
   return bound
     ? { checkinId, version, key: key as string, own: false, sent: true }

@@ -1,6 +1,7 @@
 import type { ContentChange } from "@parapka/protocol";
 import { expect, it } from "vitest";
 
+import type { Pair } from "../pairing/pair-repository";
 import { createMemoryDatabase } from "../data/memory-database";
 import { base64Encode } from "../sync/base64";
 import { parseKey } from "./key-codec";
@@ -23,17 +24,25 @@ const change = (
 
 const good = { checkinId: "2026-W45:partner", version: 1, key: KEY };
 
-function setup(deviceId: string | null = "me") {
+function setup(partnerId: string | null = "partner") {
   const database = createMemoryDatabase();
   const keys = createKeyRepository({
     database,
-    identity: { deviceId: () => Promise.resolve(deviceId) },
+    pairs: {
+      activePair: () =>
+        Promise.resolve(
+          partnerId === null ? null : ({ deviceId: partnerId } as Pair),
+        ),
+    },
   });
   return { keys, database };
 }
 
 it("parses the key of the partner and rejects the invalid ones", () => {
-  expect(parseKey(change(good), "me")).toMatchObject({ own: false, key: KEY });
+  expect(parseKey(change(good), "partner")).toMatchObject({
+    own: false,
+    key: KEY,
+  });
   const bad = [
     change({ ...good, key: "short" }),
     change({ ...good, key: 5 }),
@@ -46,8 +55,8 @@ it("parses the key of the partner and rejects the invalid ones", () => {
     change({ checkinId: good.checkinId, version: 1 }),
     { entity: "CheckInKey", id: "x", op: "delete", hlc } as ContentChange,
   ];
-  for (const item of bad) expect(parseKey(item, "me")).toBeNull();
-  expect(parseKey(change(good), "partner")).toBeNull();
+  for (const item of bad) expect(parseKey(item, "partner")).toBeNull();
+  expect(parseKey(change(good), "me")).toBeNull();
 });
 
 it("queues an own key once, sends it once and keeps it when forgetting", async () => {
@@ -64,13 +73,14 @@ it("queues an own key once, sends it once and keeps it when forgetting", async (
   expect(await keys.sync.collect(() => hlc)).toEqual([]);
 });
 
-it("keeps the newest key of the partner, and forgets it", async () => {
+it("keeps the key of each version of the partner, and forgets it", async () => {
   const { keys } = setup();
   await keys.sync.merge(change(good));
   await keys.sync.merge(change({ ...good, version: 2 }, "2026-W45:partner|2"));
   await keys.sync.merge(change(good));
   await keys.sync.merge(change({ ...good, checkinId: "x" }));
-  expect((await keys.partnerKey("2026-W45:partner"))?.version).toBe(2);
+  expect((await keys.partnerKey("2026-W45:partner", 1))?.version).toBe(1);
+  expect((await keys.partnerKey("2026-W45:partner", 2))?.version).toBe(2);
   await keys.forgetReceived();
-  expect(await keys.partnerKey("2026-W45:partner")).toBeNull();
+  expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
 });
