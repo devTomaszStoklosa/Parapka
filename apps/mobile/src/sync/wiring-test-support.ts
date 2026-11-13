@@ -188,13 +188,13 @@ export async function setup(
       registerDevice: () => Promise.resolve({ deviceId: "me" }),
     }),
   }).init();
-  const waiting = waitingFor(sodium, command, after, partner);
-  const { calls, nextCall } = stubRelay(status, waiting);
+  const relay = stubRelay(status, waitingFor(sodium, command, after, partner));
   const createSocket = vi.fn(socket);
+  const clock = { nowMs: () => 1_000 };
   const platform = {
     sodium,
     keyStore,
-    clock: { nowMs: () => 1_000 },
+    clock,
     database,
     sha256: webSha256,
     relayUrl: "unused-relay",
@@ -202,6 +202,7 @@ export async function setup(
     createSocket,
   } as unknown as Platform;
   const pairs = createPairRepository(database, keyStore);
+  const { consent, profiles } = wireConsent(platform);
   const controller = wireSync(platform);
   stoppers.push(() => {
     controller.unmount();
@@ -212,11 +213,12 @@ export async function setup(
     controller,
     createSocket,
     pairs,
-    ...wireConsent(platform),
+    consent,
+    profiles,
     pair: pairing(pairs),
-    nextCall,
-    syncs: () => calls.filter((c) => c.includes("/envelopes")).length,
-    posts: () => countPosts(calls),
+    nextCall: relay.nextCall,
+    syncs: () => relay.calls.filter((c) => c.includes("/envelopes")).length,
+    posts: () => countPosts(relay.calls),
   };
 }
 
