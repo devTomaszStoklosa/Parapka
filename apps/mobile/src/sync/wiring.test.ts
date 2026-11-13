@@ -91,7 +91,9 @@ it(
     const run = nextCall(isRun);
     await consent.save(defaultConsent(profile));
     await run;
-    expect(createSocket).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      expect(createSocket).toHaveBeenCalledTimes(1);
+    }, CYCLE);
   },
   SLOW,
 );
