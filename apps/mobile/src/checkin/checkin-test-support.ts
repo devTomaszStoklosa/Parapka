@@ -10,6 +10,7 @@ import { createScheduleRepository } from "./schedule-repository";
 import { createSealedRepository } from "./sealed-repository";
 import { createKeyRepository } from "./key-repository";
 import { createReveal } from "./reveal";
+import { createWithdrawalHandler } from "./withdrawal";
 import { createWindowEnd } from "./window-sweep";
 import {
   createCheckinHandler,
@@ -42,6 +43,41 @@ export async function setupSchedulePair(gates: Gates = {}) {
   const ua = withSchedule(devices.a, gates);
   const ub = withSchedule(devices.b, gates);
   return { ...devices, sa: ua.schedule, sb: ub.schedule, ua, ub };
+}
+
+/** The handlers of the check-in of a device, the withdrawal among them. */
+function registryOf(deps: {
+  device: Device;
+  clock: Clock;
+  gates: Gates;
+  parts: {
+    sealed: ReturnType<typeof createSealedRepository>;
+    keys: ReturnType<typeof createKeyRepository>;
+    schedule: ReturnType<typeof createScheduleRepository>;
+    reveal: ReturnType<typeof createReveal>;
+    windowEnd: ReturnType<typeof createWindowEnd>;
+  };
+}) {
+  const { device, clock, gates, parts } = deps;
+  const { sealed, keys, schedule, reveal, windowEnd } = parts;
+  const registry = createHandlerRegistry();
+  registry.register(createCheckinHandler({ sealed, reveal, windowEnd }));
+  registry.register(createCheckinKeyHandler({ keys, reveal, windowEnd }));
+  registry.register(
+    createWithdrawalHandler({
+      database: device.database,
+      clock,
+      schedule,
+      consent: {
+        isShared: (category) =>
+          Promise.resolve(gates.isShared?.(category) ?? true),
+      },
+      sealed,
+      keys,
+      reveal,
+    }),
+  );
+  return registry;
 }
 
 /** The repositories, the handlers and the service of a device. */
@@ -88,11 +124,10 @@ export function withCheckin(
     reveal,
     windowEnd,
   });
-  const registry = createHandlerRegistry();
-  registry.register(createCheckinHandler({ sealed, reveal, windowEnd }));
-  registry.register(createCheckinKeyHandler({ keys, reveal, windowEnd }));
+  const parts = { sealed, keys, schedule, reveal, windowEnd };
+  const registry = registryOf({ device, clock, gates, parts });
   device.restart({ registry, ...gates });
-  return { sealed, keys, reveal, service, registry, windowEnd };
+  return { ...parts, service, registry };
 }
 
 /** Two paired devices with the check-in services, the CHECKIN consent given. */

@@ -18,6 +18,7 @@ import {
   createRecordStore,
   forgetReceived,
   removeWhere,
+  resendWeek,
   takeIn,
   weekOfCheckinId,
   type RecordStore,
@@ -31,7 +32,10 @@ export interface KeyRepository {
   partnerKey(checkinId: string, version: number): Promise<KeyRecord | null>;
   sync: RecordHandlerSync;
   subscribe(listener: () => void): () => void;
-  forgetReceived(): Promise<void>;
+  /** Removes what the partner sent; with `until`, not what is newer than it. */
+  forgetReceived(until?: string): Promise<void>;
+  /** Marks the newest own key of the week to be sent again. */
+  resendWeek(week: IsoWeek): Promise<void>;
   /** The weeks that have a key, own or of the partner. */
   weeks(): Promise<IsoWeek[]>;
   /** True when the own key of the week has been sent. */
@@ -88,6 +92,13 @@ const weekReaders = (store: RecordStore<KeyRecord>) => ({
       }),
     ),
   ],
+  partnerKey: async (checkinId: string, version: number) =>
+    (await store.all()).find(
+      (record) =>
+        !record.own &&
+        record.checkinId === checkinId &&
+        record.version === version,
+    ) ?? null,
   ownSent: async (week: IsoWeek) =>
     (await store.all()).some(
       (record) =>
@@ -119,17 +130,12 @@ export function createKeyRepository(deps: Deps): KeyRepository {
       await store.write({ checkinId, version, key, own: true, sent: false });
       changes.notify();
     },
-    partnerKey: async (checkinId, version) =>
-      (await store.all()).find(
-        (record) =>
-          !record.own &&
-          record.checkinId === checkinId &&
-          record.version === version,
-      ) ?? null,
-    forgetReceived: async () => {
-      await forgetReceived(store);
+    partnerKey: readers.partnerKey,
+    forgetReceived: async (until) => {
+      await forgetReceived(store, until);
       changes.notify();
     },
+    resendWeek: (week) => resendWeek(store, week),
     sync: {
       collect: (nextHlc) => collectOwn(store, toChange(nextHlc)),
       commit: (sent) => commitSent(store, sent),

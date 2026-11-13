@@ -14,6 +14,7 @@ import {
 import { base64Encode } from "../sync/base64";
 import { createWebSodium } from "../platform/web-sodium";
 import { createCheckinKeyHandler, wireCheckin } from "./wiring";
+import { createWithdrawalHandler } from "./withdrawal";
 
 afterEach(() => {
   for (const stop of stoppers.splice(0)) stop();
@@ -90,4 +91,18 @@ it("makes the handler of the keys of the check-ins for the consent of CHECKIN", 
   const handler = createCheckinKeyHandler(wireCheckin(platform));
   expect(handler).toMatchObject({ entity: "CheckInKey", category: "CHECKIN" });
   await handler.forgetReceived?.();
+});
+
+it("makes the handler of the withdrawal of the check-in without a category", async () => {
+  const { platform } = await setup();
+  const handler = createWithdrawalHandler({
+    ...wireCheckin(platform),
+    database: platform.database,
+    clock: platform.clock,
+    consent: { isShared: () => Promise.resolve(true) },
+  });
+  expect(handler).toMatchObject({
+    entity: "CheckInWithdrawal",
+    category: null,
+  });
 });

@@ -1,7 +1,7 @@
 import type { ContentChange } from "@parapka/protocol";
 
 import { base64Decode } from "../sync/base64";
-import { MAX_VERSION, recordIdOf } from "./sealed-codec";
+import { MAX_VERSION, changeHlc, recordIdOf } from "./sealed-codec";
 
 export const KEY_COLLECTION = "checkin-keys";
 export const KEY_ENTITY = "CheckInKey";
@@ -16,6 +16,7 @@ export interface KeyRecord {
   key: string;
   own: boolean;
   sent: boolean;
+  hlc?: string;
 }
 
 const decodesKey = (value: unknown) => {
@@ -53,6 +54,13 @@ export function parseKey(
     author === partnerId &&
     change.id === recordIdOf(checkinId, version);
   return bound
-    ? { checkinId, version, key: key as string, own: false, sent: true }
+    ? {
+        checkinId,
+        version,
+        key: key as string,
+        own: false,
+        sent: true,
+        hlc: changeHlc(change),
+      }
     : null;
 }

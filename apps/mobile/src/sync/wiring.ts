@@ -4,6 +4,7 @@ import {
   createScheduleHandler,
   wireCheckin,
 } from "../checkin/wiring";
+import { createWithdrawalHandler } from "../checkin/withdrawal";
 import { createChoreHandler } from "../chores/chore-handler";
 import { createChoreCompletionHandler } from "../chores/completion-handler";
 import { wireChores } from "../chores/wiring";
@@ -100,6 +101,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createScheduleHandler(deps));
   registry.register(createCheckinHandler(deps));
   registry.register(createCheckinKeyHandler(deps));
+  registry.register(createWithdrawalHandler({ ...deps, database, clock }));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");
