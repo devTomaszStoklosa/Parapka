@@ -1,6 +1,6 @@
 import { decryptEnvelope, unsealCheckin } from "@parapka/crypto";
 import type { Envelope } from "@parapka/protocol";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import { base64Decode } from "../sync/base64";
 import { sendRaw } from "../sync/sync-test-support";
@@ -23,6 +23,12 @@ async function records(device: { database: Parameters<typeof dump>[0] }) {
 
 it("gives B the ciphertext only, which only the key of A opens (FR-CHK-03)", async () => {
   const { a, b, ua, ub, sodium } = await setupCheckinPair();
+  const written = new Set(["pair", "pair-closing"]);
+  const put = b.database.put.bind(b.database);
+  vi.spyOn(b.database, "put").mockImplementation((collection, id, value) => {
+    written.add(collection);
+    return put(collection, id, value);
+  });
   await ua.service.submit(answers);
   await a.engine.sync();
   await b.engine.sync();
@@ -31,9 +37,7 @@ it("gives B the ciphertext only, which only the key of A opens (FR-CHK-03)", asy
   expect(received).toMatchObject({ version: 1, own: false, sealKey: null });
   const everything = JSON.stringify(
     await Promise.all(
-      ["checkin-sealed", "checkin-own", "couple-settings", "sync-state"].map(
-        (name) => b.database.list(name),
-      ),
+      [...written].map((name) => b.database.list(name)),
     ),
   );
   expect(everything).not.toContain(NEED);
