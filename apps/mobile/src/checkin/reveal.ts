@@ -8,6 +8,7 @@ import {
 import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import { base64Decode } from "../sync/base64";
+import type { KeyRecord } from "./key-codec";
 import type { KeyRepository } from "./key-repository";
 import type { PartnerSealed, SealedRepository } from "./sealed-repository";
 
@@ -29,14 +30,14 @@ export interface Reveal {
 interface Deps {
   database: LocalDatabase;
   sodium: Sodium;
-  sealed: Pick<SealedRepository, "weeks" | "latestOwn" | "latestPartner">;
+  sealed: Pick<SealedRepository, "weeks" | "latestOwn" | "partnerVersions">;
   keys: Pick<KeyRepository, "addOwn" | "partnerKey">;
 }
 
 /** The answers in the version, or null when the key or the data are wrong. */
 function open(
   sodium: Sodium,
-  key: string,
+  { key }: KeyRecord,
   partner: PartnerSealed,
 ): CheckinAnswers | null {
   try {
@@ -66,22 +67,24 @@ export function createReveal(deps: Deps): Reveal {
     return row?.answers ?? null;
   };
   const settleWeek = async (week: IsoWeek) => {
-    const [own, partner] = [
+    const [own, versions] = [
       await sealed.latestOwn(week),
-      await sealed.latestPartner(week),
+      await sealed.partnerVersions(week),
     ];
-    if (own === null || partner === null) return;
+    if (own === null || versions.length === 0) return;
     await keys.addOwn(own.checkinId, own.version, own.sealKey);
-    const theirs = await keys.partnerKey(partner.checkinId);
-    if (theirs?.version !== partner.version) return;
     if ((await get(week)) !== null) return;
-    const answers = open(sodium, theirs.key, partner);
-    if (answers === null) return;
-    await database.put(REVEALED_COLLECTION, week, {
-      week,
-      answers,
-    } as unknown as JsonValue);
-    changes.notify();
+    for (const partner of versions) {
+      const theirs = await keys.partnerKey(partner.checkinId, partner.version);
+      const answers = theirs && open(sodium, theirs, partner);
+      if (!answers) continue;
+      await database.put(REVEALED_COLLECTION, week, {
+        week,
+        answers,
+      } as unknown as JsonValue);
+      changes.notify();
+      return;
+    }
   };
   return {
     subscribe: changes.subscribe,

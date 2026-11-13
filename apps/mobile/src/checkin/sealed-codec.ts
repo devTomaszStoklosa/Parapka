@@ -6,6 +6,9 @@ import { base64Decode } from "../sync/base64";
 export const SEALED_COLLECTION = "checkin-sealed";
 export const SEALED_ENTITY = "CheckIn";
 
+/** The highest version that the additional data of the seal can carry. */
+export const MAX_VERSION = 0xffffffff;
+
 const NONCE_LENGTH = 24;
 const WEEK = /^\d{4}-W\d{2}$/;
 
@@ -46,7 +49,10 @@ const isWeek = (value: unknown): value is string =>
   typeof value === "string" && WEEK.test(value);
 
 const isVersion = (value: unknown): value is number =>
-  typeof value === "number" && Number.isInteger(value) && value >= 1;
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= 1 &&
+  value <= MAX_VERSION;
 
 type Header = Pick<SealedRecord, "checkinId" | "week" | "authorId" | "version">;
 
@@ -54,7 +60,7 @@ type Header = Pick<SealedRecord, "checkinId" | "week" | "authorId" | "version">;
 function headerOf(
   value: (name: string) => unknown,
   id: string,
-  deviceId: string | null,
+  partnerId: string | null,
 ): Header | null {
   const checkinId = value("checkinId");
   const week = value("week");
@@ -62,21 +68,22 @@ function headerOf(
   const version = value("version");
   if (!isWeek(week) || !isText(authorId) || !isVersion(version)) return null;
   const bound =
-    authorId !== deviceId &&
+    partnerId !== null &&
+    authorId === partnerId &&
     checkinId === checkinIdOf(week, authorId) &&
     id === recordIdOf(checkinId, version);
   return bound ? { checkinId, week, authorId, version } : null;
 }
 
-/** The sealed version of a change of the partner, or null when it is invalid. */
+/** The sealed version of a change of the partner, or null when it is invalid or not his. */
 export function parseSealed(
   change: ContentChange,
-  deviceId: string | null,
+  partnerId: string | null,
 ): SealedRecord | null {
   if (change.op !== "upsert") return null;
   const value = (name: string) =>
     Object.hasOwn(change.fields, name) ? change.fields[name]?.value : undefined;
-  const header = headerOf(value, change.id, deviceId);
+  const header = headerOf(value, change.id, partnerId);
   const nonce = value("nonce");
   const ciphertext = value("ciphertext");
   if (header === null) return null;

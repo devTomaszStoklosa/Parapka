@@ -38,14 +38,15 @@ async function setup(plain: string, version = 1) {
     sealed: {
       weeks: () => Promise.resolve([WEEK]),
       latestOwn: () => Promise.resolve(state.own),
-      latestPartner: () => Promise.resolve(partner),
+      partnerVersions: () => Promise.resolve([partner]),
     },
     keys: {
       addOwn: (id, v) => {
         added.push(`${id}|${String(v)}`);
         return Promise.resolve();
       },
-      partnerKey: () => Promise.resolve(state.key),
+      partnerKey: (_id, v) =>
+        Promise.resolve(state.key?.version === v ? state.key : null),
     },
   });
   return { reveal, added, state, database };

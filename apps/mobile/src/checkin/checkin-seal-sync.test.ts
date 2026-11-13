@@ -93,7 +93,7 @@ it("sends only the newest of the versions edited before the sync", async () => {
   expect((await records(b)).map((r) => r.version)).toEqual([3]);
 });
 
-it("replaces version 1 with 2 when A edits after the send", async () => {
+it("keeps versions 1 and 2 when A edits after the send", async () => {
   const { a, b, ua } = await setupCheckinPair();
   await ua.service.submit(answers);
   await a.engine.sync();
@@ -101,7 +101,7 @@ it("replaces version 1 with 2 when A edits after the send", async () => {
   await ua.service.submit({ ...answers, mood: 1 });
   await a.engine.sync();
   await b.engine.sync();
-  expect((await records(b)).map((r) => r.version)).toEqual([2]);
+  expect((await records(b)).map((r) => r.version)).toEqual([1, 2]);
 });
 
 it("keeps back the answers without the consent and sends them after it", async () => {

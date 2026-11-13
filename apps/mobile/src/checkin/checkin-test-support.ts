@@ -53,11 +53,12 @@ export function withCheckin(
   const sealed = createSealedRepository({
     database: device.database,
     identity: { deviceId: () => Promise.resolve(device.id) },
+    pairs: device.pairs,
     sodium,
   });
   const keys = createKeyRepository({
     database: device.database,
-    identity: { deviceId: () => Promise.resolve(device.id) },
+    pairs: device.pairs,
   });
   const reveal = createReveal({
     database: device.database,

@@ -11,6 +11,7 @@ async function setup(deviceId: string | null = "device-a") {
   const sealed = createSealedRepository({
     database,
     identity: { deviceId: () => Promise.resolve(deviceId) },
+    pairs: { activePair: () => Promise.resolve(null) },
     sodium,
   });
   return { sealed, database };
