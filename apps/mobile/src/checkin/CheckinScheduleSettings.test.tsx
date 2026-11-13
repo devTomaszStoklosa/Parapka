@@ -88,6 +88,7 @@ it("shows the current term and the description", async () => {
   await open();
   expect(screen.getByText("Check-in: niedziela, 19:00")).toBeTruthy();
   expect(screen.getByText(c.description)).toBeTruthy();
+  expect(screen.getByRole("group", { name: "Godzina check-inu" })).toBeTruthy();
 });
 
 it("offers the days from Monday and the hours and minutes as radios", async () => {

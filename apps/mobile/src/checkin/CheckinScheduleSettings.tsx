@@ -62,6 +62,7 @@ function HourStepper(props: { hour: number; onPick: (hour: number) => void }) {
   const { hour, onPick } = props;
   return (
     <View
+      role="group"
       accessibilityLabel={t("checkin.hourGroup")}
       style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}
     >
