@@ -5,7 +5,7 @@ import { createIdentity } from "../identity/identity";
 import { createDisconnectRepository } from "../pairing/disconnect-repository";
 import { CLEANUP_FAILED_MESSAGE, PAIR_GONE_MESSAGE } from "./wiring";
 import { backoffMs } from "./sync-scheduler";
-import { profile, setup, start, stoppers } from "./wiring-test-support";
+import { CYCLE, profile, setup, start, stoppers } from "./wiring-test-support";
 
 afterEach(() => {
   for (const stop of stoppers.splice(0)) stop();
@@ -34,7 +34,7 @@ async function expectCleaned(d: Awaited<ReturnType<typeof started>>) {
     expect(await createDisconnectRepository(d.platform.database).state()).toBe(
       "by-partner",
     );
-  });
+  }, CYCLE);
   expect(await d.pairs.current()).toBeNull();
   expect(await d.pairs.keys()).toBeNull();
   expect(await d.consent.current()).toBeNull();
@@ -80,7 +80,7 @@ it("logs a fixed message when the cleanup fails", async () => {
   start(rest.controller);
   await vi.waitFor(() => {
     expect(warn).toHaveBeenCalledWith(CLEANUP_FAILED_MESSAGE);
-  });
+  }, CYCLE);
   expect(JSON.stringify(warn.mock.calls)).not.toContain("secret");
 });
 
@@ -137,7 +137,7 @@ async function online(statuses: Relay["statuses"] = {}) {
   start(d.controller);
   await vi.waitFor(() => {
     expect(pulls(r, "mailbox-1")).toBeGreaterThan(0);
-  });
+  }, CYCLE);
   r.calls.length = 0;
   return { d, r };
 }
@@ -158,7 +158,7 @@ async function disconnectOffline(d: Devices, r: Relay) {
   await d.controller.disconnect();
   await vi.waitFor(() => {
     expect(r.refused).toBeGreaterThanOrEqual(2);
-  });
+  }, CYCLE);
 }
 
 it("disconnects online: cleans, sends the command and closes the mailbox", async () => {
@@ -183,13 +183,13 @@ it("disconnects offline at once and finishes with a growing delay", async () => 
   await vi.advanceTimersByTimeAsync(backoffMs(1));
   await vi.waitFor(() => {
     expect(r.refused).toBeGreaterThan(refused);
-  });
+  }, CYCLE);
   expect(await marker(d)).not.toBeNull();
   r.offline = false;
   await vi.advanceTimersByTimeAsync(backoffMs(2));
   await vi.waitFor(async () => {
     expect(await marker(d)).toBeNull();
-  });
+  }, CYCLE);
   expect(sends(r, "mailbox-1")).toHaveLength(1);
   expect(closes(r)).toHaveLength(1);
 });
@@ -203,7 +203,7 @@ it("finishes the closing after the start of the app", async () => {
   d.controller.setActive(true);
   await vi.waitFor(async () => {
     expect(await marker(d)).toBeNull();
-  });
+  }, CYCLE);
   expect(closes(r)).toHaveLength(1);
 });
 
@@ -237,7 +237,7 @@ it("does not carry the envelopes of a closed mailbox to a new pair", async () =>
   await vi.waitFor(async () => {
     expect(await marker(d)).toBeNull();
     expect(pulls(r, "mailbox-2")).toBeGreaterThan(0);
-  });
+  }, CYCLE);
   expect(sends(r, "mailbox-2")).toEqual([]);
   expect(await d.platform.database.list("sync-outbox")).toEqual([]);
   expect((await d.pairs.current())?.pairMailboxId).toBe("mailbox-2");
@@ -258,7 +258,7 @@ it("keeps the command for the closed mailbox through a new pairing", async () =>
   start(d.controller);
   await vi.waitFor(() => {
     expect(pulls(r, "mailbox-2")).toBeGreaterThan(0);
-  });
+  }, CYCLE);
   expect(sends(r, "mailbox-2")).toEqual([]);
   expect(await d.platform.database.list("sync-outbox")).toHaveLength(1);
   expect(await marker(d)).toEqual({ pairMailboxId: "mailbox-1" });
@@ -269,7 +269,7 @@ it("keeps the command for the closed mailbox through a new pairing", async () =>
   d.controller.setActive(true);
   await vi.waitFor(async () => {
     expect(await marker(d)).toBeNull();
-  });
+  }, CYCLE);
   expect(sends(r, "mailbox-1")).toHaveLength(1);
   expect(closes(r)).toHaveLength(1);
   expect(await d.platform.database.list("sync-outbox")).toEqual([]);

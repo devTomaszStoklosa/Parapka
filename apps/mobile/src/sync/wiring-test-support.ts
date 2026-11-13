@@ -99,8 +99,17 @@ export function disconnectEnvelope(
 /** Answers `status` to every call but challenges; `waiting` goes out on the first fetch. */
 function stubRelay(status: number, waiting: Envelope[]) {
   const calls: string[] = [];
+  const waiters: {
+    match: (call: string) => boolean;
+    resolve: (call: string) => void;
+  }[] = [];
   vi.stubGlobal("fetch", (url: string, init: { method: string }) => {
-    calls.push(`${init.method} ${url}`);
+    const call = `${init.method} ${url}`;
+    calls.push(call);
+    for (const waiter of waiters.splice(0)) {
+      if (waiter.match(call)) waiter.resolve(call);
+      else waiters.push(waiter);
+    }
     const challenge = url.endsWith("/challenges");
     const handedOut = url.includes("/envelopes") ? waiting.splice(0) : [];
     return Promise.resolve({
@@ -116,7 +125,12 @@ function stubRelay(status: number, waiting: Envelope[]) {
         ),
     });
   });
-  return calls;
+  /** Resolves on the next relay call (`"METHOD url"`) that `match` accepts. */
+  const nextCall = (match: (call: string) => boolean) =>
+    new Promise<string>((resolve) => {
+      waiters.push({ match, resolve });
+    });
+  return { calls, nextCall };
 }
 
 /** The envelope the first fetch hands out, if any. */
@@ -174,13 +188,13 @@ export async function setup(
       registerDevice: () => Promise.resolve({ deviceId: "me" }),
     }),
   }).init();
-  const calls = stubRelay(status, waitingFor(sodium, command, after, partner));
+  const waiting = waitingFor(sodium, command, after, partner);
+  const { calls, nextCall } = stubRelay(status, waiting);
   const createSocket = vi.fn(socket);
-  const clock = { nowMs: () => 1_000 };
   const platform = {
     sodium,
     keyStore,
-    clock,
+    clock: { nowMs: () => 1_000 },
     database,
     sha256: webSha256,
     relayUrl: "unused-relay",
@@ -188,7 +202,6 @@ export async function setup(
     createSocket,
   } as unknown as Platform;
   const pairs = createPairRepository(database, keyStore);
-  const { consent, profiles } = wireConsent(platform);
   const controller = wireSync(platform);
   stoppers.push(() => {
     controller.unmount();
@@ -199,9 +212,9 @@ export async function setup(
     controller,
     createSocket,
     pairs,
-    consent,
-    profiles,
+    ...wireConsent(platform),
     pair: pairing(pairs),
+    nextCall,
     syncs: () => calls.filter((c) => c.includes("/envelopes")).length,
     posts: () => countPosts(calls),
   };
@@ -213,3 +226,23 @@ export function start(controller: SyncController) {
 }
 
 export const tick = () => new Promise((resolve) => setTimeout(resolve, 20));
+
+/** The limit of waiting for a state that has no event to wait for. */
+export const CYCLE = { timeout: 10_000 };
+
+/** The limit of a test that waits for whole cycles of the engine. */
+export const SLOW = 20_000;
+
+/** Whether the call fetched envelopes: a run of the engine. */
+export const isRun = (call: string) => call.includes("/envelopes");
+
+/** Runs the action and waits until it triggered another synchronization. */
+export async function runsAfter(
+  set: { nextCall: (match: (call: string) => boolean) => Promise<string> },
+  action: () => Promise<unknown>,
+) {
+  await tick();
+  const next = set.nextCall(isRun);
+  await action();
+  await next;
+}

@@ -1,7 +1,16 @@
 import { afterEach, expect, it, vi } from "vitest";
 
 import { defaultConsent } from "../consent/consent-model";
-import { setup, start, stoppers, tick, profile } from "./wiring-test-support";
+import {
+  isRun,
+  profile,
+  runsAfter,
+  setup,
+  SLOW,
+  start,
+  stoppers,
+  tick,
+} from "./wiring-test-support";
 import { wireChores } from "./wiring";
 
 const probe = vi.hoisted(() => ({ notify: () => {} }));
@@ -48,60 +57,54 @@ async function running() {
   const set = await setup();
   await set.pair();
   await set.consent.save(defaultConsent(profile));
+  const first = set.nextCall(isRun);
   start(set.controller);
-  await vi.waitFor(() => {
-    expect(set.syncs()).toBeGreaterThan(0);
-  });
+  await first;
   await tick();
   return set;
 }
 
-/** Waits for a run after `action`, long before the cyclic one. */
-async function runsAfter(syncs: () => number, action: () => Promise<unknown>) {
-  await tick();
-  const before = syncs();
-  await action();
-  await vi.waitFor(
-    () => {
-      expect(syncs()).toBeGreaterThan(before);
-    },
-    { timeout: 3000 },
-  );
-}
-
-it("synchronizes after each local change of a chore and a check-off", async () => {
-  const { syncs, platform } = await running();
-  const { chores, completions } = wireChores(platform);
-  let id = "";
-  await runsAfter(syncs, async () => {
-    id = (await chores.add(input)).id;
-  });
-  await runsAfter(syncs, () => chores.edit(id, { title: "Nowy" }));
-  await runsAfter(syncs, () => completions.complete(id, "2026-01-05"));
-  await runsAfter(syncs, () => completions.undo(id, "2026-01-05"));
-  await runsAfter(syncs, () => chores.remove(id));
-  await runsAfter(syncs, () => chores.restore(id));
-});
+it(
+  "synchronizes after each local change of a chore and a check-off",
+  async () => {
+    const set = await running();
+    const { chores, completions } = wireChores(set.platform);
+    let id = "";
+    await runsAfter(set, async () => {
+      id = (await chores.add(input)).id;
+    });
+    await runsAfter(set, () => chores.edit(id, { title: "Nowy" }));
+    await runsAfter(set, () => completions.complete(id, "2026-01-05"));
+    await runsAfter(set, () => completions.undo(id, "2026-01-05"));
+    await runsAfter(set, () => chores.remove(id));
+    await runsAfter(set, () => chores.restore(id));
+  },
+  SLOW,
+);
 
 it("asks for a run on the notice of a handler with subscribe", async () => {
-  const { syncs } = await running();
-  await runsAfter(syncs, () => {
+  const set = await running();
+  await runsAfter(set, () => {
     probe.notify();
     return Promise.resolve();
   });
 });
 
-it("does not ask for a run for a handler without subscribe", async () => {
-  const set = await running();
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  const settled = set.syncs();
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  expect(set.syncs()).toBe(settled);
-  await runsAfter(set.syncs, () => {
-    probe.notify();
-    return Promise.resolve();
-  });
-});
+it(
+  "does not ask for a run for a handler without subscribe",
+  async () => {
+    const set = await running();
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const settled = set.syncs();
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    expect(set.syncs()).toBe(settled);
+    await runsAfter(set, () => {
+      probe.notify();
+      return Promise.resolve();
+    });
+  },
+  SLOW,
+);
 
 it("settles after merging a change of the partner without sending", async () => {
   const set = await setup(
@@ -126,10 +129,9 @@ it("settles after merging a change of the partner without sending", async () => 
   );
   await set.pair();
   await set.consent.save(defaultConsent(profile));
+  const ran = set.nextCall(isRun);
   start(set.controller);
-  await vi.waitFor(() => {
-    expect(set.syncs()).toBeGreaterThan(1);
-  });
+  await ran;
   await new Promise((resolve) => setTimeout(resolve, 1500));
   const settled = set.syncs();
   expect(settled).toBeLessThanOrEqual(3);
@@ -140,12 +142,16 @@ it("settles after merging a change of the partner without sending", async () => 
   expect(merged.map((chore) => chore.title)).toEqual(["Od partnera"]);
 });
 
-it("settles: the runs stop when nothing changes", async () => {
-  const { syncs, platform } = await running();
-  const { chores } = wireChores(platform);
-  await runsAfter(syncs, () => chores.add(input));
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  const settled = syncs();
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  expect(syncs()).toBe(settled);
-});
+it(
+  "settles: the runs stop when nothing changes",
+  async () => {
+    const set = await running();
+    const { chores } = wireChores(set.platform);
+    await runsAfter(set, () => chores.add(input));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const settled = set.syncs();
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    expect(set.syncs()).toBe(settled);
+  },
+  SLOW,
+);

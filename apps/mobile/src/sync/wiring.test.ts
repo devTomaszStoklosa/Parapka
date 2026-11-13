@@ -2,7 +2,17 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { defaultConsent } from "../consent/consent-model";
 import { createPauseRepository } from "./pause-repository";
-import { setup, start, stoppers, tick, profile } from "./wiring-test-support";
+import {
+  CYCLE,
+  isRun,
+  profile,
+  runsAfter,
+  setup,
+  SLOW,
+  start,
+  stoppers,
+  tick,
+} from "./wiring-test-support";
 import { wireChores, wireSync } from "./wiring";
 
 const made = vi.hoisted(
@@ -70,18 +80,21 @@ it("gives one controller for one platform", async () => {
   expect(wireSync(platform)).toBe(controller);
 });
 
-it("starts after the consent is saved, without reloading", async () => {
-  const { controller, createSocket, pair, consent, syncs } = await setup();
-  start(controller);
-  await pair();
-  await tick();
-  expect(createSocket).not.toHaveBeenCalled();
-  await consent.save(defaultConsent(profile));
-  await vi.waitFor(() => {
+it(
+  "starts after the consent is saved, without reloading",
+  async () => {
+    const { controller, createSocket, pair, consent, nextCall } = await setup();
+    start(controller);
+    await pair();
+    await tick();
+    expect(createSocket).not.toHaveBeenCalled();
+    const run = nextCall(isRun);
+    await consent.save(defaultConsent(profile));
+    await run;
     expect(createSocket).toHaveBeenCalledTimes(1);
-  });
-  expect(syncs()).toBeGreaterThan(0);
-});
+  },
+  SLOW,
+);
 
 it("starts after the pair is confirmed when the consent exists", async () => {
   const { controller, createSocket, pair, consent } = await setup();
@@ -92,7 +105,7 @@ it("starts after the pair is confirmed when the consent exists", async () => {
   await pair();
   await vi.waitFor(() => {
     expect(createSocket).toHaveBeenCalledTimes(1);
-  });
+  }, CYCLE);
 });
 
 it("does not start without a pair, a consent, activity or a mounted screen", async () => {
@@ -137,16 +150,16 @@ it("stops when the app goes away and resumes with a new transport", async () => 
   start(controller);
   await vi.waitFor(() => {
     expect(createSocket).toHaveBeenCalledTimes(1);
-  });
+  }, CYCLE);
   const first = createSocket.mock.results[0]?.value as { close: () => void };
   controller.setActive(false);
   await vi.waitFor(() => {
     expect(first.close).toHaveBeenCalled();
-  });
+  }, CYCLE);
   controller.setActive(true);
   await vi.waitFor(() => {
     expect(createSocket).toHaveBeenCalledTimes(2);
-  });
+  }, CYCLE);
 });
 
 it("stops when the screen is locked", async () => {
@@ -156,12 +169,12 @@ it("stops when the screen is locked", async () => {
   start(controller);
   await vi.waitFor(() => {
     expect(createSocket).toHaveBeenCalledTimes(1);
-  });
+  }, CYCLE);
   const first = createSocket.mock.results[0]?.value as { close: () => void };
   controller.unmount();
   await vi.waitFor(() => {
     expect(first.close).toHaveBeenCalled();
-  });
+  }, CYCLE);
 });
 
 it("restarts for a pair with another mailbox", async () => {
@@ -171,52 +184,41 @@ it("restarts for a pair with another mailbox", async () => {
   start(controller);
   await vi.waitFor(() => {
     expect(createSocket).toHaveBeenCalledTimes(1);
-  });
+  }, CYCLE);
   await pair("mailbox-2");
   await vi.waitFor(() => {
     expect(createSocket).toHaveBeenCalledTimes(2);
-  });
+  }, CYCLE);
 });
 
-it("requests a synchronization after the profile is saved", async () => {
-  const { controller, createSocket, pair, consent, profiles, syncs } =
-    await setup();
-  await pair();
-  await consent.save(defaultConsent(profile));
-  start(controller);
-  await vi.waitFor(() => {
-    expect(createSocket).toHaveBeenCalledTimes(1);
-  });
-  await vi.waitFor(() => {
-    expect(syncs()).toBeGreaterThan(0);
-  });
-  await tick();
-  const before = syncs();
-  await profiles.save(profile);
-  await vi.waitFor(
-    () => {
-      expect(syncs()).toBeGreaterThan(before);
-    },
-    { timeout: 3000 },
-  );
-});
+it(
+  "requests a synchronization after the profile is saved",
+  async () => {
+    const set = await setup();
+    await set.pair();
+    await set.consent.save(defaultConsent(profile));
+    const first = set.nextCall(isRun);
+    start(set.controller);
+    await first;
+    await runsAfter(set, () => set.profiles.save(profile));
+  },
+  SLOW,
+);
 
-it("requests a synchronization after a consent changes", async () => {
-  const { controller, createSocket, pair, consent, syncs } = await setup();
-  await pair();
-  await consent.save(defaultConsent(profile));
-  start(controller);
-  await vi.waitFor(() => {
-    expect(createSocket).toHaveBeenCalledTimes(1);
-  });
-  await tick();
-  const before = syncs();
-  await consent.setCategory("CHECKIN", true);
-  await vi.waitFor(() => {
-    expect(syncs()).toBeGreaterThan(before);
-  });
-  expect(createSocket).toHaveBeenCalledTimes(1);
-});
+it(
+  "requests a synchronization after a consent changes",
+  async () => {
+    const set = await setup();
+    await set.pair();
+    await set.consent.save(defaultConsent(profile));
+    const first = set.nextCall(isRun);
+    start(set.controller);
+    await first;
+    await runsAfter(set, () => set.consent.setCategory("CHECKIN", true));
+    expect(set.createSocket).toHaveBeenCalledTimes(1);
+  },
+  SLOW,
+);
 
 it("stops when the conditions cannot be read", async () => {
   const { controller, platform, createSocket } = await setup();
@@ -226,18 +228,18 @@ it("stops when the conditions cannot be read", async () => {
   expect(createSocket).not.toHaveBeenCalled();
 });
 
-it("requests a synchronization after the pause changes", async () => {
-  const { controller, pair, consent, platform, syncs } = await setup();
-  await pair();
-  await consent.save(defaultConsent(profile));
-  start(controller);
-  await vi.waitFor(() => {
-    expect(syncs()).toBeGreaterThan(0);
-  });
-  await tick();
-  const before = syncs();
-  await createPauseRepository(platform.database).setPaused(true);
-  await vi.waitFor(() => {
-    expect(syncs()).toBeGreaterThan(before);
-  });
-});
+it(
+  "requests a synchronization after the pause changes",
+  async () => {
+    const set = await setup();
+    await set.pair();
+    await set.consent.save(defaultConsent(profile));
+    const first = set.nextCall(isRun);
+    start(set.controller);
+    await first;
+    await runsAfter(set, () =>
+      createPauseRepository(set.platform.database).setPaused(true),
+    );
+  },
+  SLOW,
+);
