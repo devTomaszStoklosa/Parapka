@@ -82,13 +82,17 @@ it(
   SLOW,
 );
 
-it("asks for a run on the notice of a handler with subscribe", async () => {
-  const set = await running();
-  await runsAfter(set, () => {
-    probe.notify();
-    return Promise.resolve();
-  });
-});
+it(
+  "asks for a run on the notice of a handler with subscribe",
+  async () => {
+    const set = await running();
+    await runsAfter(set, () => {
+      probe.notify();
+      return Promise.resolve();
+    });
+  },
+  SLOW,
+);
 
 it(
   "does not ask for a run for a handler without subscribe",
