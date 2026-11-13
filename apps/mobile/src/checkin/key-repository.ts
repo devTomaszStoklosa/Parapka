@@ -91,9 +91,7 @@ const weekReaders = (store: RecordStore<KeyRecord>) => ({
   ownSent: async (week: IsoWeek) =>
     (await store.all()).some(
       (record) =>
-        record.own &&
-        record.sent &&
-        weekOfCheckinId(record.checkinId) === week,
+        record.own && record.sent && weekOfCheckinId(record.checkinId) === week,
     ),
 });
 

@@ -13,11 +13,7 @@ import {
   createSealedRepository,
   type SealedRepository,
 } from "./sealed-repository";
-import {
-  createWindowEnd,
-  weekOfChange,
-  type WindowEnd,
-} from "./window-sweep";
+import { createWindowEnd, weekOfChange, type WindowEnd } from "./window-sweep";
 import {
   createScheduleRepository,
   type ScheduleRepository,

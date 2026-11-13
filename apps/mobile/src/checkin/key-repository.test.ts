@@ -84,3 +84,28 @@ it("keeps the key of each version of the partner, and forgets it", async () => {
   await keys.forgetReceived();
   expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
 });
+
+it("lists the weeks, and drops received and unsent keys of one week only", async () => {
+  const { keys } = setup();
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await keys.addOwn("2026-W46:me", 1, KEY);
+  await keys.sync.merge(change(good));
+  await keys.sync.merge(
+    change({ ...good, checkinId: "2026-W46:partner" }, "2026-W46:partner|1"),
+  );
+  expect((await keys.weeks()).sort()).toEqual(["2026-W45", "2026-W46"]);
+  expect(await keys.ownSent("2026-W45")).toBe(false);
+  await keys.sync.commit(
+    (await keys.sync.collect(() => hlc)).filter(
+      (item) => item.id === "2026-W46:me|1",
+    ),
+  );
+  expect(await keys.ownSent("2026-W46")).toBe(true);
+  await keys.dropReceived("2026-W45");
+  await keys.dropUnsent("2026-W45");
+  await keys.dropUnsent("2026-W46");
+  expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
+  expect(await keys.partnerKey("2026-W46:partner", 1)).not.toBeNull();
+  expect(await keys.weeks()).toEqual(["2026-W46"]);
+  expect(await keys.ownSent("2026-W46")).toBe(true);
+});

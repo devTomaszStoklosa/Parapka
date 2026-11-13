@@ -93,9 +93,7 @@ it("reveals the week to both when the key of A comes after the end", async () =>
   await a.engine.sync();
   await a.engine.sync();
   const own = await rows<KeyRecord>(a, "checkin-keys");
-  expect(own.filter((key) => key.own).map((key) => key.sent)).toEqual([
-    true,
-  ]);
+  expect(own.filter((key) => key.own).map((key) => key.sent)).toEqual([true]);
   moveTo("2026-11-15T19:00");
   await b.engine.sync();
   await a.engine.sync();
