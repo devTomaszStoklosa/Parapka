@@ -6,21 +6,34 @@ import { createPairedDevices } from "../sync/sync-test-support";
 import { createAnswersRepository } from "./answers-repository";
 import { createCheckinService } from "./checkin-service";
 import { createScheduleRepository } from "./schedule-repository";
+import { createSealedRepository } from "./sealed-repository";
 
 const input = { mood: 3, energy: 4, closeness: 5 };
 const at = (local: string) => new Date(local).getTime();
 
 async function setup(paired = true) {
-  const { a } = await createPairedDevices();
+  const { a, sodium } = await createPairedDevices();
   const database = paired ? a.database : createMemoryDatabase();
   const pairs = paired ? a.pairs : { activePair: () => Promise.resolve(null) };
   let now = at("2026-11-12T12:00");
   const clock: Clock = { nowMs: () => now };
   const schedule = createScheduleRepository({ database, pairs });
   const answers = createAnswersRepository(database);
-  const service = createCheckinService({ clock, pairs, schedule, answers });
+  const sealed = createSealedRepository({
+    database,
+    identity: { deviceId: () => Promise.resolve(a.id) },
+    sodium,
+  });
+  const service = createCheckinService({
+    clock,
+    pairs,
+    schedule,
+    answers,
+    sealed,
+  });
   return {
     service,
+    database,
     schedule,
     at: (ms: number) => {
       now = ms;
@@ -132,4 +145,18 @@ it("notifies about answers and schedule until unsubscribed", async () => {
   stop();
   await service.submit(input);
   expect(listener).toHaveBeenCalledTimes(2);
+});
+
+it("seals every submit as a new version without the answers in the clear", async () => {
+  const { service, database } = await setup();
+  await service.submit({ ...input, need: "Spaceru we dwoje" });
+  await service.submit(input);
+  const rows = await database.list("checkin-sealed");
+  expect(rows.map((row) => row.id)).toEqual([
+    "2026-W45:device-a|1",
+    "2026-W45:device-a|2",
+  ]);
+  const keys = rows.map((row) => (row.value as { sealKey: string }).sealKey);
+  expect(new Set(keys).size).toBe(2);
+  expect(JSON.stringify(rows)).not.toContain("Spaceru");
 });
