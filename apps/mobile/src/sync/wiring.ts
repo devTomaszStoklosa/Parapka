@@ -1,4 +1,8 @@
-import { createScheduleHandler, wireCheckin } from "../checkin/wiring";
+import {
+  createCheckinHandler,
+  createScheduleHandler,
+  wireCheckin,
+} from "../checkin/wiring";
 import { createChoreHandler } from "../chores/chore-handler";
 import { createChoreCompletionHandler } from "../chores/completion-handler";
 import { wireChores } from "../chores/wiring";
@@ -93,6 +97,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createCarrierHandler(deps));
   registry.register(createHandoverHandler(deps));
   registry.register(createScheduleHandler(deps));
+  registry.register(createCheckinHandler(deps));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {
     if (transport === null) throw new Error("There is no session");
