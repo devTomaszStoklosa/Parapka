@@ -1,5 +1,6 @@
-import { View } from "react-native";
+import { ScrollView } from "react-native";
 
+import { CheckinScheduleEntry } from "../checkin/CheckinScheduleSettings";
 import { t } from "../i18n";
 import { PrivacySettings } from "../consent/PrivacySettings";
 import { useConsentWiring } from "../consent/wiring";
@@ -11,7 +12,10 @@ import { spacing } from "../ui/theme";
 export function SettingsScreen() {
   const { consent, profiles } = useConsentWiring(usePlatform());
   return (
-    <View style={{ flex: 1, padding: spacing.md }}>
+    <ScrollView
+      testID="settings-scroll"
+      contentContainerStyle={{ padding: spacing.md }}
+    >
       <AppText variant="title" accessibilityRole="header">
         {t("screens.settings.title")}
       </AppText>
@@ -19,7 +23,8 @@ export function SettingsScreen() {
         {t("pairing.title")}
       </AppText>
       <PairingEntry />
+      <CheckinScheduleEntry />
       <PrivacySettings consent={consent} profiles={profiles} />
-    </View>
+    </ScrollView>
   );
 }
