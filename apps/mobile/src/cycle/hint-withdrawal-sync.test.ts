@@ -3,6 +3,7 @@ import type { GeneratedHint } from "@parapka/domain";
 import type { ContentChange, Envelope } from "@parapka/protocol";
 import { expect, it } from "vitest";
 
+import { clearPairLocally } from "../pairing/clear-pair";
 import { base64Decode } from "../sync/base64";
 import { createHandlerRegistry } from "../sync/handler-registry";
 import { createPairedDevices, type Device } from "../sync/sync-test-support";
@@ -25,7 +26,7 @@ type Phone = ReturnType<typeof phone>;
 
 /** A device with the hints, the command that takes them back and a wrapped `send`. */
 function phone(device: Device) {
-  const flags = { shared: true, paused: false };
+  const flags = { shared: true, paused: false, day: DAY };
   const sent: Envelope[] = [];
   let counter = 0;
   const hints = createHintRepository({
@@ -34,20 +35,24 @@ function phone(device: Device) {
   });
   const received = createReceivedHintRepository({
     database: device.database,
-    today: () => DAY,
+    today: () => flags.day,
   });
   const registry = createHandlerRegistry();
   registry.register(
     createHintWithdrawalHandler({
       database: device.database,
-      today: () => DAY,
+      today: () => flags.day,
       consent: { isShared: () => Promise.resolve(flags.shared) },
       pause: { isPaused: () => Promise.resolve(flags.paused) },
       hints,
       received,
     }),
   );
-  const hintHandler = createHintHandler({ hints, received, today: () => DAY });
+  const hintHandler = createHintHandler({
+    hints,
+    received,
+    today: () => flags.day,
+  });
   registry.register(hintHandler);
   device.restart({
     registry,
@@ -143,6 +148,35 @@ it("leaves the partner the state of a day without a hint, with nothing but the c
   ]);
 });
 
+it("does not send the hint of the pause day when the day changes in the pause", async () => {
+  const { a, b } = await pair();
+  a.flags.paused = true;
+  await a.hints.put(hint(DAY, "Dzień 0"));
+  a.flags.day = addDays(DAY, 1);
+  for (let offset = 1; offset <= 3; offset += 1) {
+    await a.hints.put(hint(addDays(DAY, offset), `Dzień ${String(offset)}`));
+  }
+  await run(a, b);
+  a.flags.paused = false;
+  await run(a, b);
+  expect(await texts(b)).toEqual(["Dzień 1", "Dzień 2", "Dzień 3"]);
+  expect(await a.hints.forDate(DAY)).toMatchObject({ text: "Dzień 0" });
+});
+
+it("does not send the hint of the withdrawal day when the day changes without the consent", async () => {
+  const { a, b } = await pair();
+  a.flags.shared = false;
+  await a.hints.put(hint(DAY, "Dzień 0"));
+  a.flags.day = addDays(DAY, 1);
+  for (let offset = 1; offset <= 3; offset += 1) {
+    await a.hints.put(hint(addDays(DAY, offset), `Dzień ${String(offset)}`));
+  }
+  await run(a, b);
+  a.flags.shared = true;
+  await run(a, b);
+  expect(await texts(b)).toEqual(["Dzień 1", "Dzień 2", "Dzień 3"]);
+});
+
 it("removes all the hints when CYCLE_HINTS goes off, and sends today and later when it returns", async () => {
   const { a, b, fill, commandsOf } = await pair();
   await fill();
@@ -221,10 +255,12 @@ it("sends the hints of today and later to a new pair after the disconnect", asyn
   await fill();
   await a.device.engine.push();
   // The pair is over: the local cleanup runs the handlers of the registry.
-  for (const handler of a.registry.all()) {
-    await handler.forgetReceived?.();
-    await handler.disconnected?.();
-  }
+  await clearPairLocally({
+    database: a.device.database,
+    registry: a.registry,
+    pairs: a.device.pairs,
+    consent: { clear: () => Promise.resolve() },
+  });
 
   const next = await createPairedDevices();
   for (const { id, value } of await a.device.database.list(HINTS)) {

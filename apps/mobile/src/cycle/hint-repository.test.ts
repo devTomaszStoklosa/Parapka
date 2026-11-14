@@ -160,6 +160,18 @@ describe("resendFrom", () => {
     expect(told).toBe(2);
   });
 
+  it("turns an unsent past hint private and keeps its text", async () => {
+    const { hints } = setup();
+    await hints.put(hint("2026-11-13", "a", "wczoraj"));
+    await hints.resendFrom("2026-11-14");
+    expect(await hints.sync.collect(() => "000000000000001-00000-a")).toEqual(
+      [],
+    );
+    expect(await hints.forDate("2026-11-13")).toMatchObject({
+      text: "wczoraj",
+    });
+  });
+
   it("sends the newest version again with new timestamps", async () => {
     const { hints } = setup();
     await hints.put(hint("2026-11-14", "a", "stary"));

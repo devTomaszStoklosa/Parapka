@@ -126,14 +126,23 @@ function createAccess(database: LocalDatabase) {
   return { changes, all, write, sync: { collect, commit, makePrivate } };
 }
 
-/** Marks the hints for `date` and later to be sent anew, all fields. */
+/**
+ * Marks the hints for `date` and later to be sent anew, all fields; the
+ * earlier ones turn private, so they are not sent.
+ */
 async function resend(
   { all, write }: Pick<ReturnType<typeof createAccess>, "all" | "write">,
   date: CalendarDate,
 ) {
   for (const { id, record } of await all()) {
     const { forDate, text, category, status } = currentHint(record);
-    if (forDate < date) continue;
+    if (forDate < date) {
+      // A past hint stays on the phone but never leaves it as history.
+      if (!record.shared) continue;
+      record.shared = false;
+      await write(id, record);
+      continue;
+    }
     record.shared = true;
     record.pending.fields = { forDate, text, category, status };
     await write(id, record);
