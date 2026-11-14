@@ -7,6 +7,7 @@ import type { Pair } from "../pairing/pair-repository";
 import { base64Encode } from "../sync/base64";
 import { createKeyRepository } from "./key-repository";
 import { REVEALED_COLLECTION } from "./reveal";
+import { createCheckinKeyHandler } from "./wiring";
 import { createWindowEnd, weekOfChange } from "./window-sweep";
 
 type Upsert = Extract<ContentChange, { op: "upsert" }>;
@@ -167,4 +168,54 @@ it("drops the queued own key and the data of the partner of a closed week", asyn
   expect(dropped).toEqual(["2026-W45"]);
   expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
   expect(await keys.sync.collect(() => hlc)).toEqual([]);
+});
+
+it("drops the data of the partner 7 days after the end of the window when the key of the partner did not come", async () => {
+  const { end, keys, dropped, moveTo } = windowEnd();
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await sendOwn(keys, "2026-W45:me|1");
+  await keys.sync.merge(received("2026-W45:partner"));
+  moveTo("2026-11-22T18:59");
+  await end.sweep();
+  expect(dropped).not.toContain("2026-W45");
+  expect(await keys.partnerKey("2026-W45:partner", 1)).not.toBeNull();
+  moveTo("2026-11-22T19:00");
+  await end.sweep();
+  expect(dropped).toContain("2026-W45");
+  expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
+  expect(await keys.ownSent("2026-W45")).toBe(true);
+});
+
+it("sweeps only locally and keeps a revealed week after 7 days", async () => {
+  const { end, keys, database, dropped, moveTo } = windowEnd();
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await sendOwn(keys, "2026-W45:me|1");
+  await keys.sync.merge(received("2026-W45:partner"));
+  const before = await keys.sync.collect(() => hlc);
+  moveTo("2026-11-22T19:00");
+  await database.put(REVEALED_COLLECTION, "2026-W45", {});
+  await end.sweep();
+  expect(dropped).not.toContain("2026-W45");
+  expect(await keys.partnerKey("2026-W45:partner", 1)).not.toBeNull();
+  await database.delete(REVEALED_COLLECTION, "2026-W45");
+  await end.sweep();
+  expect(await keys.sync.collect(() => hlc)).toEqual(before);
+});
+
+it("rejects the late key of the partner after 7 days", async () => {
+  const { end, keys, moveTo } = windowEnd();
+  const handler = createCheckinKeyHandler({
+    keys,
+    reveal: { settle: async () => {}, forgetReceived: async () => {} },
+    windowEnd: end,
+  });
+  await keys.addOwn("2026-W45:me", 1, KEY);
+  await sendOwn(keys, "2026-W45:me|1");
+  moveTo("2026-11-22T18:59");
+  await handler.apply(received("2026-W45:partner"));
+  expect(await keys.partnerKey("2026-W45:partner", 1)).not.toBeNull();
+  await keys.dropReceived("2026-W45");
+  moveTo("2026-11-22T19:00");
+  await handler.apply(received("2026-W45:partner"));
+  expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
 });

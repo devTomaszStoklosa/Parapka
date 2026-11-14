@@ -30,10 +30,13 @@ export const weekOfChange = (change: ContentChange): IsoWeek | null => {
   return typeof checkinId === "string" ? weekOfCheckinId(checkinId) : null;
 };
 
+const GRACE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export interface WindowEnd {
   /**
-   * True when the week is over, was not revealed and this phone sent no key
-   * for it: the data of the partner for it must not be kept (spec 7.4 point 5).
+   * True when the week is over, was not revealed and either this phone sent no
+   * key for it or the window ended at least 7 days ago: the data of the
+   * partner for it must not be kept (spec 7.4 point 5).
    */
   closed(week: IsoWeek): Promise<boolean>;
   /** Removes what the partner sent for the weeks that are closed. */
@@ -58,7 +61,14 @@ export function createWindowEnd(deps: Deps): WindowEnd {
     const { week: now } = await currentWindowOf(clock, schedule);
     if (now <= week) return false;
     if ((await database.get(REVEALED_COLLECTION, week)) !== null) return false;
-    return !(await keys.ownSent(week));
+    if (!(await keys.ownSent(week))) return true;
+    // This phone sent its key, so the partner may still send theirs and reveal
+    // the week; give up when its window ended at least 7 days ago.
+    const { week: before } = await currentWindowOf(
+      { nowMs: () => clock.nowMs() - GRACE_MS },
+      schedule,
+    );
+    return before > week;
   };
   return {
     closed,
