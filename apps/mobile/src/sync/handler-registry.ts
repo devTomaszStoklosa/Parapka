@@ -11,6 +11,12 @@ export interface SyncHandler {
   readonly entity: string;
   /** Consent category of the data; null when the data needs no consent. */
   readonly category: ConsentCategory | null;
+  /**
+   * Consent category that the receiver must have to take a change; null when
+   * the receiver needs no consent. Defaults to `category` (one-way data, e.g.
+   * the hints, is decided by the consent of the sender only).
+   */
+  readonly receiveCategory?: ConsentCategory | null;
   /** Applies a change of the partner to the local database; repeats are harmless. */
   apply(change: ContentChange): Promise<void>;
   /** Takes the local changes not sent yet, stamped with `nextHlc`. */
@@ -30,6 +36,12 @@ export interface SyncHandler {
   /** Marks the shared items as private; the copies stay (A13). */
   disconnected?(): Promise<void>;
 }
+
+/** The consent that the receiver needs to take a change of the handler. */
+export const receiveCategoryOf = (handler: SyncHandler) =>
+  handler.receiveCategory === undefined
+    ? handler.category
+    : handler.receiveCategory;
 
 export interface HandlerRegistry {
   /** Throws when a handler of the same entity is already registered. */

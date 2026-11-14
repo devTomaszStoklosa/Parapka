@@ -21,9 +21,11 @@ export function createRecordHandler(options: {
   category: ConsentCategory | null;
   sync: RecordHandlerSync;
   subscribe: SyncHandler["subscribe"];
+  receiveCategory?: ConsentCategory | null;
   forget?: () => Promise<void>;
 }): SyncHandler {
-  const { entity, category, sync, subscribe, forget } = options;
+  const { entity, category, sync, subscribe, forget, receiveCategory } =
+    options;
   let collected: readonly ContentChange[] = [];
   return {
     entity,
@@ -40,6 +42,7 @@ export function createRecordHandler(options: {
     apply: (change) => sync.merge(change),
     disconnected: () => sync.makePrivate(),
     subscribe,
+    ...(receiveCategory === undefined ? {} : { receiveCategory }),
     ...(forget ? { forgetReceived: forget } : {}),
   };
 }

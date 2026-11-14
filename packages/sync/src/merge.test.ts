@@ -37,6 +37,24 @@ const restore = (hlc: string): Change => ({
 const fold = (changes: Change[]): EntityState =>
   changes.reduce(applyChange, emptyEntityState("Chore", "c1"));
 
+describe("Hint", () => {
+  const hint = (text: string, hlc: string): Change => ({
+    entity: "Hint",
+    id: "h1",
+    op: "upsert",
+    fields: { text: { value: text, hlc } },
+  });
+
+  it("replaces the version of a day with a newer one, never with an older", () => {
+    const [old, next] = [hint("old", h(1, 0, "a")), hint("new", h(2, 0, "a"))];
+    const state = (changes: Change[]) =>
+      changes.reduce(applyChange, emptyEntityState("Hint", "h1"));
+    expect(state([old, next]).fields.text?.value).toBe("new");
+    expect(state([next, old]).fields.text?.value).toBe("new");
+    expect(state([next, next]).entity).toBe("Hint");
+  });
+});
+
 function permutations<T>(items: T[]): T[][] {
   if (items.length <= 1) return [items];
   return items.flatMap((item, i) =>

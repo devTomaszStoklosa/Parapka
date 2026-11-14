@@ -1,7 +1,12 @@
 import type { Envelope } from "@parapka/protocol";
 import { describe, expect, it } from "vitest";
 
-import { createPairedDevices, sendRaw } from "./sync-test-support";
+import { createHandlerRegistry } from "./handler-registry";
+import {
+  ChoreHandler,
+  createPairedDevices,
+  sendRaw,
+} from "./sync-test-support";
 
 const STAMP = "000000000000001-00000-device-a";
 
@@ -115,5 +120,23 @@ describe("SyncEngine receive", () => {
       last: string;
     };
     expect(stamp.last > ahead).toBe(true);
+  });
+
+  it.each([
+    ["takes a change that needs no consent of the receiver", null, 1],
+    ["skips a change without the consent of the receiver", undefined, 0],
+  ] as const)("%s", async (_name, receiveCategory, applied) => {
+    const devices = await createPairedDevices();
+    const handler = new ChoreHandler("CYCLE_HINTS");
+    const registry = createHandlerRegistry();
+    registry.register(
+      receiveCategory === null
+        ? Object.assign(handler, { receiveCategory })
+        : handler,
+    );
+    devices.b.restart({ registry, isShared: () => false });
+    await sendRaw(devices, "e1", content(choreDelete));
+    await devices.b.engine.pull();
+    expect(handler.applied).toBe(applied);
   });
 });
