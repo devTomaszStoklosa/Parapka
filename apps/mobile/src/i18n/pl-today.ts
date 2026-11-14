@@ -1,6 +1,6 @@
 export const plToday = {
   hint: {
-    title: "Wskazówka na dziś od {name}",
+    title: "Wskazówka na dziś · {name}",
     titleNoName: "Wskazówka na dziś od partnera",
     none: "Dziś brak wskazówki",
     reactions: "Twoja reakcja",

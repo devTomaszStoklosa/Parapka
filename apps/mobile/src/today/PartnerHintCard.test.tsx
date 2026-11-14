@@ -68,7 +68,7 @@ it("shows nothing without any received hint", async () => {
 
 it("shows the hint of today with the name of the partner", async () => {
   await rendered([hint("h1", TODAY)], "Ola");
-  expect(await screen.findByText("Wskazówka na dziś od Ola")).toBeTruthy();
+  expect(await screen.findByText("Wskazówka na dziś · Ola")).toBeTruthy();
   expect(screen.getByText("Tekst h1")).toBeTruthy();
   expect(screen.getAllByRole("radio")).toHaveLength(2);
 });
