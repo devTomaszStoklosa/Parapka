@@ -15,6 +15,7 @@ import {
   createItemHandler,
   wireHead,
 } from "../head/wiring";
+import { createHintWithdrawalHandler } from "../cycle/hint-withdrawal";
 import { createHintHandler } from "../cycle/hint-sync";
 import { wireCycleHints } from "../cycle/wiring";
 import { clearPairLocally } from "../pairing/clear-pair";
@@ -104,6 +105,8 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createScheduleHandler(deps));
   registry.register(createCheckinHandler(deps));
   registry.register(createCheckinKeyHandler(deps));
+  // The command goes first, so hints marked to be sent anew leave with it.
+  registry.register(createHintWithdrawalHandler({ ...deps, database }));
   registry.register(createHintHandler(deps));
   registry.register(createWithdrawalHandler({ ...deps, database, clock }));
   let transport: SyncTransport | null = null;

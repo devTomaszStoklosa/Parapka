@@ -88,8 +88,13 @@ async function receiver(
   const registry = createHandlerRegistry();
   registry.register(
     createHintHandler({
-      hints: { sync: {} as never, subscribe: () => () => undefined },
+      hints: {
+        sync: {} as never,
+        subscribe: () => () => undefined,
+        resendFrom: () => Promise.resolve(),
+      },
       received,
+      today: () => "2026-11-14",
     }),
   );
   const engine = createSyncEngine({

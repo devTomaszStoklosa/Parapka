@@ -126,3 +126,48 @@ describe("currentHint", () => {
     expect(await hints.forDate("2026-11-08")).toMatchObject({ text: "new" });
   });
 });
+
+describe("resendFrom", () => {
+  it("marks today and later as shared and not sent, not the earlier days", async () => {
+    const { database, hints } = setup();
+    for (const date of ["2026-11-13", "2026-11-14", "2026-11-15"]) {
+      await hints.put(hint(date, "a", date));
+    }
+    await hints.sync.commit(await hints.sync.collect(() => "000000000000001-00000-a"));
+    await hints.sync.makePrivate();
+    let told = 0;
+    hints.subscribe(() => (told += 1));
+    await hints.resendFrom("2026-11-14");
+    const records = (await database.list(HINTS)).map(
+      ({ value }) => value as unknown as HintRecord,
+    );
+    const byDate = (date: string) =>
+      records.find((record) => currentHint(record).forDate === date);
+    expect(byDate("2026-11-13")).toMatchObject({
+      shared: false,
+      pending: { fields: null },
+    });
+    for (const date of ["2026-11-14", "2026-11-15"]) {
+      expect(byDate(date)).toMatchObject({
+        shared: true,
+        pending: {
+          fields: { forDate: date, text: date, status: "scheduled" },
+        },
+      });
+    }
+    expect(told).toBe(2);
+  });
+
+  it("sends the newest version again with new timestamps", async () => {
+    const { hints } = setup();
+    await hints.put(hint("2026-11-14", "a", "stary"));
+    await hints.sync.commit(await hints.sync.collect(() => "000000000000001-00000-a"));
+    await hints.put(hint("2026-11-14", "b", "nowy"));
+    await hints.resendFrom("2026-11-14");
+    const again = await hints.sync.collect(() => "000000000000002-00000-a");
+    expect(again).toHaveLength(1);
+    expect(again[0]).toMatchObject({
+      fields: { text: { value: "nowy", hlc: "000000000000002-00000-a" } },
+    });
+  });
+});

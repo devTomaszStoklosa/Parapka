@@ -74,8 +74,8 @@ export function wireCycle(platform: Platform): CycleService {
   return wiredOf(platform).service;
 }
 
-/** The own and the received hints and the generator, for the screens and the sync. */
+/** The own and the received hints, the generator and the day, for the screens and the sync. */
 export function wireCycleHints(platform: Platform) {
-  const { hints, received, generator } = wiredOf(platform);
-  return { hints, received, generator };
+  const { hints, received, generator, service } = wiredOf(platform);
+  return { hints, received, generator, today: () => service.today() };
 }

@@ -59,7 +59,9 @@ function phone(device: Device, today: { value: string }) {
     today: () => today.value,
   });
   const registry = createHandlerRegistry();
-  registry.register(createHintHandler({ hints, received }));
+  registry.register(
+    createHintHandler({ hints, received, today: () => today.value }),
+  );
   device.restart({
     registry,
     isShared: (category) => category !== "CYCLE_HINTS" || flags.shared,

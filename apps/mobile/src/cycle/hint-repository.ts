@@ -50,6 +50,11 @@ export interface HintRepository {
   range(from: CalendarDate, to: CalendarDate): Promise<StoredHint[]>;
   /** Removes the records of the days before `date`, without a tombstone. */
   pruneBefore(date: CalendarDate): Promise<void>;
+  /**
+   * Marks the hints for `date` and later as shared and not sent, with all
+   * fields, so the partner gets them anew; earlier hints stay as they are.
+   */
+  resendFrom(date: CalendarDate): Promise<void>;
   subscribe(listener: () => void): () => void;
   /** For the sync handler: the own hints that leave the phone. */
   readonly sync: Pick<
@@ -121,6 +126,20 @@ function createAccess(database: LocalDatabase) {
   return { changes, all, write, sync: { collect, commit, makePrivate } };
 }
 
+/** Marks the hints for `date` and later to be sent anew, all fields. */
+async function resend(
+  { all, write }: Pick<ReturnType<typeof createAccess>, "all" | "write">,
+  date: CalendarDate,
+) {
+  for (const { id, record } of await all()) {
+    const { forDate, text, category, status } = currentHint(record);
+    if (forDate < date) continue;
+    record.shared = true;
+    record.pending.fields = { forDate, text, category, status };
+    await write(id, record);
+  }
+}
+
 export function createHintRepository(deps: {
   database: LocalDatabase;
   newId: () => string;
@@ -155,6 +174,7 @@ export function createHintRepository(deps: {
         .map(({ record }) => currentHint(record))
         .filter((hint) => hint.forDate >= from && hint.forDate <= to)
         .sort((a, b) => a.forDate.localeCompare(b.forDate)),
+    resendFrom: (date) => resend({ all, write }, date),
     pruneBefore: async (date) => {
       const old = (await all()).filter(
         ({ record }) => currentHint(record).forDate < date,
