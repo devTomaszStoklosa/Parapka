@@ -120,4 +120,46 @@ describe("the cycle screen", () => {
       screen.getByRole("button", { name: pl.cycle.disclaimer.button }),
     ).toBeTruthy();
   });
+
+  it("saves a period with one touch and refreshes the calendar and the forecast", async () => {
+    const { platform } = await setup(false);
+    show(platform);
+    await screen.findByText(pl.cycle.noForecast);
+    fireEvent.click(
+      screen.getByRole("button", { name: pl.cycle.period.startToday }),
+    );
+    expect(await screen.findByText(/^Następna miesiączka: około/)).toBeTruthy();
+    expect(
+      screen.getByLabelText("11 listopada: miesiączka, dziś"),
+    ).toBeTruthy();
+    expect(
+      await screen.findByRole("button", { name: pl.cycle.period.endToday }),
+    ).toBeTruthy();
+  });
+
+  it("opens the panel of a touched day and closes it after a save", async () => {
+    const { platform } = await setup(false);
+    show(platform);
+    await screen.findByText(pl.cycle.noForecast);
+    fireEvent.click(screen.getByLabelText("3 listopada"));
+    fireEvent.click(
+      screen.getByRole("button", { name: pl.cycle.period.startOnDay }),
+    );
+    expect(
+      await screen.findByLabelText("3 listopada: miesiączka"),
+    ).toBeTruthy();
+    expect(screen.queryByText(pl.cycle.period.startOnDay)).toBeNull();
+  });
+
+  it("keeps the screen when saving fails", async () => {
+    const { platform } = await setup(false);
+    vi.spyOn(cycleOf(platform), "savePeriod").mockRejectedValue(new Error("x"));
+    show(platform);
+    await screen.findByText(pl.cycle.noForecast);
+    fireEvent.click(
+      screen.getByRole("button", { name: pl.cycle.period.startToday }),
+    );
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByText("listopad 2026")).toBeTruthy();
+  });
 });

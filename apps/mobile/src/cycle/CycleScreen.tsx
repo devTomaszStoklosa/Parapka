@@ -1,3 +1,5 @@
+import type { CalendarDate } from "@parapka/domain";
+import { useState } from "react";
 import { ScrollView } from "react-native";
 
 import { t } from "../i18n";
@@ -7,6 +9,7 @@ import { spacing } from "../ui/theme";
 import { CycleCalendar } from "./CycleCalendar";
 import { CycleDisclaimer } from "./CycleDisclaimer";
 import { forecastText } from "./cycle-text";
+import { PeriodForm } from "./PeriodForm";
 import { PhaseCard } from "./PhaseCard";
 import { useCycle, type CycleData } from "./use-cycle";
 
@@ -30,6 +33,7 @@ function Forecast({ data }: { data: CycleData }) {
 }
 
 function Content({ data }: { data: CycleData }) {
+  const [selected, setSelected] = useState<CalendarDate | null>(null);
   return (
     <>
       <CycleCalendar
@@ -37,6 +41,18 @@ function Content({ data }: { data: CycleData }) {
         periodLength={data.periodLength}
         forecast={data.forecast}
         today={data.today}
+        selected={selected}
+        onSelect={setSelected}
+      />
+      <PeriodForm
+        key={selected ?? "none"}
+        periods={data.periods}
+        periodLength={data.periodLength}
+        today={data.today}
+        selected={selected}
+        onDone={() => {
+          setSelected(null);
+        }}
       />
       <Forecast data={data} />
       {data.phase ? (

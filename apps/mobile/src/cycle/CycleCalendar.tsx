@@ -1,7 +1,7 @@
 import { toDayNumber } from "@parapka/domain";
 import type { CalendarDate, CycleForecast } from "@parapka/domain";
 import { useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { t, type TranslationKey } from "../i18n";
 import { Button } from "../onboarding/controls";
@@ -44,17 +44,26 @@ function weeksOf(days: readonly CalendarDay[]): (CalendarDay | null)[][] {
 
 const CELL = { width: "14.28%", minHeight: 44, alignItems: "center" } as const;
 
-function Cell({ day }: { day: CalendarDay | null }) {
+function Cell(props: {
+  day: CalendarDay | null;
+  selected: CalendarDate | null;
+  onSelect: (date: CalendarDate) => void;
+}) {
+  const { day, selected, onSelect } = props;
   if (day === null) return <View style={CELL} />;
   return (
-    <View
-      accessible
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel={dayLabel(day)}
+      aria-selected={day.date === selected}
+      onPress={() => {
+        onSelect(day.date);
+      }}
       style={[
         CELL,
         {
           justifyContent: "center",
-          borderWidth: day.isToday ? 2 : 0,
+          borderWidth: day.isToday || day.date === selected ? 2 : 0,
           borderColor: colors.accent,
           backgroundColor:
             day.isPeriod || day.inForecastRange ? colors.surface : undefined,
@@ -65,7 +74,7 @@ function Cell({ day }: { day: CalendarDay | null }) {
         {Number(day.date.slice(8, 10))}
       </AppText>
       <AppText style={{ color: colors.textMuted }}>{markOf(day)}</AppText>
-    </View>
+    </Pressable>
   );
 }
 
@@ -127,7 +136,12 @@ function MonthHeader(props: { shown: Shown; onMove: (step: number) => void }) {
   );
 }
 
-function Weeks({ days }: { days: readonly CalendarDay[] }) {
+function Weeks(props: {
+  days: readonly CalendarDay[];
+  selected: CalendarDate | null;
+  onSelect: (date: CalendarDate) => void;
+}) {
+  const { days, selected, onSelect } = props;
   return (
     <>
       <View style={{ flexDirection: "row", marginTop: spacing.sm }}>
@@ -142,7 +156,7 @@ function Weeks({ days }: { days: readonly CalendarDay[] }) {
       {weeksOf(days).map((week, i) => (
         <View key={i} style={{ flexDirection: "row" }}>
           {week.map((day, j) => (
-            <Cell key={j} day={day} />
+            <Cell key={j} day={day} selected={selected} onSelect={onSelect} />
           ))}
         </View>
       ))}
@@ -156,8 +170,11 @@ export function CycleCalendar(props: {
   periodLength: number;
   forecast: CycleForecast | null;
   today: CalendarDate;
+  /** The day touched, or null. */
+  selected: CalendarDate | null;
+  onSelect: (date: CalendarDate) => void;
 }) {
-  const { periods, periodLength, forecast, today } = props;
+  const { periods, periodLength, forecast, today, selected, onSelect } = props;
   const [shown, setShown] = useState<Shown>({
     year: Number(today.slice(0, 4)),
     month: Number(today.slice(5, 7)),
@@ -176,7 +193,7 @@ export function CycleCalendar(props: {
   return (
     <View style={{ marginTop: spacing.md }}>
       <MonthHeader shown={shown} onMove={move} />
-      <Weeks days={days} />
+      <Weeks days={days} selected={selected} onSelect={onSelect} />
       <Legend />
     </View>
   );
