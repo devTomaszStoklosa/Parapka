@@ -49,6 +49,7 @@ it("has no card of the partner without a received hint", async () => {
   showToday(platform);
   await screen.findByText(pl.checkin.form.save);
   expect(screen.queryByText(pl.todayHint.none)).toBeNull();
-  expect(screen.queryByRole("radiogroup", { name: pl.todayHint.reactions }))
-    .toBeNull();
+  expect(
+    screen.queryByRole("radiogroup", { name: pl.todayHint.reactions }),
+  ).toBeNull();
 });

@@ -16,7 +16,13 @@ afterEach(() => {
 
 const isPost = (call: string) => call.startsWith("POST") && isRun(call);
 const HINT_ID = "partner-hint-0001";
-const FORBIDDEN = ["HintReaction", "hint-reactions", "done", "notToday", HINT_ID];
+const FORBIDDEN = [
+  "HintReaction",
+  "hint-reactions",
+  "done",
+  "notToday",
+  HINT_ID,
+];
 
 it(
   "keeps the reaction to a hint of the partner on the phone (FR-CYC-11)",
