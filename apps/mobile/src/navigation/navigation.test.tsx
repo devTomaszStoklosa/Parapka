@@ -86,11 +86,10 @@ it("falls back to today when the active cycle tab disappears", () => {
   const { rerender } = renderTabs(true);
   fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.cycle.title);
-  rerender(false);
-  expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
-
   fireEvent.click(screen.getByText(pl.screens.push));
   expect(screen.getByText("Poziom stosu: 2")).toBeTruthy();
+  rerender(false);
+  expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
   rerender(true);
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
 });
@@ -99,14 +98,16 @@ it("switches tabs and keeps a separate stack per tab", () => {
   renderTabs(true);
   expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
 
+  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
+  expect(screen.getByRole("heading").textContent).toBe(pl.screens.cycle.title);
   fireEvent.click(screen.getByText(pl.screens.push));
   expect(screen.getByText("Poziom stosu: 2")).toBeTruthy();
 
-  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
-  expect(screen.getByRole("heading").textContent).toBe(pl.screens.cycle.title);
-  expect(screen.getByText("Poziom stosu: 1")).toBeTruthy();
-
   fireEvent.click(screen.getByRole("tab", { name: pl.tabs.today }));
+  expect(screen.getByRole("heading").textContent).toBe(pl.screens.today.title);
+  expect(screen.queryByText(/Poziom stosu/)).toBeNull();
+
+  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
   expect(screen.getByText("Poziom stosu: 2")).toBeTruthy();
 
   fireEvent.click(screen.getByText(pl.screens.pop));
@@ -115,11 +116,17 @@ it("switches tabs and keeps a separate stack per tab", () => {
 
 it("returns to the root when the active tab is touched again", () => {
   renderTabs(true);
+  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
   fireEvent.click(screen.getByText(pl.screens.push));
   fireEvent.click(screen.getByText(pl.screens.push));
   expect(screen.getByText("Poziom stosu: 3")).toBeTruthy();
-  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.today }));
+  fireEvent.click(screen.getByRole("tab", { name: pl.tabs.cycle }));
   expect(screen.getByText("Poziom stosu: 1")).toBeTruthy();
+});
+
+it("shows the check-in card in the today tab", async () => {
+  renderTabs(true);
+  expect(await screen.findByText(pl.checkin.card.noPair)).toBeTruthy();
 });
 
 it.each(["today", "cycle", "planner", "head", "settings"] as const)(
