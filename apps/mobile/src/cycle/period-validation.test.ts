@@ -42,6 +42,21 @@ describe("validatePeriod", () => {
     }).toThrow(PeriodValidationError);
   });
 
+  it.each([
+    ["future", entry("2026-11-15", null)],
+    ["order", entry("2026-11-05", "2026-11-04")],
+    ["length", entry("2026-11-01", "2026-11-12")],
+    ["overlap", entry("2026-10-03", null)],
+    ["date", entry("2026-13-01", null)],
+  ])("tells the reason %s", (reason, period) => {
+    expect.assertions(1);
+    try {
+      validatePeriod(period, existing, today, 5);
+    } catch (error) {
+      expect((error as PeriodValidationError).reason).toBe(reason);
+    }
+  });
+
   it("rejects a period that starts during an ongoing one", () => {
     const ongoing = [entry("2026-11-01", null, "old")];
     expect(() => {

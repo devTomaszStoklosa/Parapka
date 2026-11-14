@@ -12,9 +12,15 @@ export interface PeriodLog {
   readonly endDate: CalendarDate | null;
 }
 
+export type PeriodInvalidReason =
+  "date" | "future" | "order" | "length" | "overlap";
+
 /** An invalid period entry; nothing is saved. */
 export class PeriodValidationError extends Error {
-  constructor(message: string) {
+  constructor(
+    readonly reason: PeriodInvalidReason,
+    message: string,
+  ) {
     super(message);
     this.name = "PeriodValidationError";
   }
@@ -24,7 +30,7 @@ function dayOf(date: CalendarDate): number {
   try {
     return toDayNumber(date);
   } catch {
-    throw new PeriodValidationError(`invalid date "${date}"`);
+    throw new PeriodValidationError("date", `invalid date "${date}"`);
   }
 }
 
@@ -47,13 +53,14 @@ export function validatePeriod(
   const start = dayOf(period.startDate);
   const end = lastDay(period, periodLength);
   if (start > dayOf(today)) {
-    throw new PeriodValidationError("period starts later than today");
+    throw new PeriodValidationError("future", "period starts later than today");
   }
   if (end < start) {
-    throw new PeriodValidationError("period ends before it starts");
+    throw new PeriodValidationError("order", "period ends before it starts");
   }
   if (end - start > MAX_PERIOD_LENGTH) {
     throw new PeriodValidationError(
+      "length",
       `period lasts more than ${String(MAX_PERIOD_LENGTH)} days`,
     );
   }
@@ -64,7 +71,7 @@ export function validatePeriod(
       dayOf(other.startDate) <= end,
   );
   if (overlaps) {
-    throw new PeriodValidationError("period overlaps another one");
+    throw new PeriodValidationError("overlap", "period overlaps another one");
   }
 }
 

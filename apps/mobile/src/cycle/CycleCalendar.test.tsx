@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import { pl } from "../i18n/pl";
 import { CycleCalendar } from "./CycleCalendar";
@@ -17,13 +17,20 @@ const forecast = {
   isEstimate: true,
 } as const;
 
-const show = (withForecast: boolean, today = "2026-11-14") =>
+const show = (
+  withForecast: boolean,
+  today = "2026-11-14",
+  onSelect: (date: string) => void = vi.fn(),
+  selected: string | null = null,
+) =>
   render(
     <CycleCalendar
       periods={[{ id: "a", startDate: "2026-11-01", endDate: "2026-11-05" }]}
       periodLength={5}
       forecast={withForecast ? forecast : null}
       today={today}
+      selected={selected}
+      onSelect={onSelect}
     />,
   );
 
@@ -85,4 +92,23 @@ it("scrolls over the end of the year in both directions", () => {
   expect(screen.getByText("listopad 2026")).toBeTruthy();
   for (let i = 0; i < 11; i += 1) press(pl.cycle.calendar.previous);
   expect(screen.getByText("grudzień 2025")).toBeTruthy();
+});
+
+it("makes every day a button that tells its date when touched", () => {
+  const onSelect = vi.fn();
+  show(true, "2026-11-14", onSelect);
+  fireEvent.click(
+    screen.getByRole("button", { name: "3 listopada: miesiączka" }),
+  );
+  expect(onSelect).toHaveBeenCalledWith("2026-11-03");
+  expect(screen.getAllByRole("button").length).toBeGreaterThan(30);
+});
+
+it("tells which day is selected", () => {
+  show(true, "2026-11-14", vi.fn(), "2026-11-20");
+  expect(
+    screen
+      .getByRole("button", { name: "20 listopada" })
+      .getAttribute("aria-selected"),
+  ).toBe("true");
 });
