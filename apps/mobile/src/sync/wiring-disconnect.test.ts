@@ -45,8 +45,9 @@ it("stops, cleans up and keeps the state by-partner on pair-gone", async () => {
   const d = await started(410);
   await expectCleaned(d);
   expect(warn).toHaveBeenCalledWith(PAIR_GONE_MESSAGE);
-  const first = d.createSocket.mock.results[0]?.value as { close: () => void };
-  expect(first.close).toHaveBeenCalled();
+  for (const { value } of d.createSocket.mock.results) {
+    expect((value as { close: () => void }).close).toHaveBeenCalled();
+  }
 });
 
 it("cleans up after the command disconnect of the partner", async () => {
