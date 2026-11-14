@@ -5,6 +5,7 @@ import { HeadScreen } from "../head/HeadScreen";
 import { PlannerScreen } from "../chores/PlannerScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { TabPlaceholderScreen } from "../screens/TabPlaceholderScreen";
+import { TodayScreen } from "../today/TodayScreen";
 import { colors } from "../ui/theme";
 import { initialNavState, navReducer, TAB_IDS } from "./stack-state";
 import { TabBar } from "./TabBar";
@@ -31,6 +32,8 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
           <PlannerScreen />
         ) : active === "head" ? (
           <HeadScreen />
+        ) : active === "today" ? (
+          <TodayScreen />
         ) : (
           <TabPlaceholderScreen
             tab={active}
