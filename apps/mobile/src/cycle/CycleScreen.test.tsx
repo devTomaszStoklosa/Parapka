@@ -162,4 +162,29 @@ describe("the cycle screen", () => {
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByText("listopad 2026")).toBeTruthy();
   });
+
+  it("shows the wellbeing form and refreshes after an entry saved elsewhere", async () => {
+    const { platform } = await setup(false);
+    show(platform);
+    await screen.findByText(pl.cycle.wellbeing.privacy);
+    expect(
+      screen
+        .getByRole("radio", { name: "Energia: 4 z 5" })
+        .getAttribute("aria-checked"),
+    ).toBe("false");
+    await cycleOf(platform).saveWellbeing({
+      date: "2026-11-11",
+      energy: 4,
+      mood: 2,
+      tension: 1,
+      tags: [],
+    });
+    await vi.waitFor(() => {
+      expect(
+        screen
+          .getByRole("radio", { name: "Energia: 4 z 5" })
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+    });
+  });
 });

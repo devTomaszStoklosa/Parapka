@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { t, type TranslationKey } from "../i18n";
 import type { Platform } from "../platform/context";
 import { PeriodValidationError, type PeriodLog } from "./period-validation";
+import type { WellbeingEntry } from "./wellbeing-validation";
 import { wireCycle } from "./wiring";
 
 /** What to tell about a failure: the reason of a validation, or a general text. */
@@ -47,5 +48,9 @@ export function useCycleActions(platform: Platform) {
     savePeriod: (period: PeriodLog) =>
       attempt(() => service.savePeriod(period)),
     deletePeriod: (id: string) => attempt(() => service.deletePeriod(id)),
+    saveWellbeing: (entry: WellbeingEntry) =>
+      attempt(() => service.saveWellbeing(entry)),
+    setReminder: (enabled: boolean) =>
+      attempt(() => service.setWellbeingReminder(enabled)),
   };
 }

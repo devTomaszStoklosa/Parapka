@@ -16,7 +16,7 @@ type Question = (typeof QUESTIONS)[number];
 type Ratings = Record<Question, number | null>;
 
 /** One rating: the chosen one differs by fill, border and weight, not by colour alone. */
-function RatingButton(props: {
+export function RatingButton(props: {
   label: string;
   value: number;
   checked: boolean;
