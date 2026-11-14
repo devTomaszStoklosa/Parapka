@@ -8,6 +8,11 @@ import { createMemoryDatabase } from "../data/memory-database";
 import { createCycleRepository } from "./cycle-repository";
 import { createCycleService } from "./cycle-service";
 import { PeriodValidationError } from "./period-validation";
+import { createWellbeingRepository } from "./wellbeing-repository";
+import {
+  WellbeingValidationError,
+  type WellbeingEntry,
+} from "./wellbeing-validation";
 
 const TODAY = "2026-11-14";
 const clock = { nowMs: () => new Date(2026, 10, 14, 12).getTime() };
@@ -31,6 +36,7 @@ async function setup(settings?: CycleSettings) {
   return createCycleService({
     clock,
     repository: createCycleRepository(database),
+    wellbeing: createWellbeingRepository(database),
   });
 }
 
@@ -191,5 +197,67 @@ describe("well-being reminder", () => {
     expect((await cycle.profile()).wellbeingReminder).toBe(false);
     await cycle.setWellbeingReminder(true);
     expect((await cycle.profile()).wellbeingReminder).toBe(true);
+  });
+});
+
+const wellbeing = (date: string, energy = 3): WellbeingEntry => ({
+  date,
+  energy,
+  mood: 4,
+  tension: 2,
+  desire: 5,
+  tags: ["cramps"],
+  note: "  note ",
+});
+
+describe("wellbeing", () => {
+  it("saves one trimmed entry per day, replaces it and deletes it", async () => {
+    const cycle = await setup();
+    await cycle.saveWellbeing(wellbeing("2026-11-14"));
+    expect(await cycle.wellbeingOn("2026-11-14")).toEqual({
+      ...wellbeing("2026-11-14"),
+      note: "note",
+    });
+    await cycle.saveWellbeing(wellbeing("2026-11-14", 1));
+    expect((await cycle.wellbeingOn("2026-11-14"))?.energy).toBe(1);
+    await cycle.deleteWellbeing("2026-11-14");
+    expect(await cycle.wellbeingOn("2026-11-14")).toBeNull();
+  });
+
+  it("rejects a future date and invalid data without saving", async () => {
+    const cycle = await setup();
+    await expect(cycle.saveWellbeing(wellbeing("2026-11-15"))).rejects.toThrow(
+      WellbeingValidationError,
+    );
+    await expect(
+      cycle.saveWellbeing({ ...wellbeing("2026-11-13"), mood: 6 }),
+    ).rejects.toThrow(WellbeingValidationError);
+    expect(await cycle.wellbeingForHints("2026-01-01", TODAY)).toEqual([]);
+  });
+
+  it("gives the engine only the date, energy and mood of the range", async () => {
+    const cycle = await setup();
+    for (const day of ["11", "12", "13", "14"]) {
+      await cycle.saveWellbeing(wellbeing(`2026-11-${day}`));
+    }
+    expect(await cycle.wellbeingForHints("2026-11-12", "2026-11-14")).toEqual(
+      ["12", "13", "14"].map((day) => ({
+        date: `2026-11-${day}`,
+        energy: 3,
+        mood: 4,
+      })),
+    );
+  });
+
+  it("informs about every save and delete", async () => {
+    const cycle = await setup();
+    const listener = vi.fn();
+    const stop = cycle.subscribeWellbeing(listener);
+    await cycle.saveWellbeing(wellbeing("2026-11-14"));
+    await cycle.deleteWellbeing("2026-11-14");
+    expect(listener).toHaveBeenCalledTimes(2);
+    stop();
+    await cycle.saveWellbeing(wellbeing("2026-11-14"));
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 });
