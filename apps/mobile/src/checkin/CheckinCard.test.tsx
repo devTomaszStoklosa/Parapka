@@ -3,6 +3,7 @@ import { act, cleanup, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { pl } from "../i18n/pl";
+import { receiveProfile } from "../chores/planner-test-support";
 import {
   press,
   setupCheckin,
@@ -139,12 +140,23 @@ describe("after saving", () => {
     expect(screen.queryByRole("button", { name: c.change })).toBeNull();
   });
 
-  it("announces the results after the reveal", async () => {
+  it("shows the results read-only after the reveal", async () => {
     const { platform, checkin } = await setupCheckin(true);
     await withStatus(checkin, "revealed");
     showCard(platform);
-    await screen.findByText(c.ready);
+    await screen.findByText(pl.checkin.results.title);
+    expect(screen.getByText(pl.checkin.results.partner)).toBeTruthy();
     expect(screen.queryByText(c.waiting)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
+
+  it("names the partner from the profile", async () => {
+    const { platform, checkin } = await setupCheckin(true);
+    await withStatus(checkin, "revealed");
+    await receiveProfile(platform, "Ola");
+    showCard(platform);
+    await screen.findByLabelText(`${f.mood} — Ty: 4 z 5, Ola: 1 z 5`);
   });
 });
 
@@ -167,6 +179,6 @@ it("reloads the card after a change from the synchronization", async () => {
   await withStatus(checkin, "revealed");
   await act(() => checkin.submit({ mood: 4, energy: 3, closeness: 5 }));
   await waitFor(() => {
-    expect(screen.getByText(c.ready)).toBeTruthy();
+    expect(screen.getByText(pl.checkin.results.title)).toBeTruthy();
   });
 });
