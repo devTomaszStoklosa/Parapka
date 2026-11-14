@@ -99,38 +99,45 @@ export function disconnectEnvelope(
 /** Answers `status` to every call but challenges; `waiting` goes out on the first fetch. */
 function stubRelay(status: number, waiting: Envelope[]) {
   const calls: string[] = [];
+  const bodies: string[] = [];
   const waiters: {
     match: (call: string) => boolean;
     resolve: (call: string) => void;
   }[] = [];
-  vi.stubGlobal("fetch", (url: string, init: { method: string }) => {
-    const call = `${init.method} ${url}`;
-    calls.push(call);
-    for (const waiter of waiters.splice(0)) {
-      if (waiter.match(call)) waiter.resolve(call);
-      else waiters.push(waiter);
-    }
-    const challenge = url.endsWith("/challenges");
-    const handedOut = url.includes("/envelopes") ? waiting.splice(0) : [];
-    return Promise.resolve({
-      status: challenge ? 201 : status,
-      text: () =>
-        Promise.resolve(
-          challenge
-            ? JSON.stringify({ challengeId: "c", nonce: "n" })
-            : JSON.stringify({
-                envelopes: handedOut.map((envelope) => ({ envelope })),
-                nextCursor: handedOut.length > 0 ? "cursor-1" : null,
-              }),
-        ),
-    });
-  });
+  vi.stubGlobal(
+    "fetch",
+    (url: string, init: { method: string; body?: string }) => {
+      const call = `${init.method} ${url}`;
+      calls.push(call);
+      if (countPosts([call]) > 0 && init.body !== undefined) {
+        bodies.push(init.body);
+      }
+      for (const waiter of waiters.splice(0)) {
+        if (waiter.match(call)) waiter.resolve(call);
+        else waiters.push(waiter);
+      }
+      const challenge = url.endsWith("/challenges");
+      const handedOut = url.includes("/envelopes") ? waiting.splice(0) : [];
+      return Promise.resolve({
+        status: challenge ? 201 : status,
+        text: () =>
+          Promise.resolve(
+            challenge
+              ? JSON.stringify({ challengeId: "c", nonce: "n" })
+              : JSON.stringify({
+                  envelopes: handedOut.map((envelope) => ({ envelope })),
+                  nextCursor: handedOut.length > 0 ? "cursor-1" : null,
+                }),
+          ),
+      });
+    },
+  );
   /** Resolves on the next relay call (`"METHOD url"`) that `match` accepts. */
   const nextCall = (match: (call: string) => boolean) =>
     new Promise<string>((resolve) => {
       waiters.push({ match, resolve });
     });
-  return { calls, nextCall };
+  return { calls, bodies, nextCall };
 }
 
 /** The envelope the first fetch hands out, if any. */
@@ -190,11 +197,10 @@ export async function setup(
   }).init();
   const relay = stubRelay(status, waitingFor(sodium, command, after, partner));
   const createSocket = vi.fn(socket);
-  const clock = { nowMs: () => 1_000 };
   const platform = {
     sodium,
     keyStore,
-    clock,
+    clock: { nowMs: () => 1_000 },
     database,
     sha256: webSha256,
     relayUrl: "unused-relay",
@@ -219,6 +225,7 @@ export async function setup(
     nextCall: relay.nextCall,
     syncs: () => relay.calls.filter((c) => c.includes("/envelopes")).length,
     posts: () => countPosts(relay.calls),
+    postedBodies: () => [...relay.bodies],
   };
 }
 

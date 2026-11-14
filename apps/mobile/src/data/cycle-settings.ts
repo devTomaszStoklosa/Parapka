@@ -21,6 +21,10 @@ export interface CycleSettings {
   readonly lastPeriodStart: string | null;
   readonly cycleLength: number;
   readonly periodLength: number;
+  /** The reminder to note the well-being; off when absent (FR-CYC-05). */
+  readonly wellbeingReminder?: boolean;
+  /** The first period entry was already made from `lastPeriodStart`. */
+  readonly seeded?: boolean;
 }
 
 /** Settings of a user who does not know the values ("nie wiem"). */
