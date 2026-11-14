@@ -15,6 +15,8 @@ import {
   createItemHandler,
   wireHead,
 } from "../head/wiring";
+import { createHintHandler } from "../cycle/hint-sync";
+import { wireCycleHints } from "../cycle/wiring";
 import { clearPairLocally } from "../pairing/clear-pair";
 import {
   disconnect as disconnectPair,
@@ -62,6 +64,7 @@ function createDependencies(platform: Platform) {
     ...wireChores(platform),
     ...wireHead(platform),
     ...wireCheckin(platform),
+    ...wireCycleHints(platform),
     disconnect: createDisconnectRepository(database),
     partner: createPartnerProfileRepository(database),
     pause: createPauseRepository(database),
@@ -101,6 +104,7 @@ function createEngine(platform: Platform, deps: Dependencies) {
   registry.register(createScheduleHandler(deps));
   registry.register(createCheckinHandler(deps));
   registry.register(createCheckinKeyHandler(deps));
+  registry.register(createHintHandler(deps));
   registry.register(createWithdrawalHandler({ ...deps, database, clock }));
   let transport: SyncTransport | null = null;
   const current = (): SyncTransport => {

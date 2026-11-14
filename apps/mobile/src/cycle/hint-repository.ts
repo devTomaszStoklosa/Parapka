@@ -3,31 +3,31 @@ import {
   toDayNumber,
   type CalendarDate,
   type GeneratedHint,
-  type HintCategory,
 } from "@parapka/domain";
 import { emptyEntityState, type EntityState } from "@parapka/sync";
 
 import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
+import { createRecordSync } from "../chores/record-sync";
+import {
+  ENTITY,
+  sanitize,
+  settle,
+  stampPending,
+  toMerge,
+  type Pending,
+  type SentHint,
+} from "./hint-codec";
 
 export const HINTS = "cycle-hints";
-// The merge of `@parapka/sync` knows the entities it lists; the state of a
-// hint is merged as a "Chore" and only the envelope carries "Hint".
-const MERGE_ENTITY = "Chore";
 
 /** The fields of a hint of the own person; one per day (spec §3 `Hint`). */
-export interface StoredHint {
-  readonly forDate: CalendarDate;
-  readonly text: string;
-  readonly category: HintCategory;
-  readonly templateId: string;
-  readonly contentVersion: number;
-  readonly status: "scheduled";
-}
+export interface StoredHint extends SentHint, Local {}
 
-interface Pending {
-  fields: StoredHint | null;
-  life: "delete" | "restore" | null;
+/** What stays on the phone and is never sent (FR-CYC-09). */
+export interface Local {
+  templateId: string;
+  contentVersion: number;
 }
 
 /** The shape that `createRecordSync` takes, so the sync only adds a handler. */
@@ -35,6 +35,7 @@ export interface HintRecord {
   shared: boolean;
   state: EntityState;
   pending: Pending;
+  local: Local;
 }
 
 export interface HintRepository {
@@ -50,6 +51,11 @@ export interface HintRepository {
   /** Removes the records of the days before `date`, without a tombstone. */
   pruneBefore(date: CalendarDate): Promise<void>;
   subscribe(listener: () => void): () => void;
+  /** For the sync handler: the own hints that leave the phone. */
+  readonly sync: Pick<
+    ReturnType<typeof createRecordSync>,
+    "collect" | "commit" | "makePrivate"
+  >;
 }
 
 /** The hint as it is now: the state with the pending fields on top. */
@@ -58,57 +64,90 @@ export function currentHint(record: HintRecord): StoredHint {
   for (const [name, field] of Object.entries(record.state.fields)) {
     values[name] = field.value;
   }
-  return { ...values, ...record.pending.fields } as unknown as StoredHint;
+  return {
+    ...values,
+    ...record.pending.fields,
+    ...record.local,
+  } as unknown as StoredHint;
 }
 
 export function addDays(date: CalendarDate, days: number): CalendarDate {
   return fromDayNumber(toDayNumber(date) + days);
 }
 
-const fieldsOf = (hint: GeneratedHint): StoredHint => ({
+const fieldsOf = (hint: GeneratedHint): SentHint => ({
   forDate: hint.date,
   text: hint.text,
   category: hint.category,
-  templateId: hint.templateId,
-  contentVersion: hint.contentVersion,
   status: "scheduled",
 });
 
-const isSame = (a: StoredHint, b: StoredHint) =>
+const emptyRecord = (id: string, shared: boolean): HintRecord => ({
+  shared,
+  state: emptyEntityState(ENTITY, id),
+  pending: { fields: null, life: null },
+  local: { templateId: "", contentVersion: 0 },
+});
+
+const isSame = (a: StoredHint, b: GeneratedHint) =>
   a.templateId === b.templateId && a.text === b.text;
 
-export function createHintRepository(deps: {
-  database: LocalDatabase;
-  newId: () => string;
-}): HintRepository {
-  const { database, newId } = deps;
+function createAccess(database: LocalDatabase) {
   const changes = changeChannel(database, HINTS);
   const all = async () =>
     (await database.list(HINTS)).map(({ id, value }) => ({
       id,
       record: value as unknown as HintRecord,
     }));
+  const read = async (id: string) =>
+    (await database.get(HINTS, id)) as unknown as HintRecord | null;
+  const write = async (id: string, record: HintRecord) => {
+    await database.put(HINTS, id, record as unknown as JsonValue);
+    changes.notify();
+  };
+  const { collect, commit, makePrivate } = createRecordSync<
+    Pending,
+    HintRecord
+  >({
+    records: all,
+    read,
+    write,
+    stampPending,
+    settle,
+    sanitize,
+    toMerge,
+    emptyRecord,
+  });
+  return { changes, all, write, sync: { collect, commit, makePrivate } };
+}
+
+export function createHintRepository(deps: {
+  database: LocalDatabase;
+  newId: () => string;
+}): HintRepository {
+  const { database, newId } = deps;
+  const { changes, all, write, sync } = createAccess(database);
   const find = async (date: CalendarDate) =>
     (await all()).find(({ record }) => currentHint(record).forDate === date);
   return {
     subscribe: changes.subscribe,
+    sync,
     forDate: async (date) => {
       const found = await find(date);
       return found ? currentHint(found.record) : null;
     },
     put: async (hint) => {
-      const fields = fieldsOf(hint);
       const found = await find(hint.date);
-      if (found && isSame(currentHint(found.record), fields)) return false;
+      if (found && isSame(currentHint(found.record), hint)) return false;
       const id = found?.id ?? newId();
-      const record: HintRecord = found?.record ?? {
-        shared: true,
-        state: emptyEntityState(MERGE_ENTITY, id),
-        pending: { fields, life: null },
+      const local = {
+        templateId: hint.templateId,
+        contentVersion: hint.contentVersion,
       };
-      record.pending.fields = fields;
-      await database.put(HINTS, id, record as unknown as JsonValue);
-      changes.notify();
+      const record = found?.record ?? emptyRecord(id, true);
+      record.pending.fields = fieldsOf(hint);
+      record.local = local;
+      await write(id, record);
       return true;
     },
     range: async (from, to) =>

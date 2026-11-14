@@ -11,9 +11,12 @@ import {
   stoppers,
   tick,
 } from "./wiring-test-support";
-import { wireChores } from "./wiring";
+import { wireChores, wireSync } from "./wiring";
 
-const probe = vi.hoisted(() => ({ notify: () => {} }));
+const probe = vi.hoisted(() => ({
+  notify: () => {},
+  registry: null as import("./handler-registry").HandlerRegistry | null,
+}));
 
 vi.mock("./handler-registry", async (importOriginal) => {
   const original = await importOriginal<typeof import("./handler-registry")>();
@@ -21,6 +24,7 @@ vi.mock("./handler-registry", async (importOriginal) => {
     ...original,
     createHandlerRegistry: () => {
       const registry = original.createHandlerRegistry();
+      probe.registry = registry;
       const base = {
         category: null,
         apply: () => Promise.resolve(),
@@ -164,3 +168,12 @@ it(
   },
   SLOW,
 );
+
+it("registers the one-way handler of the hints, received without consent", async () => {
+  const { platform } = await setup();
+  wireSync(platform);
+  expect(probe.registry?.get("Hint")).toMatchObject({
+    category: "CYCLE_HINTS",
+    receiveCategory: null,
+  });
+});

@@ -45,11 +45,11 @@ describe("put", () => {
       forDate: "2026-11-08",
       text: "text",
       category: "relief",
-      templateId: "a",
-      contentVersion: 3,
       status: "scheduled",
     });
-    expect(currentHint(record)).toEqual(record.pending.fields);
+    expect(record.local).toEqual({ templateId: "a", contentVersion: 3 });
+    expect(record.state.entity).toBe("Hint");
+    expect(currentHint(record)).toMatchObject(record.pending.fields ?? {});
   });
 
   it("replaces the version of the day in the same record", async () => {

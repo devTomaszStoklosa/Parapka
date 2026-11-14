@@ -17,7 +17,11 @@ import { base64Decode } from "./base64";
 import { APPLIED, ERRORS, HELD, OUTBOX } from "./engine-state";
 import { CLOCK, CURSOR, STATE } from "./engine-state";
 import { flushQueue, queueChanges, type OutboundContext } from "./outbound";
-import type { HandlerRegistry, SyncHandler } from "./handler-registry";
+import {
+  receiveCategoryOf,
+  type HandlerRegistry,
+  type SyncHandler,
+} from "./handler-registry";
 import { removeForeignEnvelopes } from "./outbox-guard";
 import type { SyncTransport } from "./transport";
 
@@ -308,7 +312,7 @@ class Engine implements SyncEngine {
           "unknown-entity",
           change,
         );
-      } else if (await this.shared(handler.category)) {
+      } else if (await this.shared(receiveCategoryOf(handler))) {
         await handler.apply(change);
         if (await this.pairEnded()) return false;
       }

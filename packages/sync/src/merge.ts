@@ -1,7 +1,14 @@
 import { type Hlc, compareHlc, parseHlc } from "./hlc.js";
 
-/** Entities edited by both people (spec 7.5). */
-export type MergeEntity = "Chore" | "MentalLoadItem" | "CoupleSettings";
+/**
+ * Entities edited by both people (spec 7.5), and the `Hint`: one author (the
+ * generator), a new version for the same date replaces the previous one.
+ */
+export type MergeEntity =
+  | "Chore"
+  | "MentalLoadItem"
+  | "CoupleSettings"
+  | "Hint";
 
 /** Value of one field with the HLC (text form) of the change that set it. */
 export interface FieldValue {
