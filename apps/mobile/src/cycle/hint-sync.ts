@@ -1,3 +1,5 @@
+import type { CalendarDate } from "@parapka/domain";
+
 import type { SyncHandler } from "../sync/handler-registry";
 import { createRecordHandler } from "../sync/record-handler";
 import { ENTITY } from "./hint-codec";
@@ -11,11 +13,12 @@ import type { ReceivedHintRepository } from "./received-hint-repository";
  * partner go to their own collection, never to the own hints.
  */
 export function createHintHandler(deps: {
-  hints: Pick<HintRepository, "sync" | "subscribe">;
+  hints: Pick<HintRepository, "sync" | "subscribe" | "resendFrom">;
+  today: () => CalendarDate;
   received: Pick<ReceivedHintRepository, "merge" | "forgetReceived">;
 }): SyncHandler {
-  const { hints, received } = deps;
-  return createRecordHandler({
+  const { hints, received, today } = deps;
+  const handler = createRecordHandler({
     entity: ENTITY,
     category: "CYCLE_HINTS",
     receiveCategory: null,
@@ -23,4 +26,11 @@ export function createHintHandler(deps: {
     subscribe: hints.subscribe,
     forget: () => received.forgetReceived(),
   });
+  return {
+    ...handler,
+    disconnected: async () => {
+      await hints.sync.makePrivate();
+      await hints.resendFrom(today());
+    },
+  };
 }

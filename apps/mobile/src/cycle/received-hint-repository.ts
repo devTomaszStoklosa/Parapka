@@ -32,6 +32,12 @@ export interface ReceivedHintRepository {
   subscribe(listener: () => void): () => void;
   /** Removes every received hint (the pair is over). */
   forgetReceived(): Promise<void>;
+  /**
+   * Removes the hints for the days from `from` (every day when null) whose
+   * newest field is not later than `until`, the HLC of the command of the
+   * partner; a hint sent after the command stays.
+   */
+  forgetSent(from: CalendarDate | null, until: string): Promise<void>;
   /** Takes in a change of the partner; an invalid one is skipped. */
   merge(change: ContentChange): Promise<void>;
 }
@@ -66,7 +72,21 @@ function createStore(database: LocalDatabase, today: () => CalendarDate) {
       hint === null ? [] : [{ ...hint, id }],
     );
   };
-  return { changes, prune, list };
+  const forgetSent = async (from: CalendarDate | null, until: string) => {
+    let removed = 0;
+    for (const { id, value } of await database.list(RECEIVED)) {
+      const { state } = value as unknown as ReceivedRecord;
+      const forDate = validHint(entityValues(state) ?? {})?.forDate ?? "";
+      const newest = Object.values(state.fields).map(({ hlc }) => hlc);
+      // The text form of an HLC is ordered like the HLC.
+      if (from !== null && forDate < from) continue;
+      if (newest.some((hlc) => hlc > until)) continue;
+      await database.delete(RECEIVED, id);
+      removed += 1;
+    }
+    if (removed > 0) changes.notify();
+  };
+  return { changes, prune, list, forgetSent };
 }
 
 /**
@@ -79,7 +99,10 @@ export function createReceivedHintRepository(deps: {
   today: () => CalendarDate;
 }): ReceivedHintRepository {
   const { database } = deps;
-  const { changes, prune, list } = createStore(database, deps.today);
+  const { changes, prune, list, forgetSent } = createStore(
+    database,
+    deps.today,
+  );
   return {
     subscribe: changes.subscribe,
     today: async () =>
@@ -94,6 +117,7 @@ export function createReceivedHintRepository(deps: {
       }
       changes.notify();
     },
+    forgetSent,
     merge: async (change) => {
       // Only the generator of a hint changes it, never the partner.
       if ((await database.get(HINTS, change.id)) !== null) return;

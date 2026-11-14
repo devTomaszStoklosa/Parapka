@@ -177,3 +177,13 @@ it("registers the one-way handler of the hints, received without consent", async
     receiveCategory: null,
   });
 });
+
+it("registers the command that takes the hints back, without a category", async () => {
+  const { platform } = await setup();
+  wireSync(platform);
+  expect(probe.registry?.get("HintWithdrawal")).toMatchObject({
+    category: null,
+  });
+  const order = probe.registry?.all().map(({ entity }) => entity) ?? [];
+  expect(order.indexOf("HintWithdrawal")).toBeLessThan(order.indexOf("Hint"));
+});
