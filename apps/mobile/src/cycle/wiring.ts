@@ -1,22 +1,72 @@
+import { createUuid7Generator } from "@parapka/domain";
+
+import { wireCheckin } from "../checkin/wiring";
+import { createProfileRepository } from "../data/profile-repository";
 import type { Platform } from "../platform/context";
+import { loadContent } from "./content";
 import { createCycleRepository } from "./cycle-repository";
 import { createCycleService, type CycleService } from "./cycle-service";
+import { createHintGenerator, type HintGenerator } from "./hint-generator";
+import { createHintRepository, type HintRepository } from "./hint-repository";
 import { createWellbeingRepository } from "./wellbeing-repository";
 
-const wired = new WeakMap<Platform, CycleService>();
+interface Wired {
+  service: CycleService;
+  hints: HintRepository;
+  generator: HintGenerator;
+}
+
+const wired = new WeakMap<Platform, Wired>();
+
+function build(platform: Platform): Wired {
+  const { database, clock, sodium } = platform;
+  const service = createCycleService({
+    clock,
+    repository: createCycleRepository(database),
+    wellbeing: createWellbeingRepository(database),
+  });
+  const random = { bytes: (length: number) => sodium.randomBytes(length) };
+  const hints = createHintRepository({
+    database,
+    newId: createUuid7Generator({ clock, random }),
+  });
+  const profiles = createProfileRepository(database);
+  const { checkin } = wireCheckin(platform);
+  const generator = createHintGenerator({
+    cycle: service,
+    checkin,
+    hints,
+    profiles,
+    library: () => loadContent(),
+  });
+  // The hints follow the cycle data, the entries, the own check-in and the form.
+  generator.start([
+    { subscribe: (listener) => service.subscribe(listener) },
+    { subscribe: (listener) => service.subscribeWellbeing(listener) },
+    checkin,
+    profiles,
+  ]);
+  return { service, hints, generator };
+}
+
+function wiredOf(platform: Platform): Wired {
+  const known = wired.get(platform);
+  if (known) return known;
+  const set = build(platform);
+  wired.set(platform, set);
+  return set;
+}
 
 /**
  * The cycle facade of the platform: one per platform. The data stays in the
- * local database; nothing of it is registered for synchronization.
+ * local database; the own hints are made from it after every change.
  */
 export function wireCycle(platform: Platform): CycleService {
-  const known = wired.get(platform);
-  if (known) return known;
-  const service = createCycleService({
-    clock: platform.clock,
-    repository: createCycleRepository(platform.database),
-    wellbeing: createWellbeingRepository(platform.database),
-  });
-  wired.set(platform, service);
-  return service;
+  return wiredOf(platform).service;
+}
+
+/** The own hints and their generator, for the screens and the sync (#236). */
+export function wireCycleHints(platform: Platform) {
+  const { hints, generator } = wiredOf(platform);
+  return { hints, generator };
 }
