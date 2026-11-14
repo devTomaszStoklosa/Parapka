@@ -2,6 +2,7 @@ import { plCheckin } from "./pl-checkin";
 import { plCycle } from "./pl-cycle";
 import { plHead } from "./pl-head";
 import { plannerEdit } from "./pl-planner";
+import { plToday } from "./pl-today";
 
 export const pl = {
   app: {
@@ -58,6 +59,7 @@ export const pl = {
   head: plHead,
   cycle: plCycle,
   checkin: plCheckin,
+  todayHint: plToday.hint,
   pairing: {
     title: "Para",
     invite: "Zaproś partnera",

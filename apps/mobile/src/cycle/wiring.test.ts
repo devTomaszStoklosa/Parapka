@@ -44,3 +44,13 @@ it("makes the hints of the cycle data after the start and a change", async () =>
   await wireCycleHints(own).generator.refresh();
   expect(await hints.range("2026-11-08", "2026-11-10")).toHaveLength(3);
 });
+
+it("gives the reactions of the platform, kept in the local database", async () => {
+  const { platform } = await setup();
+  const { reactions } = wireCycleHints(platform);
+  await reactions.set("h1", "done");
+  expect(wireCycleHints(platform).reactions).toBe(reactions);
+  expect(await platform.database.get("hint-reactions", "h1")).toEqual({
+    reaction: "done",
+  });
+});
