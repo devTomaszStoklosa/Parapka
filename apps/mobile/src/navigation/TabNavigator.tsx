@@ -1,10 +1,10 @@
 import { useEffect, useReducer } from "react";
 import { View } from "react-native";
 
+import { CycleScreen } from "../cycle/CycleScreen";
 import { HeadScreen } from "../head/HeadScreen";
 import { PlannerScreen } from "../chores/PlannerScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
-import { TabPlaceholderScreen } from "../screens/TabPlaceholderScreen";
 import { TodayScreen } from "../today/TodayScreen";
 import { colors } from "../ui/theme";
 import { initialNavState, navReducer, TAB_IDS } from "./stack-state";
@@ -35,16 +35,7 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
         ) : active === "today" ? (
           <TodayScreen />
         ) : (
-          <TabPlaceholderScreen
-            tab={active}
-            depth={state.depth[active]}
-            onPush={() => {
-              dispatch({ type: "push" });
-            }}
-            onPop={() => {
-              dispatch({ type: "pop" });
-            }}
-          />
+          <CycleScreen />
         )}
       </View>
       <TabBar
