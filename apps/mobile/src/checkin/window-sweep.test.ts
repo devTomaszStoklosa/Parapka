@@ -7,6 +7,7 @@ import type { Pair } from "../pairing/pair-repository";
 import { base64Encode } from "../sync/base64";
 import { createKeyRepository } from "./key-repository";
 import { REVEALED_COLLECTION } from "./reveal";
+import { createCheckinKeyHandler } from "./wiring";
 import { createWindowEnd, weekOfChange } from "./window-sweep";
 
 type Upsert = Extract<ContentChange, { op: "upsert" }>;
@@ -203,8 +204,18 @@ it("sweeps only locally and keeps a revealed week after 7 days", async () => {
 
 it("rejects the late key of the partner after 7 days", async () => {
   const { end, keys, moveTo } = windowEnd();
+  const handler = createCheckinKeyHandler({
+    keys,
+    reveal: { settle: async () => {}, forgetReceived: async () => {} },
+    windowEnd: end,
+  });
   await keys.addOwn("2026-W45:me", 1, KEY);
   await sendOwn(keys, "2026-W45:me|1");
+  moveTo("2026-11-22T18:59");
+  await handler.apply(received("2026-W45:partner"));
+  expect(await keys.partnerKey("2026-W45:partner", 1)).not.toBeNull();
+  await keys.dropReceived("2026-W45");
   moveTo("2026-11-22T19:00");
-  expect(await end.closed("2026-W45")).toBe(true);
+  await handler.apply(received("2026-W45:partner"));
+  expect(await keys.partnerKey("2026-W45:partner", 1)).toBeNull();
 });
