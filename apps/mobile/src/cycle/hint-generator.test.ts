@@ -74,9 +74,12 @@ function setup(
     library: options.library ?? (() => loadContent()),
   });
   const stored = () => hints.range("2000-01-01", "2100-01-01");
-  const nextChange = () =>
+  const nextChange = (count = 1) =>
     new Promise<void>((resolve) => {
+      let seen = 0;
       const stop = hints.subscribe(() => {
+        seen += 1;
+        if (seen < count) return;
         stop();
         resolve();
       });
@@ -204,8 +207,9 @@ describe("own check-in (criterion 6, FR-CHK-08)", () => {
     await s.nextChange();
     await s.generator.refresh();
     s.own.checkin = { date: "2026-11-02", answers: scoreOf(1) };
+    const changed = s.nextChange(2);
     for (const listener of s.listeners) listener();
-    await s.generator.refresh();
+    await changed;
     const [, ...future] = await s.stored();
     for (const hint of future) {
       expect(["relief", "space"]).toContain(hint.category);
