@@ -1,4 +1,5 @@
 import { plCheckin } from "./pl-checkin";
+import { plCycle } from "./pl-cycle";
 import { plHead } from "./pl-head";
 import { plannerEdit } from "./pl-planner";
 
@@ -55,6 +56,7 @@ export const pl = {
     failed: "Nie udało się wczytać obowiązków. Spróbuj ponownie później.",
   },
   head: plHead,
+  cycle: plCycle,
   checkin: plCheckin,
   pairing: {
     title: "Para",
