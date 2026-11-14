@@ -16,7 +16,7 @@ const WEEK = ["1", "2", "3", "4", "5", "6", "7"] as const;
 /** Next to the colors, so that a state is never told by color alone. */
 const MARKS = { today: "•", period: "●", range: "○", next: "◆" } as const;
 
-const markOf = (day: CalendarDay) =>
+const stateMark = (day: CalendarDay) =>
   day.isPeriod
     ? MARKS.period
     : day.isNextStart
@@ -24,6 +24,10 @@ const markOf = (day: CalendarDay) =>
       : day.inForecastRange
         ? MARKS.range
         : "";
+
+/** The "today" mark goes beside the state mark, so both are visible. */
+const markOf = (day: CalendarDay) =>
+  (day.isToday ? MARKS.today : "") + stateMark(day);
 
 /** Weeks of seven cells, the week starting on Monday; null pads the month. */
 function weeksOf(days: readonly CalendarDay[]): (CalendarDay | null)[][] {

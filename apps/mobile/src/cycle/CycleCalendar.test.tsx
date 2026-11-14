@@ -47,6 +47,17 @@ it("shows the current month with the states of the days", () => {
   expect(screen.getByLabelText("20 listopada")).toBeTruthy();
 });
 
+it("marks today in the cell, beside the state mark", () => {
+  show(true);
+  expect(screen.getByLabelText("14 listopada: dziś").textContent).toContain(
+    "•",
+  );
+  show(true, "2026-11-03");
+  expect(
+    screen.getAllByLabelText(/^3 listopada/).at(-1)?.textContent,
+  ).toContain("•●");
+});
+
 it("tells every state in words in the legend", () => {
   show(true);
   for (const text of Object.values(pl.cycle.calendar.legend)) {
