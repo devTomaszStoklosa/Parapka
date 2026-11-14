@@ -133,7 +133,9 @@ describe("resendFrom", () => {
     for (const date of ["2026-11-13", "2026-11-14", "2026-11-15"]) {
       await hints.put(hint(date, "a", date));
     }
-    await hints.sync.commit(await hints.sync.collect(() => "000000000000001-00000-a"));
+    await hints.sync.commit(
+      await hints.sync.collect(() => "000000000000001-00000-a"),
+    );
     await hints.sync.makePrivate();
     let told = 0;
     hints.subscribe(() => (told += 1));
@@ -161,7 +163,9 @@ describe("resendFrom", () => {
   it("sends the newest version again with new timestamps", async () => {
     const { hints } = setup();
     await hints.put(hint("2026-11-14", "a", "stary"));
-    await hints.sync.commit(await hints.sync.collect(() => "000000000000001-00000-a"));
+    await hints.sync.commit(
+      await hints.sync.collect(() => "000000000000001-00000-a"),
+    );
     await hints.put(hint("2026-11-14", "b", "nowy"));
     await hints.resendFrom("2026-11-14");
     const again = await hints.sync.collect(() => "000000000000002-00000-a");
