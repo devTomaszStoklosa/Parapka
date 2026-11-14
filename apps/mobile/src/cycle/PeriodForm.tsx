@@ -1,4 +1,4 @@
-import type { CalendarDate } from "@parapka/domain";
+import { MAX_PERIOD_LENGTH, type CalendarDate } from "@parapka/domain";
 import { useState } from "react";
 import { View } from "react-native";
 
@@ -136,11 +136,13 @@ function DayPanel(props: DayProps) {
 
 /** Records the periods: today's buttons, and the panel of the touched day. */
 export function PeriodForm(props: Props) {
-  const { periods, periodLength, today, selected, onDone } = props;
+  const { periods, today, selected, onDone } = props;
   const actions = useCycleActions(usePlatform());
   const last = ongoingBefore(periods, today);
-  // An old entry that was never closed does not hide the button of the start.
-  const ongoing = last && covers(last, periodLength, today) ? last : undefined;
+  // An entry that lasts longer than the average is still ongoing; only one
+  // too old to end today does not hide the button of the start.
+  const ongoing =
+    last && covers(last, MAX_PERIOD_LENGTH + 1, today) ? last : undefined;
   const label = ongoing
     ? t("cycle.period.endToday")
     : t("cycle.period.startToday");

@@ -78,6 +78,16 @@ describe("today's button", () => {
     expect(await service.periods()).toEqual([entry("a", "2026-11-09", TODAY)]);
   });
 
+  it("ends a period that lasts longer than the average", async () => {
+    const { service, onDone } = await open([entry("a", "2026-11-05", null)]);
+    expect(screen.queryByRole("button", { name: p.startToday })).toBeNull();
+    press(p.endToday);
+    await waitFor(() => {
+      expect(onDone).toHaveBeenCalled();
+    });
+    expect(await service.periods()).toEqual([entry("a", "2026-11-05", TODAY)]);
+  });
+
   it("offers the start again when the old entry was never closed", async () => {
     await open([entry("a", "2026-10-01", null)]);
     expect(screen.getByRole("button", { name: p.startToday })).toBeTruthy();
