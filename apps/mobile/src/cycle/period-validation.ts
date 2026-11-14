@@ -28,9 +28,11 @@ function dayOf(date: CalendarDate): number {
   }
 }
 
-/** The last day an entry occupies; an ongoing one only its first day. */
-const lastDay = (period: PeriodLog) =>
-  dayOf(period.endDate ?? period.startDate);
+/** The last day an entry occupies; an ongoing one lasts `periodLength` days. */
+const lastDay = (period: PeriodLog, periodLength: number) =>
+  period.endDate === null
+    ? dayOf(period.startDate) + periodLength - 1
+    : dayOf(period.endDate);
 
 /**
  * Throws when the entry starts after `today`, ends before it starts or more
@@ -40,9 +42,10 @@ export function validatePeriod(
   period: PeriodLog,
   others: readonly PeriodLog[],
   today: CalendarDate,
+  periodLength: number,
 ): void {
   const start = dayOf(period.startDate);
-  const end = lastDay(period);
+  const end = lastDay(period, periodLength);
   if (start > dayOf(today)) {
     throw new PeriodValidationError("period starts later than today");
   }
@@ -57,7 +60,7 @@ export function validatePeriod(
   const overlaps = others.some(
     (other) =>
       other.id !== period.id &&
-      start <= lastDay(other) &&
+      start <= lastDay(other, periodLength) &&
       dayOf(other.startDate) <= end,
   );
   if (overlaps) {
@@ -75,10 +78,7 @@ export function periodDays(
 ): CalendarDate[] {
   return periods.flatMap((period) => {
     const start = toDayNumber(period.startDate);
-    const end =
-      period.endDate === null
-        ? start + periodLength - 1
-        : toDayNumber(period.endDate);
+    const end = lastDay(period, periodLength);
     return Array.from({ length: end - start + 1 }, (_, i) =>
       fromDayNumber(start + i),
     );

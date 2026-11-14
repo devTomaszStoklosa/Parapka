@@ -51,6 +51,7 @@ export function createCycleService(deps: {
   repository: CycleRepository;
 }): CycleService {
   const { clock, repository } = deps;
+  const load = () => Promise.all([repository.profile(), repository.periods()]);
   const today = () => {
     const { year, month, day } = toLocalDateTime(clock.nowMs());
     return `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
@@ -63,14 +64,12 @@ export function createCycleService(deps: {
     deletePeriod: (id) => repository.deletePeriod(id),
     today,
     savePeriod: async (period) => {
-      validatePeriod(period, await repository.periods(), today());
+      const [profile, periods] = await load();
+      validatePeriod(period, periods, today(), profile.typicalPeriodLength);
       await repository.putPeriod(period);
     },
     forecast: async (day) => {
-      const [profile, periods] = await Promise.all([
-        repository.profile(),
-        repository.periods(),
-      ]);
+      const [profile, periods] = await load();
       if (periods.length === 0) return null;
       return forecastCycle({
         periodStarts: periods.map((p) => p.startDate),
@@ -79,10 +78,7 @@ export function createCycleService(deps: {
       });
     },
     phaseOn: async (date, day) => {
-      const [profile, periods] = await Promise.all([
-        repository.profile(),
-        repository.periods(),
-      ]);
+      const [profile, periods] = await load();
       const last = periods[periods.length - 1];
       if (!last || date < last.startDate) return null;
       return estimateCyclePhase({

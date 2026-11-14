@@ -23,7 +23,7 @@ describe("validatePeriod", () => {
     entry("2026-11-01", "2026-11-01"),
   ])("accepts %j", (period) => {
     expect(() => {
-      validatePeriod(period, existing, today);
+      validatePeriod(period, existing, today, 5);
     }).not.toThrow();
   });
 
@@ -38,13 +38,28 @@ describe("validatePeriod", () => {
     ["has an invalid end", entry("2026-11-01", "soon")],
   ])("rejects a period that %s", (_reason, period) => {
     expect(() => {
-      validatePeriod(period, existing, today);
+      validatePeriod(period, existing, today, 5);
     }).toThrow(PeriodValidationError);
+  });
+
+  it("rejects a period that starts during an ongoing one", () => {
+    const ongoing = [entry("2026-11-01", null, "old")];
+    expect(() => {
+      validatePeriod(entry("2026-11-03", null), ongoing, today, 5);
+    }).toThrow(PeriodValidationError);
+    expect(() => {
+      validatePeriod(entry("2026-11-06", null), ongoing, today, 5);
+    }).not.toThrow();
   });
 
   it("does not overlap the entry with itself", () => {
     expect(() => {
-      validatePeriod(entry("2026-10-02", "2026-10-06", "old"), existing, today);
+      validatePeriod(
+        entry("2026-10-02", "2026-10-06", "old"),
+        existing,
+        today,
+        5,
+      );
     }).not.toThrow();
   });
 });
