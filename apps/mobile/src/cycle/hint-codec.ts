@@ -85,10 +85,21 @@ export function stampPending(
   return changes;
 }
 
-/** Drops from pending what a collected change took over. */
+/**
+ * Drops from pending what a collected change took over. A newer version put
+ * while the change was being sent stays pending.
+ */
 export function settle(pending: Pending, change: ContentChange): void {
   if (change.op === "upsert") {
-    pending.fields = null;
+    const sent = pending.fields;
+    if (
+      sent !== null &&
+      FIELDS.every(
+        (name) => sent[name as keyof SentHint] === change.fields[name]?.value,
+      )
+    ) {
+      pending.fields = null;
+    }
   } else if (pending.life === change.op) {
     pending.life = null;
   }

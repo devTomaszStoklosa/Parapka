@@ -79,4 +79,11 @@ describe("stampPending and settle", () => {
     settle(pending, upsert(valid));
     expect(pending).toEqual({ fields: null, life: null });
   });
+
+  it("keeps a newer version put while the older one was being sent", () => {
+    const newer = { ...valid, text: "Zrób kawę" } as typeof sent;
+    const pending = { fields: newer, life: null };
+    settle(pending, upsert(valid));
+    expect(pending.fields).toEqual(newer);
+  });
 });
