@@ -15,6 +15,43 @@ const HINTS = ["self", "help", "together"] as const;
 type Question = (typeof QUESTIONS)[number];
 type Ratings = Record<Question, number | null>;
 
+/** One rating: the chosen one differs by fill, border and weight, not by colour alone. */
+function RatingButton(props: {
+  label: string;
+  value: number;
+  checked: boolean;
+  onPick: (value: number) => void;
+}) {
+  const { label, value, checked, onPick } = props;
+  return (
+    <Pressable
+      role="radio"
+      aria-checked={checked}
+      accessibilityLabel={label}
+      onPress={() => {
+        onPick(value);
+      }}
+      style={{
+        minHeight: MIN_TOUCH_TARGET,
+        minWidth: MIN_TOUCH_TARGET,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: checked ? 3 : 1,
+        borderColor: checked ? colors.accent : colors.border,
+        backgroundColor: checked ? colors.accent : colors.background,
+      }}
+    >
+      <AppText
+        style={
+          checked ? { color: colors.onAccent, fontWeight: "bold" } : undefined
+        }
+      >
+        {String(value)}
+      </AppText>
+    </Pressable>
+  );
+}
+
 /** One scale of 1–5: five radio buttons labelled with the question and value. */
 function Scale(props: {
   question: Question;
@@ -32,30 +69,13 @@ function Scale(props: {
         style={{ flexDirection: "row", gap: spacing.sm }}
       >
         {RATINGS.map((value) => (
-          <Pressable
+          <RatingButton
             key={value}
-            role="radio"
-            aria-checked={selected === value}
-            accessibilityLabel={t("checkin.form.rating", {
-              question: text,
-              value,
-            })}
-            onPress={() => {
-              onPick(value);
-            }}
-            style={{
-              minHeight: MIN_TOUCH_TARGET,
-              minWidth: MIN_TOUCH_TARGET,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: selected === value ? colors.accent : colors.border,
-              backgroundColor:
-                selected === value ? colors.surface : colors.background,
-            }}
-          >
-            <AppText>{String(value)}</AppText>
-          </Pressable>
+            label={t("checkin.form.rating", { question: text, value })}
+            value={value}
+            checked={selected === value}
+            onPick={onPick}
+          />
         ))}
       </View>
     </View>

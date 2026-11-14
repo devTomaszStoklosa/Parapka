@@ -16,9 +16,17 @@ export const plCheckin = {
     disabled:
       "Check-in jest wyłączony. Możesz go włączyć w Ustawieniach → Prywatność.",
     waiting: "Czekamy na wyniki",
-    ready: "Wyniki są gotowe",
     change: "Zmień odpowiedzi",
     until: "Check-in do {day}, {time}",
+  },
+  results: {
+    title: "Wasz check-in z tego tygodnia",
+    you: "Ty",
+    partner: "Partner",
+    none: "—",
+    value: "{value} z 5",
+    closeness: "Bliskość",
+    row: "{question} — Ty: {own}, {name}: {other}",
   },
   form: {
     mood: "Nastrój",

@@ -7,6 +7,7 @@ import { Button } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
+import { CheckinResults } from "./CheckinResults";
 import { CheckinForm } from "./CheckinForm";
 import type { CheckinInput } from "./checkin-service";
 import { useCheckin, type CheckinData } from "./use-checkin";
@@ -43,7 +44,13 @@ function Body(props: {
   if (!view.paired) return <AppText>{t("checkin.card.noPair")}</AppText>;
   if (!shared) return <AppText>{t("checkin.card.disabled")}</AppText>;
   if (view.status === "revealed") {
-    return <AppText>{t("checkin.card.ready")}</AppText>;
+    return (
+      <CheckinResults
+        own={view.own}
+        partner={view.partner}
+        partnerName={data.partnerName}
+      />
+    );
   }
   const form = view.status === "open" || editing;
   return (

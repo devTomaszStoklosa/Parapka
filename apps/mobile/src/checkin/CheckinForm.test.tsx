@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
+import { colors, contrastRatio } from "../ui/theme";
 import { pl } from "../i18n/pl";
 import { CheckinForm } from "./CheckinForm";
 
@@ -102,4 +103,18 @@ it("starts from the current answers", () => {
       .getByRole("radio", { name: `${f.energy}: 3 z 5` })
       .getAttribute("aria-checked"),
   ).toBe("true");
+});
+
+it("makes the chosen rating clearly different from the others", () => {
+  render(<CheckinForm initial={null} onSubmit={vi.fn()} />);
+  rate(f.mood, 4);
+  const chosen = screen.getByRole("radio", { name: `${f.mood}: 4 z 5` });
+  const other = screen.getByRole("radio", { name: `${f.mood}: 3 z 5` });
+  expect(chosen.getAttribute("aria-checked")).toBe("true");
+  expect(other.getAttribute("aria-checked")).toBe("false");
+  expect(chosen.style.backgroundColor).not.toBe(other.style.backgroundColor);
+  expect(chosen.style.borderWidth).not.toBe(other.style.borderWidth);
+  expect(chosen.querySelector("div")?.style.fontWeight).toBe("bold");
+  expect(contrastRatio(colors.accent, colors.background)).toBeGreaterThan(3);
+  expect(contrastRatio(colors.onAccent, colors.accent)).toBeGreaterThan(4.5);
 });
