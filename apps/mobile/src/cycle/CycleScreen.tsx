@@ -11,6 +11,8 @@ import { CycleDisclaimer } from "./CycleDisclaimer";
 import { forecastText } from "./cycle-text";
 import { PeriodForm } from "./PeriodForm";
 import { PhaseCard } from "./PhaseCard";
+import { WellbeingForm } from "./WellbeingForm";
+import { ReminderToggle } from "./ReminderToggle";
 import { useCycle, type CycleData } from "./use-cycle";
 
 function Forecast({ data }: { data: CycleData }) {
@@ -62,6 +64,12 @@ function Content({ data }: { data: CycleData }) {
           form={data.form}
         />
       ) : null}
+      <WellbeingForm
+        key={data.wellbeing ? "saved" : "new"}
+        today={data.today}
+        initial={data.wellbeing}
+      />
+      <ReminderToggle enabled={data.wellbeingReminder} />
     </>
   );
 }

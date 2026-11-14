@@ -13,6 +13,7 @@ import type { Platform } from "../platform/context";
 import { loadContent } from "./content";
 import type { PeriodLog } from "./period-validation";
 import type { CycleService } from "./cycle-service";
+import type { WellbeingEntry } from "./wellbeing-validation";
 import { wireCycle } from "./wiring";
 
 export interface CycleData {
@@ -26,6 +27,9 @@ export interface CycleData {
   /** The library text of the phase; undefined when the library is invalid. */
   readonly description: PhaseDescription | undefined;
   readonly form: GrammaticalForm;
+  /** The wellbeing entry of today; null before it is saved. */
+  readonly wellbeing: WellbeingEntry | null;
+  readonly wellbeingReminder: boolean;
 }
 
 /** The data of the screen: null while loading, "failed" when it did not load. */
@@ -37,13 +41,15 @@ async function loadCycle(
   profiles: ProfileRepository,
 ): Promise<CycleData> {
   const today = service.today();
-  const [periods, cycle, forecast, phase, profile] = await Promise.all([
-    service.periods(),
-    service.profile(),
-    service.forecast(today),
-    service.phaseOn(today, today),
-    profiles.get(),
-  ]);
+  const [periods, cycle, forecast, phase, profile, wellbeing] =
+    await Promise.all([
+      service.periods(),
+      service.profile(),
+      service.forecast(today),
+      service.phaseOn(today, today),
+      profiles.get(),
+      service.wellbeingOn(today),
+    ]);
   return {
     today,
     periods,
@@ -54,12 +60,14 @@ async function loadCycle(
       (entry) => entry.phase === phase?.phase,
     ),
     form: profile?.form ?? "neutral",
+    wellbeing,
+    wellbeingReminder: cycle.wellbeingReminder,
   };
 }
 
 /**
  * Loads the cycle data and the description of today's phase, and loads them
- * again after every change of the cycle data or of the profile.
+ * again after every change of the cycle data, the wellbeing entries or the profile.
  */
 export function useCycle(platform: Platform): CycleState {
   const service = useMemo(() => wireCycle(platform), [platform]);
@@ -82,9 +90,11 @@ export function useCycle(platform: Platform): CycleState {
       });
     };
     load();
-    const unsubscribe = [service, profiles].map((source) =>
-      source.subscribe(load),
-    );
+    const unsubscribe = [
+      service.subscribe(load),
+      service.subscribeWellbeing(load),
+      profiles.subscribe(load),
+    ];
     return () => {
       active = false;
       for (const stop of unsubscribe) stop();
