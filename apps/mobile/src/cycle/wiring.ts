@@ -1,6 +1,7 @@
 import type { Platform } from "../platform/context";
 import { createCycleRepository } from "./cycle-repository";
 import { createCycleService, type CycleService } from "./cycle-service";
+import { createWellbeingRepository } from "./wellbeing-repository";
 
 const wired = new WeakMap<Platform, CycleService>();
 
@@ -14,6 +15,7 @@ export function wireCycle(platform: Platform): CycleService {
   const service = createCycleService({
     clock: platform.clock,
     repository: createCycleRepository(platform.database),
+    wellbeing: createWellbeingRepository(platform.database),
   });
   wired.set(platform, service);
   return service;

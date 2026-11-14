@@ -6,6 +6,7 @@ import {
   type CycleConfig,
   type CycleForecast,
   type CyclePhaseEstimate,
+  type HintWellbeingEntry,
 } from "@parapka/domain";
 
 import { toLocalDateTime } from "../checkin/local-time";
@@ -15,6 +16,12 @@ import {
   validatePeriod,
   type PeriodLog,
 } from "./period-validation";
+import type { WellbeingRepository } from "./wellbeing-repository";
+import {
+  validateWellbeing,
+  WellbeingValidationError,
+  type WellbeingEntry,
+} from "./wellbeing-validation";
 
 export interface CycleService {
   profile(): Promise<CycleProfile>;
@@ -33,6 +40,17 @@ export interface CycleService {
     today: CalendarDate,
   ): Promise<CyclePhaseEstimate | null>;
   subscribe(listener: () => void): () => void;
+  /** Adds the entry, or replaces the one of its day; throws when invalid. */
+  saveWellbeing(entry: WellbeingEntry): Promise<void>;
+  deleteWellbeing(date: CalendarDate): Promise<void>;
+  wellbeingOn(date: CalendarDate): Promise<WellbeingEntry | null>;
+  /** Only energy and mood of the days from `from` to `to`, for the engine. */
+  wellbeingForHints(
+    from: CalendarDate,
+    to: CalendarDate,
+  ): Promise<HintWellbeingEntry[]>;
+  /** Informs about every saved or deleted wellbeing entry. */
+  subscribeWellbeing(listener: () => void): () => void;
 }
 
 const pad = (value: number, length = 2) => String(value).padStart(length, "0");
@@ -45,12 +63,46 @@ const configOf = (profile: CycleProfile): CycleConfig =>
         periodLength: profile.typicalPeriodLength,
       };
 
+type WellbeingMethods = Pick<
+  CycleService,
+  | "saveWellbeing"
+  | "deleteWellbeing"
+  | "wellbeingOn"
+  | "wellbeingForHints"
+  | "subscribeWellbeing"
+>;
+
+function wellbeingMethods(
+  wellbeing: WellbeingRepository,
+  today: () => CalendarDate,
+): WellbeingMethods {
+  return {
+    saveWellbeing: async (entry) => {
+      const valid = validateWellbeing(entry);
+      if (valid.date > today()) {
+        throw new WellbeingValidationError("wellbeing date is in the future");
+      }
+      await wellbeing.put(valid);
+    },
+    deleteWellbeing: (date) => wellbeing.delete(date),
+    wellbeingOn: (date) => wellbeing.get(date),
+    subscribeWellbeing: (listener) => wellbeing.subscribe(listener),
+    wellbeingForHints: async (from, to) =>
+      (await wellbeing.range(from, to)).map(({ date, energy, mood }) => ({
+        date,
+        energy,
+        mood,
+      })),
+  };
+}
+
 /** The cycle data of the phone: validation and estimates on top of the repository. */
 export function createCycleService(deps: {
   clock: Clock;
   repository: CycleRepository;
+  wellbeing: WellbeingRepository;
 }): CycleService {
-  const { clock, repository } = deps;
+  const { clock, repository, wellbeing } = deps;
   const load = () => Promise.all([repository.profile(), repository.periods()]);
   const today = () => {
     const { year, month, day } = toLocalDateTime(clock.nowMs());
@@ -63,6 +115,7 @@ export function createCycleService(deps: {
     subscribe: (listener) => repository.subscribe(listener),
     deletePeriod: (id) => repository.deletePeriod(id),
     today,
+    ...wellbeingMethods(wellbeing, today),
     savePeriod: async (period) => {
       const [profile, periods] = await load();
       validatePeriod(period, periods, today(), profile.typicalPeriodLength);
