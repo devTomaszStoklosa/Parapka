@@ -5,10 +5,7 @@ import { type Hlc, compareHlc, parseHlc } from "./hlc.js";
  * generator), a new version for the same date replaces the previous one.
  */
 export type MergeEntity =
-  | "Chore"
-  | "MentalLoadItem"
-  | "CoupleSettings"
-  | "Hint";
+  "Chore" | "MentalLoadItem" | "CoupleSettings" | "Hint";
 
 /** Value of one field with the HLC (text form) of the change that set it. */
 export interface FieldValue {
