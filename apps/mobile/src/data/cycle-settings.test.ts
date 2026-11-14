@@ -84,3 +84,19 @@ describe("CycleSettingsRepository", () => {
     expect(await repo.get()).toEqual(settings);
   });
 });
+
+describe("CycleSettings optional fields", () => {
+  it("keeps the reminder and the seeded mark of a saved record", async () => {
+    const repo = createCycleSettingsRepository(createMemoryDatabase());
+    await repo.save({
+      ...UNKNOWN_CYCLE_SETTINGS,
+      wellbeingReminder: true,
+      seeded: true,
+    });
+    expect(await repo.get()).toEqual({
+      ...UNKNOWN_CYCLE_SETTINGS,
+      wellbeingReminder: true,
+      seeded: true,
+    });
+  });
+});
