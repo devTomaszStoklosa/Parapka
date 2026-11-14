@@ -14,6 +14,7 @@ import {
 import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import { ENTITY, sanitize, validHint, type SentHint } from "./hint-codec";
+import { HINT_REACTIONS } from "./hint-reaction-repository";
 import { addDays, HINTS } from "./hint-repository";
 
 export const RECEIVED = "cycle-hints-received";
@@ -46,6 +47,12 @@ interface ReceivedRecord {
   state: EntityState;
 }
 
+/** Removes a received hint with the reaction to it. */
+async function remove(database: LocalDatabase, id: string) {
+  await database.delete(RECEIVED, id);
+  await database.delete(HINT_REACTIONS, id);
+}
+
 /** The stored hints and the removal of those older than 14 days. */
 function createStore(database: LocalDatabase, today: () => CalendarDate) {
   const changes = changeChannel(database, RECEIVED);
@@ -63,7 +70,7 @@ function createStore(database: LocalDatabase, today: () => CalendarDate) {
     const old = (await all()).filter(
       ({ hint }) => (hint?.forDate ?? "") < from,
     );
-    for (const { id } of old) await database.delete(RECEIVED, id);
+    for (const { id } of old) await remove(database, id);
     if (old.length > 0) changes.notify();
   };
   const list = async () => {
@@ -81,7 +88,7 @@ function createStore(database: LocalDatabase, today: () => CalendarDate) {
       // The text form of an HLC is ordered like the HLC.
       if (from !== null && forDate < from) continue;
       if (newest.some((hlc) => hlc > until)) continue;
-      await database.delete(RECEIVED, id);
+      await remove(database, id);
       removed += 1;
     }
     if (removed > 0) changes.notify();
@@ -113,7 +120,7 @@ export function createReceivedHintRepository(deps: {
         .sort((a, b) => b.forDate.localeCompare(a.forDate)),
     forgetReceived: async () => {
       for (const { id } of await database.list(RECEIVED)) {
-        await database.delete(RECEIVED, id);
+        await remove(database, id);
       }
       changes.notify();
     },

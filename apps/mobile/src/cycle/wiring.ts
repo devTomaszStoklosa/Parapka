@@ -7,6 +7,10 @@ import { loadContent } from "./content";
 import { createCycleRepository } from "./cycle-repository";
 import { createCycleService, type CycleService } from "./cycle-service";
 import { createHintGenerator, type HintGenerator } from "./hint-generator";
+import {
+  createHintReactionRepository,
+  type HintReactionRepository,
+} from "./hint-reaction-repository";
 import { createHintRepository, type HintRepository } from "./hint-repository";
 import {
   createReceivedHintRepository,
@@ -18,6 +22,7 @@ interface Wired {
   service: CycleService;
   hints: HintRepository;
   received: ReceivedHintRepository;
+  reactions: HintReactionRepository;
   generator: HintGenerator;
 }
 
@@ -39,6 +44,7 @@ function build(platform: Platform): Wired {
     database,
     today: () => service.today(),
   });
+  const reactions = createHintReactionRepository(database);
   const profiles = createProfileRepository(database);
   const { checkin } = wireCheckin(platform);
   const generator = createHintGenerator({
@@ -55,7 +61,7 @@ function build(platform: Platform): Wired {
     checkin,
     profiles,
   ]);
-  return { service, hints, received, generator };
+  return { service, hints, received, reactions, generator };
 }
 
 function wiredOf(platform: Platform): Wired {
@@ -76,6 +82,12 @@ export function wireCycle(platform: Platform): CycleService {
 
 /** The own and the received hints, the generator and the day, for the screens and the sync. */
 export function wireCycleHints(platform: Platform) {
-  const { hints, received, generator, service } = wiredOf(platform);
-  return { hints, received, generator, today: () => service.today() };
+  const { hints, received, reactions, generator, service } = wiredOf(platform);
+  return {
+    hints,
+    received,
+    reactions,
+    generator,
+    today: () => service.today(),
+  };
 }

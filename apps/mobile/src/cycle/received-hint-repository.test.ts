@@ -2,6 +2,7 @@ import type { ContentChange } from "@parapka/protocol";
 import { describe, expect, it } from "vitest";
 
 import { createMemoryDatabase } from "../data/memory-database";
+import { HINT_REACTIONS } from "./hint-reaction-repository";
 import {
   createReceivedHintRepository,
   RECEIVED,
@@ -121,5 +122,39 @@ describe("forgetSent", () => {
     });
     await received.forgetSent(null, hlc(5));
     expect(await ids(database)).toEqual([]);
+  });
+});
+
+describe("the reactions", () => {
+  const reacted = async (database: ReturnType<typeof setup>["database"]) =>
+    (await database.list(HINT_REACTIONS)).map(({ id }) => id).sort();
+
+  it("go with the hints that are pruned", async () => {
+    const { received, database, today } = setup();
+    await received.merge(change("edge", "2026-10-31"));
+    await received.merge(change("new", "2026-11-14"));
+    await database.put(HINT_REACTIONS, "edge", { reaction: "done" });
+    await database.put(HINT_REACTIONS, "new", { reaction: "done" });
+    today.value = "2026-11-15";
+    await received.history();
+    expect(await reacted(database)).toEqual(["new"]);
+  });
+
+  it("go with forgetReceived", async () => {
+    const { received, database } = setup();
+    await received.merge(change("h0", "2026-11-14"));
+    await database.put(HINT_REACTIONS, "h0", { reaction: "notToday" });
+    await received.forgetReceived();
+    expect(await reacted(database)).toEqual([]);
+  });
+
+  it("go with forgetSent, and stay with a hint that stays", async () => {
+    const { received, database } = setup();
+    await received.merge(change("past", "2026-11-13"));
+    await received.merge(change("today", "2026-11-14"));
+    await database.put(HINT_REACTIONS, "past", { reaction: "done" });
+    await database.put(HINT_REACTIONS, "today", { reaction: "done" });
+    await received.forgetSent("2026-11-14", "9".repeat(21));
+    expect(await reacted(database)).toEqual(["past"]);
   });
 });
