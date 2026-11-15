@@ -141,3 +141,16 @@ it("shows the planner in the planner tab", async () => {
   fireEvent.click(screen.getByRole("tab", { name: pl.tabs.planner }));
   expect(await screen.findByText(pl.planner.empty.text)).toBeTruthy();
 });
+
+it("switches to the cycle tab from the card of the own hint", async () => {
+  renderTabs(true);
+  fireEvent.click(
+    await screen.findByRole("button", { name: pl.cycle.ownHint.openCycle }),
+  );
+  expect(await screen.findByText(pl.cycle.noForecast)).toBeTruthy();
+  expect(
+    screen
+      .getByRole("tab", { name: pl.tabs.cycle })
+      .getAttribute("aria-selected"),
+  ).toBe("true");
+});

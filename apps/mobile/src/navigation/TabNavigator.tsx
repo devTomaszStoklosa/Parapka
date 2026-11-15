@@ -33,7 +33,15 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
         ) : active === "head" ? (
           <HeadScreen />
         ) : active === "today" ? (
-          <TodayScreen />
+          <TodayScreen
+            onOpenCycle={
+              cycleEnabled
+                ? () => {
+                    dispatch({ type: "select", tab: "cycle" });
+                  }
+                : undefined
+            }
+          />
         ) : (
           <CycleScreen />
         )}
