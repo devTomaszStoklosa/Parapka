@@ -4,14 +4,7 @@ import type { CheckinAnswers } from "@parapka/domain";
 import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
-
-const QUESTIONS = [
-  { key: "mood", label: "checkin.form.mood" },
-  { key: "energy", label: "checkin.form.energy" },
-  { key: "closeness", label: "checkin.results.closeness" },
-] as const;
-
-const value = (rating: number) => t("checkin.results.value", { value: rating });
+import { QUESTIONS, valueText } from "./checkin-questions";
 
 /** Two equal columns: "You" is always the left one. */
 function Pair(props: { left: string; right: string; label?: string }) {
@@ -46,8 +39,8 @@ export function CheckinResults(props: {
       <Pair left={t("checkin.results.you")} right={name} />
       {QUESTIONS.map(({ key, label }) => {
         const question = t(label);
-        const mine = own === null ? none : value(own[key]);
-        const theirs = partner === null ? none : value(partner[key]);
+        const mine = own === null ? none : valueText(own[key]);
+        const theirs = partner === null ? none : valueText(partner[key]);
         return (
           <View key={key} style={{ gap: spacing.xs }}>
             <AppText style={{ color: colors.textMuted }}>{question}</AppText>

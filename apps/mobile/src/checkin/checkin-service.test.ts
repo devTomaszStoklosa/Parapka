@@ -166,7 +166,7 @@ it("lists the history, the newest first and limited", async () => {
   await service.submit({ ...input, mood: 2 });
   const [first, second] = await service.history(2);
   expect(first?.week).toBe("2026-W46");
-  expect(second).toMatchObject({ week: "2026-W45", answers: input });
+  expect(second).toMatchObject({ week: "2026-W45", own: input, partner: null });
   expect(await service.history(1)).toHaveLength(1);
 });
 
@@ -257,4 +257,35 @@ it("reveals the answers of the partner once the key is here", async () => {
     status: "revealed",
     partner: { mood: 1, energy: 2, closeness: 3 },
   });
+});
+
+it("gives each week of the history the window that the schedule gives", async () => {
+  const { service, schedule } = await setup();
+  await service.submit(input);
+  const [entry] = await service.history(1);
+  expect(entry?.window).toEqual((await service.current()).window);
+  await schedule.set({ weekday: 3, hour: 20, minute: 30 });
+  expect((await service.history(1))[0]?.window).toEqual({
+    week: "2026-W45",
+    start: { year: 2026, month: 11, day: 4, hour: 20, minute: 30 },
+    end: { year: 2026, month: 11, day: 11, hour: 20, minute: 30 },
+  });
+});
+
+it("puts the partner in the history only for the revealed weeks", async () => {
+  const { service, sealed, keys, reveal, sodium } = await setup();
+  const { version, keyChange } = fromPartner(sodium);
+  await service.submit(input);
+  await sealed.sync.merge(version);
+  const locked = await service.history(5);
+  expect(locked.map((entry) => entry.partner)).toEqual([null]);
+  await keys.sync.merge(keyChange);
+  await reveal.settle();
+  expect((await service.history(5))[0]?.partner).toEqual({
+    mood: 1,
+    energy: 2,
+    closeness: 3,
+  });
+  await reveal.forgetReceived();
+  expect((await service.history(5))[0]?.partner).toBeNull();
 });
