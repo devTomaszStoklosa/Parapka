@@ -12,6 +12,14 @@ export interface PartnerHintData {
   readonly reaction: HintReaction | null;
   /** The name from the profile of the partner; null until it arrives. */
   readonly partnerName: string | null;
+  /** The hints of the days before today without the skipped ones, the newest first. */
+  readonly history: readonly PastHint[];
+}
+
+/** A hint of a past day with the reaction of this phone to it. */
+export interface PastHint {
+  readonly hint: ReceivedHint;
+  readonly reaction: HintReaction | null;
 }
 
 /** The data of the card: null while loading or without any hint, "failed" when it did not load. */
@@ -29,10 +37,19 @@ async function read(hints: Hints, profile: Profile): Promise<PartnerHintState> {
   ]);
   if (today === null && history.length === 0) return null;
   const hint = today?.status === "scheduled" ? today : null;
+  const past = history.filter(({ status }) => status !== "skipped");
+  const [reaction, found] = await Promise.all([
+    hint === null ? null : reactions.get(hint.id),
+    reactions.getMany(past.map(({ id }) => id)),
+  ]);
   return {
     hint,
-    reaction: hint === null ? null : await reactions.get(hint.id),
+    reaction,
     partnerName: partner?.name ?? null,
+    history: past.map((entry) => ({
+      hint: entry,
+      reaction: found[entry.id] ?? null,
+    })),
   };
 }
 
