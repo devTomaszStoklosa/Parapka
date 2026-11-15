@@ -222,6 +222,19 @@ describe("failures", () => {
     );
   });
 
+  it("shows the error above the buttons of the day panel", async () => {
+    const { service } = await open([], "2026-11-12");
+    vi.spyOn(service, "savePeriod").mockRejectedValue(
+      new PeriodValidationError("overlap", "x"),
+    );
+    press(p.startOnDay);
+    const alert = await screen.findByRole("alert");
+    const close = screen.getByRole("button", { name: p.close });
+    expect(
+      alert.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("clears the error after a success", async () => {
     const { service } = await open([]);
     const spy = vi

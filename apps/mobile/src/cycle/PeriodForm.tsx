@@ -148,6 +148,9 @@ export function PeriodForm(props: Props) {
     : t("cycle.period.startToday");
   return (
     <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+      {actions.error ? (
+        <AppText accessibilityRole="alert">{actions.error}</AppText>
+      ) : null}
       <Button
         primary
         label={label}
@@ -164,9 +167,6 @@ export function PeriodForm(props: Props) {
       />
       {selected ? (
         <DayPanel {...props} day={selected} actions={actions} />
-      ) : null}
-      {actions.error ? (
-        <AppText accessibilityRole="alert">{actions.error}</AppText>
       ) : null}
     </View>
   );

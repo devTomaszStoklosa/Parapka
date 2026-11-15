@@ -106,32 +106,29 @@ interface Shown {
 
 function MonthHeader(props: { shown: Shown; onMove: (step: number) => void }) {
   const { shown, onMove } = props;
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
+  const mover = (label: string, mark: string, step: number) => (
+    <View style={{ flex: 1 }}>
       <Button
-        label={t("cycle.calendar.previous")}
+        label={mark}
+        accessibilityLabel={label}
         onPress={() => {
-          onMove(-1);
+          onMove(step);
         }}
       />
+    </View>
+  );
+  return (
+    <View style={{ gap: spacing.xs }}>
       <AppText accessibilityRole="header">
         {t("cycle.calendar.month", {
           month: t(`cycle.months.${String(shown.month)}` as TranslationKey),
           year: shown.year,
         })}
       </AppText>
-      <Button
-        label={t("cycle.calendar.next")}
-        onPress={() => {
-          onMove(1);
-        }}
-      />
+      <View style={{ flexDirection: "row", gap: spacing.sm }}>
+        {mover(t("cycle.calendar.previous"), "‹", -1)}
+        {mover(t("cycle.calendar.next"), "›", 1)}
+      </View>
     </View>
   );
 }
