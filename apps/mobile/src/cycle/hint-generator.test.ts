@@ -185,7 +185,10 @@ describe("scope and replacement (criteria 2-4)", () => {
     const other = createHintGenerator({
       cycle: s.cycle,
       checkin: s.checkin,
-      hints: createHintRepository({ database: s.database, newId: () => "o" + Math.random().toString() }),
+      hints: createHintRepository({
+        database: s.database,
+        newId: () => "o" + Math.random().toString(),
+      }),
       profiles: s.profiles,
       library: () => loadContent(),
     });
