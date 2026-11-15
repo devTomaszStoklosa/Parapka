@@ -64,11 +64,7 @@ function Content({ data }: { data: CycleData }) {
           form={data.form}
         />
       ) : null}
-      <WellbeingForm
-        key={data.wellbeing ? "saved" : "new"}
-        today={data.today}
-        initial={data.wellbeing}
-      />
+      <WellbeingForm today={data.today} initial={data.wellbeing} />
       <ReminderToggle enabled={data.wellbeingReminder} />
     </>
   );

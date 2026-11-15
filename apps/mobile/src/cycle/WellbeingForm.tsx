@@ -6,6 +6,7 @@ import { RatingButton } from "../checkin/CheckinForm";
 import { t, type TranslationKey } from "../i18n";
 import { Button, Field, Option } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
+import { AlertText } from "../ui/AlertText";
 import { AppText } from "../ui/AppText";
 import { spacing } from "../ui/theme";
 import { useCycleActions } from "./use-cycle-actions";
@@ -161,14 +162,41 @@ function Note(props: { note: string; onChange: (note: string) => void }) {
   );
 }
 
+/** The save confirmation, the privacy note and the error, if any. */
+function Feedback(props: { saved: boolean; error: string | null }) {
+  return (
+    <>
+      {props.saved ? (
+        <AppText role="status">{t("cycle.wellbeing.saved")}</AppText>
+      ) : null}
+      <AppText>{t("cycle.wellbeing.privacy")}</AppText>
+      {props.error ? <AlertText>{props.error}</AlertText> : null}
+    </>
+  );
+}
+
+/** The draft; it follows the stored entry when that changes elsewhere. */
+function useDraft(initial: WellbeingEntry | null) {
+  const stored = JSON.stringify(initial);
+  const [seen, setSeen] = useState(stored);
+  const [draft, setDraft] = useState(() => draftOf(initial));
+  if (seen !== stored) {
+    setSeen(stored);
+    setDraft(draftOf(initial));
+  }
+  return [draft, setDraft] as const;
+}
+
 /** Today's wellbeing: three required scales, then the optional fields. */
 export function WellbeingForm(props: {
   today: CalendarDate;
   initial: WellbeingEntry | null;
 }) {
   const actions = useCycleActions(usePlatform());
-  const [draft, setDraft] = useState(() => draftOf(props.initial));
+  const [draft, setDraft] = useDraft(props.initial);
+  const [saved, setSaved] = useState(false);
   const change = (patch: Partial<Draft>) => {
+    setSaved(false);
     setDraft({ ...draft, ...patch });
   };
   const entry = entryOf(props.today, draft);
@@ -197,13 +225,11 @@ export function WellbeingForm(props: {
         label={t("cycle.wellbeing.save")}
         disabled={entry === null}
         onPress={() => {
-          if (entry !== null) void actions.saveWellbeing(entry);
+          if (entry === null) return;
+          void actions.saveWellbeing(entry).then(setSaved);
         }}
       />
-      <AppText>{t("cycle.wellbeing.privacy")}</AppText>
-      {actions.error ? (
-        <AppText accessibilityRole="alert">{actions.error}</AppText>
-      ) : null}
+      <Feedback saved={saved} error={actions.error} />
     </View>
   );
 }

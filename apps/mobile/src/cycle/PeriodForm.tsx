@@ -5,6 +5,7 @@ import { View } from "react-native";
 import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
+import { AlertText } from "../ui/AlertText";
 import { AppText } from "../ui/AppText";
 import { spacing } from "../ui/theme";
 import { dateText } from "./cycle-text";
@@ -148,9 +149,7 @@ export function PeriodForm(props: Props) {
     : t("cycle.period.startToday");
   return (
     <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
-      {actions.error ? (
-        <AppText accessibilityRole="alert">{actions.error}</AppText>
-      ) : null}
+      {actions.error ? <AlertText>{actions.error}</AlertText> : null}
       <Button
         primary
         label={label}

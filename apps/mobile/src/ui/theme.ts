@@ -6,6 +6,7 @@ export const colors = {
   accent: "#0B57D0",
   onAccent: "#FFFFFF",
   border: "#767680",
+  danger: "#B00020",
 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24 } as const;

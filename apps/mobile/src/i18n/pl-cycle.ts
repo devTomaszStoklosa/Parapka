@@ -99,6 +99,7 @@ export const plCycle = {
     note: "Notatka",
     counter: "{count}/{max}",
     save: "Zapisz",
+    saved: "Zapisano.",
     privacy: "Wpis zostaje tylko na tym telefonie. Partner go nie zobaczy.",
     error: "Nie udało się. Spróbuj jeszcze raz.",
   },

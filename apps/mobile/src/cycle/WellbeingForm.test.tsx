@@ -117,5 +117,25 @@ describe("the wellbeing form", () => {
       "Nie udało się. Spróbuj jeszcze raz.",
     );
     expect(screen.getByText("listopad 2026")).toBeTruthy();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("alert").style.color).not.toBe(
+      screen.getByText(pl.cycle.wellbeing.privacy).style.color,
+    );
+  });
+
+  it("confirms the save and hides the confirmation after a change", async () => {
+    await open();
+    rate("Energia", 1);
+    rate("Nastrój", 1);
+    rate("Napięcie", 1);
+    expect(screen.queryByRole("status")).toBeNull();
+    fireEvent.click(save());
+    const status = await screen.findByRole("status");
+    expect(status.textContent).toBe("Zapisano.");
+    expect(status.style.color).toBe(
+      screen.getByText(pl.cycle.wellbeing.privacy).style.color,
+    );
+    rate("Energia", 2);
+    expect(screen.queryByRole("status")).toBeNull();
   });
 });

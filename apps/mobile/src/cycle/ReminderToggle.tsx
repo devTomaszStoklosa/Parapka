@@ -2,6 +2,7 @@ import { Switch, View } from "react-native";
 
 import { t } from "../i18n";
 import { usePlatform } from "../platform/context";
+import { AlertText } from "../ui/AlertText";
 import { AppText } from "../ui/AppText";
 import { spacing } from "../ui/theme";
 import { useCycleActions } from "./use-cycle-actions";
@@ -26,9 +27,7 @@ export function ReminderToggle({ enabled }: { enabled: boolean }) {
           <AppText>{t("cycle.reminder.hint")}</AppText>
         </View>
       </View>
-      {actions.error ? (
-        <AppText accessibilityRole="alert">{actions.error}</AppText>
-      ) : null}
+      {actions.error ? <AlertText>{actions.error}</AlertText> : null}
     </View>
   );
 }

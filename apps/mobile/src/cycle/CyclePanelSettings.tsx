@@ -13,6 +13,7 @@ import {
 } from "../onboarding/onboarding-state";
 import { CycleSetupStep, DisclaimerStep } from "../onboarding/steps";
 import { usePlatform } from "../platform/context";
+import { AlertText } from "../ui/AlertText";
 import { AppText } from "../ui/AppText";
 import { spacing } from "../ui/theme";
 import { createCyclePanel, type CyclePanel } from "./cycle-panel";
@@ -137,9 +138,7 @@ export function CyclePanelSettings() {
           }}
         />
       )}
-      {failed ? (
-        <AppText accessibilityRole="alert">{t("cycle.panel.failed")}</AppText>
-      ) : null}
+      {failed ? <AlertText>{t("cycle.panel.failed")}</AlertText> : null}
     </View>
   );
 }
