@@ -40,6 +40,8 @@ export interface PlannerRow {
   readonly reminder: string | null;
   /** The check-off of the occurrence, or null while it is not done. */
   readonly completion: RowCompletion | null;
+  /** The chore was made from a thing of the Head. */
+  readonly fromHead: boolean;
 }
 
 export interface PlannerLists {
@@ -131,6 +133,7 @@ function occurrenceRows(
         note: chore.note,
         reminder: chore.reminder,
         completion: done.get(key) ?? null,
+        fromHead: chore.linkedItemId !== null,
       });
     }
   }

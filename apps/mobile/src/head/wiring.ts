@@ -6,6 +6,7 @@ import { createCarrierRepository } from "./carrier-repository";
 import { createHandoverRepository } from "./handover-repository";
 import { createHandoverService } from "./handover-service";
 import { createHeadService } from "./head-service";
+import { convertToChore } from "./convert-to-chore";
 import { createItemRepository } from "./item-repository";
 
 export { createCarrierHandler } from "./carrier-handler";
@@ -20,6 +21,7 @@ const wired = new WeakMap<
     head: ReturnType<typeof createHeadService>;
     handovers: ReturnType<typeof createHandoverRepository>;
     handover: ReturnType<typeof createHandoverService>;
+    convert: (itemId: string) => ReturnType<typeof convertToChore>;
   }
 >();
 
@@ -30,7 +32,7 @@ const wired = new WeakMap<
 export function wireHead(platform: Platform) {
   const known = wired.get(platform);
   if (known) return known;
-  const { pairs, identity } = wireChores(platform);
+  const { pairs, identity, chores } = wireChores(platform);
   const { sodium, clock, database } = platform;
   const random = { bytes: (length: number) => sodium.randomBytes(length) };
   const newId = createUuid7Generator({ clock, random });
@@ -46,7 +48,9 @@ export function wireHead(platform: Platform) {
     identity,
     newId,
   });
-  const set = { items, carriers, head, handovers, handover };
+  const convert = (itemId: string) =>
+    convertToChore({ head, items, chores, clock }, itemId);
+  const set = { items, carriers, head, handovers, handover, convert };
   wired.set(platform, set);
   return set;
 }

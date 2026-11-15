@@ -18,9 +18,11 @@ export const plHead = {
     none: "Bez przypisania",
   },
   due: "Termin {date}",
+  inPlanner: "Jest w planerze",
   actions: {
     takeOver: "Przejmuję",
     done: "Załatwione",
+    convert: "Zamień w obowiązek",
     label: "{action}: {title}",
     failed: "Nie udało się. Spróbuj jeszcze raz.",
   },

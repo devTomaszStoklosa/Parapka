@@ -62,6 +62,7 @@ export const plannerEdit = {
     label: "{action}: {title}, {date}",
     failed: "Nie udało się. Spróbuj jeszcze raz.",
     reminder: "Przypomnienie {time}",
+    fromHead: "Z Głowy",
     doneBy: "Zrobił(a): {who}, {when}",
     you: "Ty",
     partner: "Partner",

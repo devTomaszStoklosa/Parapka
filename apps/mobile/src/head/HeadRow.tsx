@@ -4,7 +4,12 @@ import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
-import { canRequestHandover, canTakeOver, detailLines } from "./head-model";
+import {
+  canConvert,
+  canRequestHandover,
+  canTakeOver,
+  detailLines,
+} from "./head-model";
 import type { HeadItem } from "./head-service";
 import type { HeadActions } from "./use-head-actions";
 
@@ -36,6 +41,24 @@ function AskForHandover(props: {
       })}
       onPress={() => {
         actions.onRequest(item.id);
+      }}
+    />
+  );
+}
+
+/** The "turn into a chore" button, until the thing has a chore. */
+function ConvertButton(props: { item: HeadItem; actions: HeadActions }) {
+  const { item, actions } = props;
+  if (!canConvert(item)) return null;
+  return (
+    <Button
+      label={t("head.actions.convert")}
+      accessibilityLabel={t("head.actions.label", {
+        action: t("head.actions.convert"),
+        title: item.title,
+      })}
+      onPress={() => {
+        actions.onConvert(item.id);
       }}
     />
   );
@@ -80,6 +103,7 @@ export function HeadRow(props: {
           />
         ) : null}
         <AskForHandover {...props} />
+        <ConvertButton item={item} actions={actions} />
         <Button
           label={t("head.actions.done")}
           accessibilityLabel={labelFor(t("head.actions.done"))}

@@ -81,3 +81,12 @@ it(
   },
   SLOW,
 );
+
+it("shares one converter that turns a thing into a chore", async () => {
+  const { platform } = await setup();
+  const { head, items, convert } = wireHead(platform);
+  expect(convert).toBe(wireHead(platform).convert);
+  const { id } = await head.add({ title: "Rzecz" });
+  const chore = await convert(id);
+  expect(await items.list()).toMatchObject([{ id, linkedChoreId: chore.id }]);
+});
