@@ -15,6 +15,8 @@ it.each([
   ["textMuted", "surface"],
   ["accent", "background"],
   ["accent", "surface"],
+  ["danger", "background"],
+  ["danger", "surface"],
   ["onAccent", "accent"],
 ] as const)("%s on %s has contrast of at least 4.5:1", (fg, bg) => {
   expect(contrastRatio(colors[fg], colors[bg])).toBeGreaterThanOrEqual(4.5);
