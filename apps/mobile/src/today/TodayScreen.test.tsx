@@ -7,7 +7,12 @@ import {
   showToday,
   useSodium,
 } from "../checkin/checkin-test-screen-support";
+import { defaultConsent } from "../consent/consent-model";
+import { wireConsent } from "../consent/wiring";
 import { wireCycleHints } from "../cycle/wiring";
+import { createProfileRepository } from "../data/profile-repository";
+import { press } from "../chores/planner-test-support";
+import { profile } from "../sync/wiring-test-support";
 import { pl } from "../i18n/pl";
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
@@ -119,4 +124,22 @@ it("has no pause switch without a pair", async () => {
   showToday(platform);
   await screen.findByText(pl.checkin.card.noPair);
   expect(screen.queryByText(pl.pause.hint)).toBeNull();
+});
+
+it("shows the pause on the card of the own hint after the switch", async () => {
+  const { platform } = await setupCheckin(true);
+  const cycleProfile = { ...profile, cycle: "yes" } as const;
+  await createProfileRepository(platform.database).save(cycleProfile);
+  await wireConsent(platform).consent.save({
+    ...defaultConsent(cycleProfile),
+    CYCLE_HINTS: true,
+  });
+  render(
+    <PlatformProvider platform={platform}>
+      <TodayScreen onOpenCycle={vi.fn()} />
+    </PlatformProvider>,
+  );
+  expect(await screen.findByText(pl.cycle.ownHint.shared)).toBeTruthy();
+  await press(pl.pause.label, "switch");
+  expect(await screen.findByText(pl.cycle.ownHint.paused)).toBeTruthy();
 });
