@@ -59,9 +59,9 @@ it("asks with nothing picked, then moves only what is picked", async () => {
   const row = await screen.findByRole("checkbox", { name: "Podlać kwiaty" });
   expect(row.getAttribute("aria-checked")).toBe("false");
   expect(
-    screen.getByRole("checkbox", { name: "Umówić wizytę" }).getAttribute(
-      "aria-checked",
-    ),
+    screen
+      .getByRole("checkbox", { name: "Umówić wizytę" })
+      .getAttribute("aria-checked"),
   ).toBe("false");
   fireEvent.click(row);
   expect(row.getAttribute("aria-checked")).toBe("true");
@@ -71,7 +71,9 @@ it("asks with nothing picked, then moves only what is picked", async () => {
   press("Przenieś wybrane");
   await screen.findByText("aplikacja");
   expect(await chores.list()).toMatchObject([{ shared: true }]);
-  expect(await wireHead(platform).items.list()).toMatchObject([{ shared: false }]);
+  expect(await wireHead(platform).items.list()).toMatchObject([
+    { shared: false },
+  ]);
 });
 
 it("keeps everything private after Skip and does not ask again", async () => {

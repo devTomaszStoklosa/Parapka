@@ -34,7 +34,10 @@ function useCandidates() {
       for (const stop of stops) stop();
     };
   }, [platform, service]);
-  return { service, candidates, close: () => {
+  return {
+    service,
+    candidates,
+    close: () => {
       setCandidates(null);
     },
   };

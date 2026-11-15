@@ -48,8 +48,7 @@ const ownerOf = (id: string) => id.split("|", 1).join("");
 export function createSharePrivateService(deps: Deps): SharePrivateService {
   const { database, consent } = deps;
   const isDone = async () => (await database.get(COLLECTION, ID)) !== null;
-  const finish = () =>
-    database.put(COLLECTION, ID, { done: true });
+  const finish = () => database.put(COLLECTION, ID, { done: true });
   // Only the categories the person shares are offered.
   const privateOnes = async () => ({
     chores: (await consent.isShared("SHARED_CHORES"))

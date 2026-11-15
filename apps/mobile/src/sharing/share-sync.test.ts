@@ -9,7 +9,10 @@ describe("handing private records over", () => {
     await pair.ua.service.share([choreId], [itemId]);
     await exchange(pair);
     expect(await pair.ub.chores.list()).toMatchObject([
-      { title: "Podlać kwiaty", assignment: { kind: "person", person: "partner" } },
+      {
+        title: "Podlać kwiaty",
+        assignment: { kind: "person", person: "partner" },
+      },
     ]);
     expect(await pair.ub.completions.list()).toMatchObject([
       { choreId, occurrenceDate: "2026-11-10", completedBy: "device-a" },
@@ -67,9 +70,12 @@ describe("handing private records over", () => {
     await exchange(pair);
     expect(
       [...new Set(pair.ua.sent)].every((entity) =>
-        ["Chore", "ChoreCompletion", "MentalLoadItem", "CarrierChange"].includes(
-          entity,
-        ),
+        [
+          "Chore",
+          "ChoreCompletion",
+          "MentalLoadItem",
+          "CarrierChange",
+        ].includes(entity),
       ),
     ).toBe(true);
     expect(pair.ua.sent.length).toBeGreaterThan(0);

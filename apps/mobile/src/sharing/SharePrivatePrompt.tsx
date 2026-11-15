@@ -65,17 +65,24 @@ function usePicks() {
   ] as const;
 }
 
+function useRunner() {
+  const [failed, setFailed] = useState(false);
+  return [
+    failed,
+    (action: Promise<void>) => {
+      setFailed(false);
+      action.catch(() => {
+        setFailed(true);
+      });
+    },
+  ] as const;
+}
+
 /** The one-time question of FR-PAIR-04: nothing is picked until the person picks it. */
 export function SharePrivatePrompt({ candidates, onShare, onSkip }: Props) {
   const [chores, toggleChore] = usePicks();
   const [items, toggleItem] = usePicks();
-  const [failed, setFailed] = useState(false);
-  const run = (action: Promise<void>) => {
-    setFailed(false);
-    action.catch(() => {
-      setFailed(true);
-    });
-  };
+  const [failed, run] = useRunner();
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -98,7 +105,9 @@ export function SharePrivatePrompt({ candidates, onShare, onSkip }: Props) {
         toggle={toggleItem}
       />
       <AppText>{t("share.skipHint")}</AppText>
-      {failed && <AppText accessibilityRole="alert">{t("share.failed")}</AppText>}
+      {failed && (
+        <AppText accessibilityRole="alert">{t("share.failed")}</AppText>
+      )}
       <Button
         primary
         label={t("share.move")}

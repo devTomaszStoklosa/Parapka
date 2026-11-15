@@ -67,8 +67,10 @@ export function createRecordSync<P, R extends SyncRecord<P>>(
 }
 
 /** A record that can be handed to the partner after it was private. */
-export interface ShareableRecordSyncParts<P, R extends SyncRecord<P>>
-  extends RecordSyncParts<P, R> {
+export interface ShareableRecordSyncParts<
+  P,
+  R extends SyncRecord<P>,
+> extends RecordSyncParts<P, R> {
   /** Puts the whole current state of the record into pending, to be sent anew. */
   reseed: (record: R) => void;
 }
