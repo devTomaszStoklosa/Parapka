@@ -22,7 +22,9 @@ function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
     filter: "all",
   });
   const { partnerName, deviceId, paired } = data;
-  const all = [...todo, ...rows];
+  const open = { partnerName, deviceId, paired, actions, onOpen: onOpenPlanner };
+  const renderRows = (list: typeof rows) =>
+    list.map((row) => <PlannerRow key={row.key} row={row} {...open} />);
   return (
     <>
       {failed ? (
@@ -30,21 +32,18 @@ function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
           {t("planner.actions.failed")}
         </AppText>
       ) : null}
-      {all.length === 0 ? (
+      {todo.length > 0 ? (
+        <View>
+          <AppText style={{ fontWeight: "bold" }} accessibilityRole="header">
+            {t("planner.todo")}
+          </AppText>
+          {renderRows(todo)}
+        </View>
+      ) : null}
+      {renderRows(rows)}
+      {todo.length === 0 && rows.length === 0 ? (
         <AppText>{t("todayChores.none")}</AppText>
-      ) : (
-        all.map((row) => (
-          <PlannerRow
-            key={row.key}
-            row={row}
-            partnerName={partnerName}
-            deviceId={deviceId}
-            paired={paired}
-            actions={actions}
-            onOpen={onOpenPlanner}
-          />
-        ))
-      )}
+      ) : null}
     </>
   );
 }

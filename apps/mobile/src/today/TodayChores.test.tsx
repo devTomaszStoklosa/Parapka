@@ -52,6 +52,15 @@ describe("the chores of today", () => {
     expect(await screen.findByText(pl.todayChores.title)).toBeTruthy();
     expect(screen.getByText("Stare")).toBeTruthy();
     expect(screen.getByText("Ola · 11.11.2026")).toBeTruthy();
+    expect(screen.getByText(pl.planner.todo)).toBeTruthy();
+  });
+
+  it("has no \"to do\" section without overdue occurrences", async () => {
+    const { platform, chores } = await setup(true);
+    await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
+    show(platform);
+    expect(await screen.findByText("Zmywanie")).toBeTruthy();
+    expect(screen.queryByText(pl.planner.todo)).toBeNull();
   });
 
   it("ticks off, undoes and releases an occurrence", async () => {
