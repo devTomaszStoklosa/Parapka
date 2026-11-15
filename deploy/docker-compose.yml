@@ -1,0 +1,36 @@
+# Relay and web behind Caddy. Run from this directory with a `.env` file
+# (`cp env.example .env`).
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: services/relay/Dockerfile
+    restart: unless-stopped
+    environment:
+      RELAY_DB_PATH: /data/relay.db
+      RELAY_ALLOWED_ORIGINS: ${RELAY_ALLOWED_ORIGINS:?set RELAY_ALLOWED_ORIGINS in .env}
+    volumes:
+      - relay-data:/data
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - relay
+    environment:
+      PARAPKA_DOMAIN: ${PARAPKA_DOMAIN:?set PARAPKA_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web:/srv/web:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  relay-data:
+  caddy-data:
+  caddy-config:

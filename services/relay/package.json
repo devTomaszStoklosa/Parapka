@@ -5,7 +5,8 @@
   "description": "Relay of Parapka: HTTP service with the envelope and mailbox store (spec 7.1).",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/server.ts"
+    "dev": "tsx src/server.ts",
+    "start": "tsx src/server.ts"
   },
   "dependencies": {
     "@parapka/domain": "*",
