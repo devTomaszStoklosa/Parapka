@@ -1,0 +1,26 @@
+# One domain: relay API (HTTP and WebSocket) and the web build.
+# `PARAPKA_DOMAIN=localhost` makes Caddy use its internal certificate.
+{$PARAPKA_DOMAIN} {
+	# No access logs, so no request content is ever written.
+	log {
+		output discard
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+
+	# Caddy proxies WebSocket upgrades without extra configuration.
+	@relay path /v1/* /health
+	handle @relay {
+		reverse_proxy relay:3000
+	}
+
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+	}
+}

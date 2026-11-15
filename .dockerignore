@@ -1,0 +1,8 @@
+**/node_modules
+.git
+.github
+**/dist
+**/coverage
+.expo
+deploy/backups
+deploy/web
