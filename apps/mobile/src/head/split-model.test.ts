@@ -20,6 +20,7 @@ const item = (id: string, over: Partial<StoredItem> = {}): StoredItem => ({
   dueDate: null,
   status: "open",
   doneAt: null,
+  linkedChoreId: null,
   shared: true,
   ...over,
 });

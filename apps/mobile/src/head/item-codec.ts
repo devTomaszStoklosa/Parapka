@@ -1,7 +1,13 @@
 import { MENTAL_LOAD_CATEGORIES, validateChoreTitle } from "@parapka/domain";
 
 export type ItemField =
-  "title" | "category" | "weight" | "dueDate" | "status" | "doneAt";
+  | "title"
+  | "category"
+  | "weight"
+  | "dueDate"
+  | "status"
+  | "doneAt"
+  | "linkedChoreId";
 
 const DUE_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -11,7 +17,8 @@ export const isItemField = (name: string): name is ItemField =>
   name === "weight" ||
   name === "dueDate" ||
   name === "status" ||
-  name === "doneAt";
+  name === "doneAt" ||
+  name === "linkedChoreId";
 
 /** A due date as stored: null (none) or an existing day, `YYYY-MM-DD`. */
 export function isValidDueDate(value: unknown): value is string | null {
@@ -49,6 +56,8 @@ const CHECKS: Record<ItemField, (value: unknown) => boolean> = {
   dueDate: isValidDueDate,
   status: (value) => value === "open" || value === "done",
   doneAt: isDoneAt,
+  linkedChoreId: (value) =>
+    value === null || (typeof value === "string" && value !== ""),
 };
 
 /** True when a value that came from the partner may be kept as the field. */
