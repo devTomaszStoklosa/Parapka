@@ -76,7 +76,7 @@ describe("Identity", () => {
     const first = setup();
     first.state.offline = true;
     expect(await first.identity.init()).toBe("waitingForNetwork");
-    expect(await first.identity.deviceId()).toBeNull();
+    expect(await first.identity.deviceId()).toMatch(/^[\w-]{22}$/);
     expect(await first.identity.credentials()).toBeNull();
     const keys = await first.identity.publicKeys();
 
@@ -84,6 +84,26 @@ describe("Identity", () => {
     expect(await second.identity.init()).toBe("registered");
     expect(await second.identity.publicKeys()).toEqual(keys);
     expect(second.calls).toEqual([base64urlEncode(must(keys).signing)]);
+  });
+
+  it("knows a stable id from the keys alone, without the relay", async () => {
+    const first = setup();
+    expect(await first.identity.deviceId()).toBeNull();
+    await first.identity.ensureLocal();
+    await first.identity.ensureLocal();
+    const id = await first.identity.deviceId();
+    expect(id).toMatch(/^[\w-]{22}$/);
+    expect(first.calls).toEqual([]);
+    expect(await first.identity.credentials()).toBeNull();
+    expect(await setup(first).identity.deviceId()).toBe(id);
+  });
+
+  it("keeps the stored id of a registered device", async () => {
+    const { identity, database } = setup();
+    await identity.init();
+    const record = (await database.get("identity", "device")) as object;
+    await database.put("identity", "device", { ...record, deviceId: "old" });
+    expect(await identity.deviceId()).toBe("old");
   });
 
   it("retries in ensureRegistered", async () => {

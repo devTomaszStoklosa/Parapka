@@ -1,6 +1,6 @@
 import { createUuid7Generator } from "@parapka/domain";
 
-import { createIdentity } from "../identity/identity";
+import { createIdentity, type Identity } from "../identity/identity";
 import { createRelayClient, type DeviceCredentials } from "../net/relay-client";
 import { createPairRepository } from "../pairing/pair-repository";
 import type { Platform } from "../platform/context";
@@ -17,12 +17,20 @@ function buildChores(platform: Platform) {
       sha256,
       ...(credentials ? { credentials } : {}),
     });
-  const identity = createIdentity({
+  const relayIdentity = createIdentity({
     sodium,
     keyStore,
     database,
     relay: client,
   });
+  // The repositories read deviceId() on every write: the local keys come first.
+  const identity: Identity = {
+    ...relayIdentity,
+    deviceId: async () => {
+      await relayIdentity.ensureLocal();
+      return relayIdentity.deviceId();
+    },
+  };
   const pairs = createPairRepository(database, keyStore);
   const random = { bytes: (length: number) => sodium.randomBytes(length) };
   const newId = createUuid7Generator({ clock, random });

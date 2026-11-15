@@ -1,5 +1,6 @@
 import {
   base64urlDecode,
+  base64urlEncode,
   encodeDevicePublicKeys,
   generateDeviceKeys,
   type DevicePublicKeys,
@@ -30,9 +31,11 @@ interface DeviceRecord {
 export interface Identity {
   /** Makes the keys on the first launch and tries to register the device. */
   init(): Promise<IdentityState>;
+  /** Makes the keys when missing, without the network or the relay. */
+  ensureLocal(): Promise<void>;
   /** Retries the registration when it is still pending. */
   ensureRegistered(): Promise<IdentityState>;
-  /** The id given by the relay, or null before the registration. */
+  /** The stored id, or the one derived from the signing key; null before the keys exist. */
   deviceId(): Promise<string | null>;
   publicKeys(): Promise<DevicePublicKeys | null>;
   /** The key agreement pair for `derivePairKeys`; null before the keys exist. */
@@ -72,8 +75,20 @@ async function createKeys(deps: IdentityDeps): Promise<DeviceRecord> {
   return record;
 }
 
-async function register(deps: IdentityDeps): Promise<IdentityState> {
-  const record = (await loadRecord(deps.database)) ?? (await createKeys(deps));
+/** The id the relay derives from the key: 16 bytes of BLAKE2b-512, base64url. */
+const deriveId = (sodium: Sodium, record: DeviceRecord) =>
+  base64urlEncode(
+    sodium.hash(64, base64urlDecode(record.signingPublicKey)).subarray(0, 16),
+  );
+
+const idOf = (sodium: Sodium, record: DeviceRecord | null) =>
+  record ? (record.deviceId ?? deriveId(sodium, record)) : null;
+
+async function register(
+  deps: IdentityDeps,
+  ensureKeys: () => Promise<DeviceRecord>,
+): Promise<IdentityState> {
+  const record = await ensureKeys();
   if (record.deviceId !== null) return "registered";
   try {
     const { deviceId } = await deps
@@ -89,12 +104,26 @@ async function register(deps: IdentityDeps): Promise<IdentityState> {
   }
 }
 
+/** One key creation at a time, so a parallel caller gets the same keys. */
+function sharedKeys(deps: IdentityDeps): () => Promise<DeviceRecord> {
+  let creating: Promise<DeviceRecord> | null = null;
+  const make = async () =>
+    (await loadRecord(deps.database)) ?? (await createKeys(deps));
+  return () => {
+    creating ??= make().finally(() => {
+      creating = null;
+    });
+    return creating;
+  };
+}
+
 export function createIdentity(deps: IdentityDeps): Identity {
   const { keyStore, database } = deps;
   let pending: Promise<IdentityState> | null = null;
+  const ensureKeys = sharedKeys(deps);
 
   const ensureRegistered = () => {
-    pending ??= register(deps).finally(() => {
+    pending ??= register(deps, ensureKeys).finally(() => {
       pending = null;
     });
     return pending;
@@ -103,7 +132,10 @@ export function createIdentity(deps: IdentityDeps): Identity {
   return {
     init: ensureRegistered,
     ensureRegistered,
-    deviceId: async () => (await loadRecord(database))?.deviceId ?? null,
+    ensureLocal: async () => {
+      await ensureKeys();
+    },
+    deviceId: async () => idOf(deps.sodium, await loadRecord(database)),
     publicKeys: async () => {
       const record = await loadRecord(database);
       if (!record) return null;
