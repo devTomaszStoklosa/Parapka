@@ -117,7 +117,7 @@ async function putToken(
 }
 
 describe("POST /v1/devices", () => {
-  it("returns a random 128-bit deviceId and stores only key and time", async () => {
+  it("returns a 128-bit deviceId and stores only key and time", async () => {
     const a = await register();
     const b = await register();
     expect(a.deviceId).toMatch(/^[A-Za-z0-9_-]{22,}$/);

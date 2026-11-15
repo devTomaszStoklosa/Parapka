@@ -8,6 +8,7 @@ export interface RegisterDeviceRequest {
   readonly signingPublicKey: string;
 }
 export interface RegisterDeviceResponse {
+  /** Derived from the key: the first 16 bytes of its BLAKE2b-512, base64url. The same key gets the same id. */
   readonly deviceId: string;
 }
 

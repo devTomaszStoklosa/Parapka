@@ -5,6 +5,7 @@ import type { RelayFetch } from "../../../apps/mobile/src/net/relay-client";
 import { createMemoryKeyStore } from "../../../apps/mobile/src/platform/memory-key-store";
 import { webSha256 } from "../../../apps/mobile/src/platform/sha256";
 import { createWebSodium } from "../../../apps/mobile/src/platform/web-sodium";
+import { createHash } from "node:crypto";
 import type { Sodium } from "@parapka/crypto";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, expect, it } from "vitest";
@@ -79,4 +80,38 @@ it("waits for the network and registers on the next try", async () => {
   online = true;
   expect(await identity.ensureRegistered()).toBe("registered");
   expect(await identity.deviceId()).not.toBeNull();
+});
+
+it("knows the id before the registration and the relay uses the same one", async () => {
+  let calls = 0;
+  const identity = newIdentity((url, init) => {
+    calls += 1;
+    return injectFetch(url, init);
+  });
+  await identity.ensureLocal();
+  const local = await identity.deviceId();
+  expect(calls).toBe(0);
+  expect(await identity.init()).toBe("registered");
+  expect(await identity.deviceId()).toBe(local);
+  expect((await identity.credentials())?.deviceId).toBe(local);
+});
+
+it("derives the id from the key and registers the same key idempotently", async () => {
+  const identity = newIdentity(injectFetch);
+  await identity.init();
+  const keys = await identity.publicKeys();
+  if (!keys) throw new Error("no keys");
+  const digest = createHash("blake2b512").update(keys.signing).digest();
+  expect(await identity.deviceId()).toBe(
+    digest.subarray(0, 16).toString("base64url"),
+  );
+  const again = await app.inject({
+    method: "POST",
+    url: "/v1/devices",
+    headers: { "content-type": "application/json" },
+    payload: JSON.stringify({
+      signingPublicKey: Buffer.from(keys.signing).toString("base64url"),
+    }),
+  });
+  expect(again.json()).toEqual({ deviceId: await identity.deviceId() });
 });

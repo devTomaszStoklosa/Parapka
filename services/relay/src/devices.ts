@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type {
   RegisterDeviceResponse,
   SetPushTokenRequest,
@@ -18,6 +18,15 @@ function randomId(bytes: number): string {
   return randomBytes(bytes).toString("base64url");
 }
 
+/** The device id: the first 16 bytes of BLAKE2b-512 of the public key, so the device knows it in advance. */
+function deviceIdOf(key: string): string {
+  return createHash("blake2b512")
+    .update(Buffer.from(key, "base64url"))
+    .digest()
+    .subarray(0, 16)
+    .toString("base64url");
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -30,12 +39,15 @@ function registerDevice(app: FastifyInstance): void {
       return reply.code(400).send({ error: "invalid signingPublicKey" });
     }
     const { store, clock } = app.relay;
-    const deviceId = randomId(16);
-    await store.putDevice({
-      deviceId,
-      signingPublicKey: key,
-      createdAtMs: clock.nowMs(),
-    });
+    const deviceId = deviceIdOf(key);
+    // Idempotent: a known key keeps its row, and with it the push token.
+    if ((await store.getDevice(deviceId)) === null) {
+      await store.putDevice({
+        deviceId,
+        signingPublicKey: key,
+        createdAtMs: clock.nowMs(),
+      });
+    }
     return reply.code(201).send({ deviceId } satisfies RegisterDeviceResponse);
   });
 }

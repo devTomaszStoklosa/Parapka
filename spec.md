@@ -449,7 +449,7 @@ Biblioteki do weryfikacji przy konfiguracji projektu: `expo-sqlite` z obsługą 
 
 ### 7.3 Tożsamość, klucze i parowanie
 
-1. **Pierwsze uruchomienie:** telefon generuje parę kluczy podpisu (Ed25519) i parę kluczy uzgadniania (X25519); klucze prywatne trafiają do Keychain/Keystore. Rejestracja urządzenia na relayu przesyła tylko klucz publiczny podpisu; kolejne żądania są uwierzytelniane podpisem wyzwania serwera, bez haseł (A10).
+1. **Pierwsze uruchomienie:** telefon generuje parę kluczy podpisu (Ed25519) i parę kluczy uzgadniania (X25519); klucze prywatne trafiają do Keychain/Keystore. Identyfikator urządzenia jest pochodną klucza publicznego podpisu (pierwsze 16 bajtów BLAKE2b-512, base64url), więc telefon zna go lokalnie od utworzenia kluczy, bez sieci i bez pary. Rejestracja urządzenia na relayu przesyła tylko klucz publiczny podpisu, relay wylicza ten sam identyfikator, a powtórzona rejestracja tego samego klucza jest idempotentna i niczego nie nadpisuje; kolejne żądania są uwierzytelniane podpisem wyzwania serwera, bez haseł (A10).
 2. **Zaproszenie (A):** relay tworzy `invitationId`, jednorazowy i ważny 24 h. Kod QR i link zawierają wersję protokołu, `invitationId`, klucze publiczne A i losowy 256-bitowy sekret. Sekret nie trafia na relay w jawnej postaci.
 3. **Przyjęcie (B):** B wysyła na relay swoje klucze publiczne zaszyfrowane kluczem wyprowadzonym z sekretu, więc relay nie może ich podmienić bez znajomości sekretu.
 4. **Klucze pary:** oba telefony wyprowadzają kierunkowe klucze sesji (`crypto_kx`) i 6-cyfrowy kod bezpieczeństwa ze skrótu obu kluczy publicznych. Kod chroni połączenie przez link, bo link mógł przejść przez komunikator, który zna sekret (FR-PAIR-02).

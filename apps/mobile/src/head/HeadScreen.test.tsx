@@ -95,7 +95,7 @@ describe("the list of the head", () => {
   it("works on a device that is not registered yet", async () => {
     const { platform, time } = await setup(false);
     await platform.database.put("identity", "device", {
-      signingPublicKey: "s",
+      signingPublicKey: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       agreementPublicKey: "a",
       deviceId: null,
     });
