@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   createUuid7Generator,
   type CheckinAnswers,
@@ -176,6 +178,21 @@ describe("scope and replacement (criteria 2-4)", () => {
     ]);
     expect(changes).toBe(3);
     expect((await s.recordIds()).length).toBe(3);
+  });
+
+  it("makes one record per day with two generators on one database", async () => {
+    const s = setup();
+    await s.profiles.save(profile);
+    await start(s.cycle, "2026-11-01");
+    const other = createHintGenerator({
+      cycle: s.cycle,
+      checkin: s.checkin,
+      hints: createHintRepository({ database: s.database, newId: randomUUID }),
+      profiles: s.profiles,
+      library: () => loadContent(),
+    });
+    await Promise.all([s.generator.refresh(), other.refresh()]);
+    expect(await s.database.list(HINTS)).toHaveLength(3);
   });
 
   it("an entry of today changes tomorrow and the day after, not today (FR-CYC-08)", async () => {
