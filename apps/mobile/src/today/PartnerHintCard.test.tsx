@@ -135,6 +135,28 @@ it("looks the same without a hint of today, with a skipped one and in a pause", 
   expect(screen.queryByRole("radio")).toBeNull();
 });
 
+it("shows no card without a shown history, whatever the reason of the missing hint", async () => {
+  const trees: string[] = [];
+  const empty = async (changes: ContentChange[], pause = false) => {
+    const { platform } = await setup(true);
+    const { received } = wireCycleHints(platform);
+    for (const change of changes) await received.merge(change);
+    if (pause) await received.forgetSent(TODAY, "9".repeat(21));
+    const view = showCard(platform);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    trees.push(view.container.innerHTML);
+    cleanup();
+  };
+  await empty([]);
+  await empty([hint("h1", TODAY, "skipped")]);
+  await empty([
+    hint("h1", TODAY, "skipped"),
+    hint("p1", "2026-11-10", "skipped"),
+  ]);
+  await empty([hint("h1", TODAY)], true);
+  expect(trees).toEqual(["", "", "", ""]);
+});
+
 it("shows the card regardless of an own hint (FR-CYC-14)", async () => {
   const { platform } = await setup(true);
   const { received, hints } = wireCycleHints(platform);
