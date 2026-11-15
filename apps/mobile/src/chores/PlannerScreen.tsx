@@ -22,6 +22,7 @@ import type { RowActions } from "./PlannerActions";
 import { PlannerRow } from "./PlannerRow";
 import { UndoBar } from "./UndoBar";
 import { usePlanner, type PlannerData } from "./use-planner";
+import { useRowActions } from "./use-row-actions";
 
 interface Open {
   readonly partnerName: string | null;
@@ -54,39 +55,6 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </View>
     </View>
   );
-}
-
-/** The row buttons call the repositories; a rejection only sets `failed`. */
-function useRowActions() {
-  const platform = usePlatform();
-  const { chores, completions } = useMemo(
-    () => wireChores(platform),
-    [platform],
-  );
-  const [failed, setFailed] = useState(false);
-  // The list reloads by itself through the subscriptions.
-  const attempt = (action: Promise<void>) => {
-    action.then(
-      () => {
-        setFailed(false);
-      },
-      () => {
-        setFailed(true);
-      },
-    );
-  };
-  const actions: RowActions = {
-    onDone: (row) => {
-      attempt(completions.complete(row.choreId, row.date));
-    },
-    onUndo: (row) => {
-      attempt(completions.undo(row.choreId, row.date));
-    },
-    onRelease: (row) => {
-      attempt(chores.release(row.choreId));
-    },
-  };
-  return { actions, failed };
 }
 
 function Lists(props: {

@@ -34,6 +34,9 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
           <HeadScreen />
         ) : active === "today" ? (
           <TodayScreen
+            onOpenPlanner={() => {
+              dispatch({ type: "select", tab: "planner" });
+            }}
             onOpenCycle={
               cycleEnabled
                 ? () => {

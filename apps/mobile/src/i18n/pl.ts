@@ -60,6 +60,7 @@ export const pl = {
   cycle: plCycle,
   checkin: plCheckin,
   todayHint: plToday.hint,
+  todayChores: plToday.chores,
   pairing: {
     title: "Para",
     invite: "Zaproś partnera",

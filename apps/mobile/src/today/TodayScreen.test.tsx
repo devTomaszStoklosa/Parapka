@@ -13,6 +13,7 @@ import { wireCycleHints } from "../cycle/wiring";
 import { createProfileRepository } from "../data/profile-repository";
 import { press } from "../chores/planner-test-support";
 import { profile } from "../sync/wiring-test-support";
+import { wireChores } from "../sync/wiring";
 import { pl } from "../i18n/pl";
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
@@ -90,7 +91,7 @@ it("shows both cards when both people have the cycle (FR-CYC-14)", async () => {
   const onOpenCycle = vi.fn();
   render(
     <PlatformProvider platform={platform}>
-      <TodayScreen onOpenCycle={onOpenCycle} />
+      <TodayScreen onOpenCycle={onOpenCycle} onOpenPlanner={vi.fn()} />
     </PlatformProvider>,
   );
   expect(await screen.findByText("Własna wskazówka")).toBeTruthy();
@@ -136,10 +137,27 @@ it("shows the pause on the card of the own hint after the switch", async () => {
   });
   render(
     <PlatformProvider platform={platform}>
-      <TodayScreen onOpenCycle={vi.fn()} />
+      <TodayScreen onOpenCycle={vi.fn()} onOpenPlanner={vi.fn()} />
     </PlatformProvider>,
   );
   expect(await screen.findByText(pl.cycle.ownHint.shared)).toBeTruthy();
   await press(pl.pause.label, "switch");
   expect(await screen.findByText(pl.cycle.ownHint.paused)).toBeTruthy();
+});
+
+it("shows the chores of today between the hints and the check-in card", async () => {
+  const { platform } = await setupCheckin(true);
+  await wireChores(platform).chores.add({
+    title: "Zmywanie",
+    rule: { kind: "daily" },
+    assignment: { kind: "both" },
+  });
+  showToday(platform);
+  await waitFor(() => {
+    const text = document.body.textContent;
+    expect(text).toContain("Zmywanie");
+    expect(text.indexOf(pl.todayChores.title)).toBeLessThan(
+      text.indexOf(pl.checkin.form.save),
+    );
+  });
 });

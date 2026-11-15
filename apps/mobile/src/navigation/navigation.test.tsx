@@ -154,3 +154,16 @@ it("switches to the cycle tab from the card of the own hint", async () => {
       .getAttribute("aria-selected"),
   ).toBe("true");
 });
+
+it("switches to the planner tab from the chores card of the today tab", async () => {
+  renderTabs(true);
+  fireEvent.click(
+    await screen.findByRole("button", { name: pl.todayChores.openPlanner }),
+  );
+  expect(await screen.findByText(pl.planner.empty.text)).toBeTruthy();
+  expect(
+    screen
+      .getByRole("tab", { name: pl.tabs.planner })
+      .getAttribute("aria-selected"),
+  ).toBe("true");
+});

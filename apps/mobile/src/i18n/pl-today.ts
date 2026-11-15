@@ -19,4 +19,9 @@ export const plToday = {
     },
     failed: "Nie udało się. Spróbuj jeszcze raz.",
   },
+  chores: {
+    title: "Obowiązki na dziś",
+    none: "Na dziś nie masz obowiązków.",
+    openPlanner: "Otwórz planer",
+  },
 } as const;
