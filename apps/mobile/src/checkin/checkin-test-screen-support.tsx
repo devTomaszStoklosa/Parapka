@@ -22,7 +22,7 @@ export const showCard = (platform: Platform) =>
 export const showToday = (platform: Platform) =>
   render(
     <PlatformProvider platform={platform}>
-      <TodayScreen />
+      <TodayScreen onOpenPlanner={vi.fn()} />
     </PlatformProvider>,
   );
 
