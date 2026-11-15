@@ -116,6 +116,31 @@ async function putToken(
   });
 }
 
+function pushText(device: TestDevice, sent: Challenge): string {
+  return buildSignedText({
+    method: "PUT",
+    url: `/v1/devices/${device.deviceId}/push-token`,
+    challengeId: sent.challengeId,
+    nonce: sent.nonce,
+    body: Buffer.from(BODY),
+  });
+}
+
+/** Sends a push-token PUT with the given challenge and signature. */
+function putRaw(device: TestDevice, sent: Challenge, signature: string) {
+  return app.inject({
+    method: "PUT",
+    url: `/v1/devices/${device.deviceId}/push-token`,
+    headers: {
+      ...JSON_HEADERS,
+      "x-device-id": device.deviceId,
+      "x-challenge-id": sent.challengeId,
+      "x-signature": signature,
+    },
+    payload: BODY,
+  });
+}
+
 describe("POST /v1/devices", () => {
   it("returns a 128-bit deviceId and stores only key and time", async () => {
     const a = await register();
@@ -128,6 +153,31 @@ describe("POST /v1/devices", () => {
       createdAtMs: now,
       push: null,
     });
+  });
+
+  it("registers a known key again without touching its row", async () => {
+    const device = await register();
+    expect((await putToken(device, device)).statusCode).toBe(200);
+    const before = await store.getDevice(device.deviceId);
+    now += 60_000;
+    const again = await app.inject({
+      method: "POST",
+      url: "/v1/devices",
+      headers: JSON_HEADERS,
+      payload: JSON.stringify({ signingPublicKey: device.publicKey }),
+    });
+    expect(again.json<{ deviceId: string }>().deviceId).toBe(device.deviceId);
+    expect(before?.push).toEqual({ platform: "fcm", token: "tok" });
+    expect(await store.getDevice(device.deviceId)).toEqual(before);
+  });
+
+  it("derives the id from the key alone, leaving other devices alone", async () => {
+    const first = await register();
+    const second = await register();
+    expect(second.deviceId).not.toBe(first.deviceId);
+    expect((await store.getDevice(first.deviceId))?.signingPublicKey).toBe(
+      first.publicKey,
+    );
   });
 
   it("answers 400 for a missing, malformed or unparsable body", async () => {
@@ -166,51 +216,16 @@ describe("challenges", () => {
     const device = await register();
     const sent = await challenge(device.deviceId);
     now += CHALLENGE_TTL_MS;
-    const url = `/v1/devices/${device.deviceId}/push-token`;
-    const text = buildSignedText({
-      method: "PUT",
-      url,
-      challengeId: sent.challengeId,
-      nonce: sent.nonce,
-      body: Buffer.from(BODY),
-    });
-    const response = await app.inject({
-      method: "PUT",
-      url,
-      headers: {
-        ...JSON_HEADERS,
-        "x-device-id": device.deviceId,
-        "x-challenge-id": sent.challengeId,
-        "x-signature": device.sign(text),
-      },
-      payload: BODY,
-    });
+    const text = pushText(device, sent);
+    const response = await putRaw(device, sent, device.sign(text));
     expect(response.statusCode).toBe(401);
   });
 
   it("a used one gets 401; a standard base64 signature gets 401", async () => {
     const device = await register();
     const sent = await challenge(device.deviceId);
-    const url = `/v1/devices/${device.deviceId}/push-token`;
-    const send = (signature: string) =>
-      app.inject({
-        method: "PUT",
-        url,
-        headers: {
-          ...JSON_HEADERS,
-          "x-device-id": device.deviceId,
-          "x-challenge-id": sent.challengeId,
-          "x-signature": signature,
-        },
-        payload: BODY,
-      });
-    const text = buildSignedText({
-      method: "PUT",
-      url,
-      challengeId: sent.challengeId,
-      nonce: sent.nonce,
-      body: Buffer.from(BODY),
-    });
+    const send = (signature: string) => putRaw(device, sent, signature);
+    const text = pushText(device, sent);
     const std = Buffer.from(device.sign(text), "base64url").toString("base64");
     expect((await send(std)).statusCode).toBe(401);
     expect((await send(device.sign(text))).statusCode).toBe(401);
@@ -254,17 +269,7 @@ describe("PUT /v1/devices/{id}/push-token", () => {
     const device = await register();
     const sent = await challenge(device.deviceId);
     await store.deleteDevice(device.deviceId);
-    const response = await app.inject({
-      method: "PUT",
-      url: `/v1/devices/${device.deviceId}/push-token`,
-      headers: {
-        ...JSON_HEADERS,
-        "x-device-id": device.deviceId,
-        "x-challenge-id": sent.challengeId,
-        "x-signature": "AAAA",
-      },
-      payload: BODY,
-    });
+    const response = await putRaw(device, sent, "AAAA");
     expect(response.statusCode).toBe(401);
   });
 
