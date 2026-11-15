@@ -42,12 +42,12 @@ async function load(
 }
 
 type PrivacyConsent = Pick<ConsentRepository, "current" | "setCategory"> &
-  Partial<Pick<ConsentRepository, "onSaved" | "onCleared">>;
+  Partial<Pick<ConsentRepository, "onSaved" | "onCleared" | "onChange">>;
 
-function usePrivacy(
-  consent: PrivacyConsent,
-  profiles: Pick<ProfileRepository, "get">,
-) {
+type PrivacyProfiles = Pick<ProfileRepository, "get"> &
+  Partial<Pick<ProfileRepository, "subscribe">>;
+
+function usePrivacy(consent: PrivacyConsent, profiles: PrivacyProfiles) {
   const [view, setView] = useState<Loaded>({ kind: "loading" });
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -61,10 +61,14 @@ function usePrivacy(
     reload();
     const stopSaved = consent.onSaved?.(reload);
     const stopCleared = consent.onCleared?.(reload);
+    const stopChanged = consent.onChange?.(reload);
+    const stopProfile = profiles.subscribe?.(reload);
     return () => {
       active = false;
       stopSaved?.();
       stopCleared?.();
+      stopChanged?.();
+      stopProfile?.();
     };
   }, [consent, profiles]);
 
@@ -95,7 +99,7 @@ export function PrivacySettings({
   profiles,
 }: {
   consent: PrivacyConsent;
-  profiles: Pick<ProfileRepository, "get">;
+  profiles: PrivacyProfiles;
 }) {
   const { view, failed, change } = usePrivacy(consent, profiles);
 
