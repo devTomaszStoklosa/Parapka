@@ -4,20 +4,25 @@ import { buildApp } from "./app.js";
 import { loggerOptions } from "./logging.js";
 import { MemoryStore } from "./store/memory-store.js";
 
+function loggedApp() {
+  const lines: string[] = [];
+  const stream = new Writable({
+    write(chunk: Buffer, _encoding, done) {
+      lines.push(chunk.toString("utf8"));
+      done();
+    },
+  });
+  const app = buildApp({
+    store: new MemoryStore(),
+    clock: { nowMs: () => 0 },
+    logger: loggerOptions(stream),
+  });
+  return { app, lines };
+}
+
 describe("request log", () => {
   it("holds no envelope content, signature, push token or IP", async () => {
-    const lines: string[] = [];
-    const stream = new Writable({
-      write(chunk: Buffer, _encoding, done) {
-        lines.push(chunk.toString("utf8"));
-        done();
-      },
-    });
-    const app = buildApp({
-      store: new MemoryStore(),
-      clock: { nowMs: () => 0 },
-      logger: loggerOptions(stream),
-    });
+    const { app, lines } = loggedApp();
     await app.inject({
       method: "POST",
       url: "/v1/pairs/p1/envelopes?token=QUERYSECRET",
@@ -52,18 +57,7 @@ describe("request log", () => {
   });
 
   it("holds no body fragment when the JSON is invalid", async () => {
-    const lines: string[] = [];
-    const stream = new Writable({
-      write(chunk: Buffer, _encoding, done) {
-        lines.push(chunk.toString("utf8"));
-        done();
-      },
-    });
-    const app = buildApp({
-      store: new MemoryStore(),
-      clock: { nowMs: () => 0 },
-      logger: loggerOptions(stream),
-    });
+    const { app, lines } = loggedApp();
     const response = await app.inject({
       method: "POST",
       url: "/v1/pairs/p1/envelopes",
@@ -79,18 +73,7 @@ describe("request log", () => {
   });
 
   it("holds no credential of a WebSocket query", async () => {
-    const lines: string[] = [];
-    const stream = new Writable({
-      write(chunk: Buffer, _encoding, done) {
-        lines.push(chunk.toString("utf8"));
-        done();
-      },
-    });
-    const app = buildApp({
-      store: new MemoryStore(),
-      clock: { nowMs: () => 0 },
-      logger: loggerOptions(stream),
-    });
+    const { app, lines } = loggedApp();
     await app.ready();
     await expect(
       app.injectWS(
@@ -115,18 +98,7 @@ describe("request log", () => {
   });
 
   it("logs route patterns, not ids, for devices and invitations", async () => {
-    const lines: string[] = [];
-    const stream = new Writable({
-      write(chunk: Buffer, _encoding, done) {
-        lines.push(chunk.toString("utf8"));
-        done();
-      },
-    });
-    const app = buildApp({
-      store: new MemoryStore(),
-      clock: { nowMs: () => 0 },
-      logger: loggerOptions(stream),
-    });
+    const { app, lines } = loggedApp();
     await app.inject({
       method: "PUT",
       url: "/v1/devices/DEVICE-ID-1/push-token?x=QUERYSECRET",
@@ -156,18 +128,7 @@ describe("request log", () => {
   });
 
   it("logs a fixed marker for an unmatched route", async () => {
-    const lines: string[] = [];
-    const stream = new Writable({
-      write(chunk: Buffer, _encoding, done) {
-        lines.push(chunk.toString("utf8"));
-        done();
-      },
-    });
-    const app = buildApp({
-      store: new MemoryStore(),
-      clock: { nowMs: () => 0 },
-      logger: loggerOptions(stream),
-    });
+    const { app, lines } = loggedApp();
     const response = await app.inject({
       method: "GET",
       url: "/v1/nope/SECRET-ID?x=1",
