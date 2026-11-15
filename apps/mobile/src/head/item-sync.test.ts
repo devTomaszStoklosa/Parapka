@@ -21,6 +21,7 @@ describe("item sync", () => {
         dueDate: "2026-12-24",
         status: "open",
         doneAt: null,
+        linkedChoreId: null,
         shared: true,
       },
     ]);

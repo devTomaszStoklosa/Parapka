@@ -15,6 +15,7 @@ describe("item repository", () => {
       dueDate: null,
       status: "open",
       doneAt: null,
+      linkedChoreId: null,
       shared: false,
     });
     expect(await items.list()).toEqual([item]);

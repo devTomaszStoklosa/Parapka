@@ -59,6 +59,7 @@ describe("the form model", () => {
       assignment: { kind: "person", person: "me" },
       note: "Notka",
       reminder: "07:15",
+      linkedItemId: null,
       shared: true,
     };
     expect(formStateOf(chore, TODAY)).toMatchObject({

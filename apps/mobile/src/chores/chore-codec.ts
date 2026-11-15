@@ -9,7 +9,8 @@ import {
 
 import { isValidNote, isValidReminder } from "./chore-extras";
 
-export type ChoreField = "title" | "rule" | "assignment" | "note" | "reminder";
+export type ChoreField =
+  "title" | "rule" | "assignment" | "note" | "reminder" | "linkedItemId";
 
 /** The ids of the two devices, to turn a `Person` into a device and back. */
 export interface Devices {
@@ -115,38 +116,36 @@ export const isChoreField = (name: string): name is ChoreField =>
   name === "rule" ||
   name === "assignment" ||
   name === "note" ||
-  name === "reminder";
+  name === "reminder" ||
+  name === "linkedItemId";
+
+const isRule = (value: unknown) =>
+  isObject(value) &&
+  RULE_KINDS.includes(value.kind as string) &&
+  passes(() => {
+    validateChoreRule(value as unknown as ChoreRule);
+  });
+
+const isAssignment = (value: unknown) =>
+  isStoredAssignment(value) &&
+  passes(() => {
+    validateAssignment(decodeAssignment(value, { own: null, partner: null }));
+  });
+
+const CHECKS: Record<ChoreField, (value: unknown) => boolean> = {
+  title: (value) =>
+    typeof value === "string" &&
+    passes(() => {
+      validateChoreTitle(value);
+    }),
+  note: isValidNote,
+  reminder: isValidReminder,
+  rule: isRule,
+  assignment: isAssignment,
+  linkedItemId: (value) =>
+    value === null || (typeof value === "string" && value !== ""),
+};
 
 /** True when a value that came from the partner may be kept as the field. */
-export function isValidField(name: ChoreField, value: unknown): boolean {
-  switch (name) {
-    case "title":
-      return (
-        typeof value === "string" &&
-        passes(() => {
-          validateChoreTitle(value);
-        })
-      );
-    case "note":
-      return isValidNote(value);
-    case "reminder":
-      return isValidReminder(value);
-    case "rule":
-      return (
-        isObject(value) &&
-        RULE_KINDS.includes(value.kind as string) &&
-        passes(() => {
-          validateChoreRule(value as unknown as ChoreRule);
-        })
-      );
-    case "assignment":
-      return (
-        isStoredAssignment(value) &&
-        passes(() => {
-          validateAssignment(
-            decodeAssignment(value, { own: null, partner: null }),
-          );
-        })
-      );
-  }
-}
+export const isValidField = (name: ChoreField, value: unknown): boolean =>
+  CHECKS[name](value);

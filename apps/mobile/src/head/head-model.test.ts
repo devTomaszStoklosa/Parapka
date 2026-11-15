@@ -21,6 +21,7 @@ const item = (id: string, changes: Partial<HeadItem> = {}): HeadItem => ({
   dueDate: null,
   status: "open",
   doneAt: null,
+  linkedChoreId: null,
   shared: true,
   carrier: "me",
   ...changes,

@@ -3,17 +3,9 @@ import {
   releaseChore,
   validateAssignment,
   validateChore,
-  type Assignment,
-  type Chore,
-  type ChoreRule,
 } from "@parapka/domain";
 import type { ContentChange } from "@parapka/protocol";
-import {
-  emptyEntityState,
-  isAlive,
-  type Change,
-  type EntityState,
-} from "@parapka/sync";
+import { emptyEntityState, type Change } from "@parapka/sync";
 
 import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
@@ -21,51 +13,25 @@ import type { Identity } from "../identity/identity";
 import type { PairRepository } from "../pairing/pair-repository";
 import type { NextHlc } from "../sync/handler-registry";
 import { validateExtras } from "./chore-extras";
+import { encodeAssignment, type Devices } from "./chore-codec";
 import {
-  decodeAssignment,
-  encodeAssignment,
-  isChoreField,
-  isValidField,
-  type Devices,
-  type StoredAssignment,
-} from "./chore-codec";
+  currentFields,
+  sanitize,
+  toChore,
+  type ChoreInput,
+  type ChoreRecord,
+  type Pending,
+  type StoredChore,
+} from "./chore-record";
 import { createShareableRecordSync } from "./record-sync";
 
 const COLLECTION = "chores";
 const ENTITY = "Chore";
 
-/** A chore as the screens see it; the people are "me" and "partner". */
-export interface StoredChore extends Chore {
-  readonly assignment: Assignment;
-  /** False for a chore that stays on this device (no pair, or the pair ended). */
-  readonly shared: boolean;
-  readonly note: string | null;
-  /** The time of the reminder, `HH:MM`; nothing is scheduled yet. */
-  readonly reminder: string | null;
-}
-
-export interface ChoreInput {
-  readonly title: string;
-  readonly rule: ChoreRule;
-  readonly assignment: Assignment;
-  readonly note?: string | null;
-  readonly reminder?: string | null;
-}
+export type { ChoreInput, StoredChore };
 
 export interface AddOptions {
   readonly private?: boolean;
-}
-
-/** Local changes that have no timestamp yet; the sync stamps them. */
-interface Pending {
-  fields: Record<string, unknown>;
-  life: "delete" | "restore" | null;
-}
-
-interface ChoreRecord {
-  shared: boolean;
-  state: EntityState;
-  pending: Pending;
 }
 
 export interface ChoreRepository {
@@ -134,45 +100,6 @@ function settle(pending: Pending, change: ContentChange) {
   }
 }
 
-/** The change of the partner without the fields that are not valid. */
-function sanitize(change: ContentChange): Change | null {
-  if (change.op !== "upsert") return change as Change;
-  const fields = Object.entries(change.fields).filter(
-    ([name, field]) => isChoreField(name) && isValidField(name, field.value),
-  );
-  if (fields.length === 0) return null;
-  return { ...change, fields: Object.fromEntries(fields) } as Change;
-}
-
-const isAliveNow = ({ state, pending }: ChoreRecord) =>
-  pending.life === null ? isAlive(state) : pending.life === "restore";
-
-/** The fields as they are now: the merged state with the pending edits on top. */
-function currentFields({ state, pending }: ChoreRecord) {
-  const values: Record<string, unknown> = {};
-  for (const [name, field] of Object.entries(state.fields)) {
-    values[name] = field.value;
-  }
-  return { ...values, ...pending.fields };
-}
-
-function toChore(id: string, record: ChoreRecord, devices: Devices) {
-  if (!isAliveNow(record)) return null;
-  const { title, rule, assignment, note, reminder } = currentFields(record);
-  if (title === undefined || rule === undefined || assignment === undefined) {
-    return null;
-  }
-  return {
-    id,
-    title,
-    rule,
-    assignment: decodeAssignment(assignment as StoredAssignment, devices),
-    note: note ?? null,
-    reminder: reminder ?? null,
-    shared: record.shared,
-  } as StoredChore;
-}
-
 interface Deps {
   database: LocalDatabase;
   pairs: Pick<PairRepository, "activePair">;
@@ -239,10 +166,11 @@ function createSyncAccess(access: Access): ChoreRepository["sync"] {
   });
 }
 
-/** The note and the reminder of an input, null when it has none. */
+/** The note, the reminder and the link of an input, null when it has none. */
 const extrasOf = (input: ChoreInput) => ({
   note: input.note ?? null,
   reminder: input.reminder ?? null,
+  linkedItemId: input.linkedItemId ?? null,
 });
 
 export function createChoreRepository(deps: Deps): ChoreRepository {

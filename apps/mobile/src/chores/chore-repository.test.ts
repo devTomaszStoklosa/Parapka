@@ -21,6 +21,7 @@ describe("chore repository", () => {
       ...input,
       note: null,
       reminder: null,
+      linkedItemId: null,
       shared: false,
     });
     expect(await chores.list()).toEqual([added]);

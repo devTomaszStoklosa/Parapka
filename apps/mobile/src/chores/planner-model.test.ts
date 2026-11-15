@@ -30,6 +30,7 @@ const chore = (
   assignment,
   note: null,
   reminder: null,
+  linkedItemId: null,
   shared: true,
 });
 
