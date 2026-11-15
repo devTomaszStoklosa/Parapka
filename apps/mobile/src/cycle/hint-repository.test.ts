@@ -52,6 +52,29 @@ describe("put", () => {
     expect(currentHint(record)).toMatchObject(record.pending.fields ?? {});
   });
 
+  it("keeps one record when two repositories share a database", async () => {
+    const { database, hints } = setup();
+    const other = createHintRepository({ database, newId: () => "other-1" });
+    await Promise.all([
+      hints.put(hint("2026-11-08")),
+      other.put(hint("2026-11-08")),
+    ]);
+    expect(await database.list(HINTS)).toHaveLength(1);
+  });
+
+  it("goes on with the queue after an operation failed", async () => {
+    const { database, hints } = setup();
+    const other = createHintRepository({
+      database,
+      newId: () => {
+        throw new Error("no id");
+      },
+    });
+    await expect(other.put(hint("2026-11-08"))).rejects.toThrow("no id");
+    expect(await hints.put(hint("2026-11-08"))).toBe(true);
+    expect(await database.list(HINTS)).toHaveLength(1);
+  });
+
   it("replaces the version of the day in the same record", async () => {
     const { database, hints } = setup();
     await hints.put(hint("2026-11-08"));

@@ -149,6 +149,19 @@ async function resend(
   }
 }
 
+const queues = new WeakMap<LocalDatabase, Promise<unknown>>();
+
+// Writes of all repositories on one database run one after another, so the
+// read of a day and its write cannot interleave with another instance.
+function exclusive<T>(database: LocalDatabase, task: () => Promise<T>) {
+  const run = (queues.get(database) ?? Promise.resolve()).then(task);
+  queues.set(
+    database,
+    run.catch(() => undefined),
+  );
+  return run;
+}
+
 export function createHintRepository(deps: {
   database: LocalDatabase;
   newId: () => string;
@@ -157,6 +170,27 @@ export function createHintRepository(deps: {
   const { changes, all, write, sync } = createAccess(database);
   const find = async (date: CalendarDate) =>
     (await all()).find(({ record }) => currentHint(record).forDate === date);
+  const putHint = async (hint: GeneratedHint) => {
+    const found = await find(hint.date);
+    if (found && isSame(currentHint(found.record), hint)) return false;
+    const id = found?.id ?? newId();
+    const local = {
+      templateId: hint.templateId,
+      contentVersion: hint.contentVersion,
+    };
+    const record = found?.record ?? emptyRecord(id, true);
+    record.pending.fields = fieldsOf(hint);
+    record.local = local;
+    await write(id, record);
+    return true;
+  };
+  const prune = async (date: CalendarDate) => {
+    const old = (await all()).filter(
+      ({ record }) => currentHint(record).forDate < date,
+    );
+    for (const { id } of old) await database.delete(HINTS, id);
+    if (old.length > 0) changes.notify();
+  };
   return {
     subscribe: changes.subscribe,
     sync,
@@ -164,32 +198,14 @@ export function createHintRepository(deps: {
       const found = await find(date);
       return found ? currentHint(found.record) : null;
     },
-    put: async (hint) => {
-      const found = await find(hint.date);
-      if (found && isSame(currentHint(found.record), hint)) return false;
-      const id = found?.id ?? newId();
-      const local = {
-        templateId: hint.templateId,
-        contentVersion: hint.contentVersion,
-      };
-      const record = found?.record ?? emptyRecord(id, true);
-      record.pending.fields = fieldsOf(hint);
-      record.local = local;
-      await write(id, record);
-      return true;
-    },
+    put: (hint) => exclusive(database, () => putHint(hint)),
     range: async (from, to) =>
       (await all())
         .map(({ record }) => currentHint(record))
         .filter((hint) => hint.forDate >= from && hint.forDate <= to)
         .sort((a, b) => a.forDate.localeCompare(b.forDate)),
-    resendFrom: (date) => resend({ all, write }, date),
-    pruneBefore: async (date) => {
-      const old = (await all()).filter(
-        ({ record }) => currentHint(record).forDate < date,
-      );
-      for (const { id } of old) await database.delete(HINTS, id);
-      if (old.length > 0) changes.notify();
-    },
+    resendFrom: (date) =>
+      exclusive(database, () => resend({ all, write }, date)),
+    pruneBefore: (date) => exclusive(database, () => prune(date)),
   };
 }
