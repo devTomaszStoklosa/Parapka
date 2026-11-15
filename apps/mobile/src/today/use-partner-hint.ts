@@ -35,9 +35,10 @@ async function read(hints: Hints, profile: Profile): Promise<PartnerHintState> {
     received.history(),
     profile.get(),
   ]);
-  if (today === null && history.length === 0) return null;
   const hint = today?.status === "scheduled" ? today : null;
   const past = history.filter(({ status }) => status !== "skipped");
+  // A skipped hint without a shown history looks like a pause: no card.
+  if (hint === null && past.length === 0) return null;
   const [reaction, found] = await Promise.all([
     hint === null ? null : reactions.get(hint.id),
     reactions.getMany(past.map(({ id }) => id)),

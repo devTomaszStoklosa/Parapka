@@ -52,7 +52,8 @@ function Hint(props: {
 /**
  * The hint of the partner for today (FR-CYC-11). A day without a hint, a
  * skipped hint and a pause look the same (FR-CYC-07, FR-PAIR-06). Without
- * any received hint there is no card.
+ * a hint for today and without a shown hint of the days before (the skipped
+ * ones are not shown) there is no card.
  */
 export function PartnerHintCard() {
   const { state, failed, react } = usePartnerHint(usePlatform());
