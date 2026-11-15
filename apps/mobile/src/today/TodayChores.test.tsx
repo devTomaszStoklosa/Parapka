@@ -55,7 +55,7 @@ describe("the chores of today", () => {
     expect(screen.getByText(pl.planner.todo)).toBeTruthy();
   });
 
-  it("has no \"to do\" section without overdue occurrences", async () => {
+  it('has no "to do" section without overdue occurrences', async () => {
     const { platform, chores } = await setup(true);
     await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
     show(platform);

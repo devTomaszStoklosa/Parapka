@@ -22,7 +22,13 @@ function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
     filter: "all",
   });
   const { partnerName, deviceId, paired } = data;
-  const open = { partnerName, deviceId, paired, actions, onOpen: onOpenPlanner };
+  const open = {
+    partnerName,
+    deviceId,
+    paired,
+    actions,
+    onOpen: onOpenPlanner,
+  };
   const renderRows = (list: typeof rows) =>
     list.map((row) => <PlannerRow key={row.key} row={row} {...open} />);
   return (
