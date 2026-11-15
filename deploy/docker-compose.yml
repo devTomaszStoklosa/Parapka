@@ -1,5 +1,5 @@
 # Relay and web behind Caddy. Run from this directory with a `.env` file
-# (copy `.env.example`).
+# (`cp env.example .env`).
 services:
   relay:
     build:

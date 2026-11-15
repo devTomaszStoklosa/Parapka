@@ -9,7 +9,8 @@ Jeden serwer, jedna domena: Caddy (automatyczny HTTPS) serwuje wersję web i prz
    - Shape: **VM.Standard.A1.Flex** (ARM64, Ampere), np. 2 OCPU / 12 GB RAM.
    - Obraz: **Ubuntu 24.04** (aarch64).
    - Dodaj swój klucz publiczny SSH.
-3. Zapisz publiczny adres IP instancji (dalej `<IP>`). Warto zamienić go na rezerwowany (Networking → Reserved public IPs), żeby nie zmieniał się po wyłączeniu instancji.
+3. Instancje A1.Flex bywają niedostępne (błąd „Out of capacity"). Ponów próbę później albo wybierz inną domenę dostępności (Availability Domain).
+4. Zapisz publiczny adres IP instancji (dalej `<IP>`). Warto zamienić go na rezerwowany (Networking → Reserved public IPs), żeby nie zmieniał się po wyłączeniu instancji.
 
 ## 2. Porty 80 i 443
 
@@ -25,7 +26,7 @@ Domyślnie Oracle blokuje ruch w dwóch miejscach.
    sudo netfilter-persistent save
    ```
 
-   Numer pozycji (`6`) sprawdź przez `sudo iptables -L INPUT --line-numbers`: reguły muszą stać przed `REJECT`.
+   Numer pozycji (`6`) sprawdź przez `sudo iptables -L INPUT --line-numbers`: reguły muszą stać przed `REJECT`. Zapisz je (`netfilter-persistent save`) przed instalacją Dockera (krok 4). Porty publikowane przez Dockera idą przez łańcuch FORWARD, w który Docker sam wstawia swoje reguły, więc po instalacji Dockera nie zapisuj reguł ponownie.
 
 ## 3. Domena
 
@@ -39,7 +40,7 @@ curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker "$USER"   # wyloguj się i zaloguj ponownie
 git clone <adres-repozytorium> Parapka
 cd Parapka/deploy
-cp .env.example .env
+cp env.example .env
 ```
 
 W `.env` ustaw `PARAPKA_DOMAIN` na swoją domenę. `RELAY_ALLOWED_ORIGINS` ma wskazywać ten sam adres (`https://<domena>`). W pliku nie ma sekretów.
@@ -48,26 +49,34 @@ W `.env` ustaw `PARAPKA_DOMAIN` na swoją domenę. `RELAY_ALLOWED_ORIGINS` ma ws
 
 Adres relaya wchodzi do aplikacji przy budowaniu (`EXPO_PUBLIC_RELAY_URL`). Wynik musi trafić do `deploy/web`.
 
-Na serwerze (wymaga Node ≥ 22):
+Na serwerze, w kontenerze (bez instalowania Node na hoście; Ubuntu 24.04 ma w repozytorium starszy Node):
 
 ```bash
 cd ~/Parapka
-npm ci
-EXPO_PUBLIC_RELAY_URL=https://<domena> npm run web:build -w @parapka/mobile
-mkdir -p deploy/web && cp -r apps/mobile/dist/. deploy/web/
+mkdir -p deploy/web
+docker run --rm -v "$PWD":/app -w /app -e EXPO_PUBLIC_RELAY_URL=https://<domena> node:22 \
+  sh -c "npm ci && npm run web:build -w @parapka/mobile"
+cp -r apps/mobile/dist/. deploy/web/
 ```
+
+Zamiast kontenera możesz zainstalować Node 22, np. przez NodeSource.
 
 Albo lokalnie, a potem kopia:
 
 ```bash
+npm ci
 EXPO_PUBLIC_RELAY_URL=https://<domena> npm run web:build -w @parapka/mobile
+ssh ubuntu@<IP> mkdir -p Parapka/deploy/web
 scp -r apps/mobile/dist/. ubuntu@<IP>:Parapka/deploy/web/
 ```
 
 ## 6. Uruchomienie i sprawdzenie
 
+Katalog `deploy/web` musi istnieć przed `docker compose up` (krok 5). Inaczej Docker utworzy pusty katalog należący do roota.
+
 ```bash
 cd ~/Parapka/deploy
+mkdir -p web
 docker compose up -d --build
 docker compose ps
 curl https://<domena>/health      # {"status":"ok"}
