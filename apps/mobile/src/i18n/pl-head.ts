@@ -54,6 +54,15 @@ export const plHead = {
     bar: "Tydzień {number}: Ty {me}%, {name} {partner}%",
     barEmpty: "Tydzień {number}: brak rzeczy",
   },
+  dump: {
+    open: "Zrzut głowy",
+    title: "Wpisz, co masz w głowie",
+    done: "Gotowe",
+    offer:
+      "Na początek spróbujcie zrzutu głowy: wpisz pod rząd wszystko, co nosisz w głowie.",
+    start: "Zacznij",
+    later: "Nie teraz",
+  },
   add: {
     title: "Co masz w głowie?",
     submit: "Dodaj",

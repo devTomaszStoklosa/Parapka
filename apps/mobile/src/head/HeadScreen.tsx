@@ -10,7 +10,7 @@ import { HeadArchive } from "./HeadArchive";
 import { HeadRow } from "./HeadRow";
 import { SplitCard } from "./SplitCard";
 import { TrendChart } from "./TrendChart";
-import { QuickAdd } from "./QuickAdd";
+import { HeadCapture } from "./HeadCapture";
 import { useHandover, type HandoverData } from "./use-handover";
 import type { HeadItem } from "./head-service";
 import { useHead, type HeadData } from "./use-head";
@@ -80,7 +80,7 @@ export function HeadScreen() {
   const archive = archivedItems(state.items);
   return (
     <Screen>
-      <QuickAdd paired={state.paired} partnerName={state.partnerName} />
+      <HeadCapture paired={state.paired} partnerName={state.partnerName} />
       {failed ? (
         <AppText accessibilityRole="alert">{t("head.actions.failed")}</AppText>
       ) : null}
