@@ -47,8 +47,20 @@ const ownerOf = (id: string) => id.split("|", 1).join("");
 
 export function createSharePrivateService(deps: Deps): SharePrivateService {
   const { database, consent } = deps;
-  const isDone = async () => (await database.get(COLLECTION, ID)) !== null;
-  const finish = () => database.put(COLLECTION, ID, { done: true });
+  // The answer counts for the current pairing only (FR-PAIR-08, FR-SEC-06).
+  const currentPair = async () =>
+    (await deps.pairs.activePair())?.pairMailboxId ?? null;
+  const isDone = async () => {
+    const stored = (await database.get(COLLECTION, ID)) as {
+      pairMailboxId?: string;
+    } | null;
+    return stored !== null && stored.pairMailboxId === (await currentPair());
+  };
+  const finish = async () =>
+    database.put(COLLECTION, ID, {
+      done: true,
+      pairMailboxId: await currentPair(),
+    });
   // Only the categories the person shares are offered.
   const privateOnes = async () => ({
     chores: (await consent.isShared("SHARED_CHORES"))
@@ -63,7 +75,10 @@ export function createSharePrivateService(deps: Deps): SharePrivateService {
       if ((await deps.pairs.activePair()) === null) return null;
       if (!(await consent.canSync()) || (await isDone())) return null;
       const found = await privateOnes();
-      return found.chores.length + found.items.length === 0 ? null : found;
+      if (found.chores.length + found.items.length > 0) return found;
+      // Nothing to hand over now: later private records are chosen on purpose.
+      await finish();
+      return null;
     },
     share: async (choreIds, itemIds) => {
       const found = await privateOnes();

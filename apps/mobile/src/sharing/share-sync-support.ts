@@ -13,6 +13,7 @@ import {
   type SyncHandler,
 } from "../sync/handler-registry";
 import { createPairedDevices, type Device } from "../sync/sync-test-support";
+import type { PairRepository } from "../pairing/pair-repository";
 import { createSharePrivateService } from "./share-private";
 
 export { exchange } from "../chores/chore-test-support";
@@ -21,6 +22,8 @@ interface Overrides {
   readonly canSync?: () => Promise<boolean>;
   readonly shared?: (category: ConsentCategory) => boolean;
   readonly paired?: boolean;
+  /** Replaces the mailbox of the active pair, to stand for a new pairing. */
+  readonly mailbox?: () => string;
 }
 
 /** Wraps a handler so that the entities it sends are noted in `sent`. */
@@ -31,6 +34,24 @@ function noting(handler: SyncHandler, sent: string[]): SyncHandler {
       const changes = await handler.collect(nextHlc);
       sent.push(...changes.map(({ entity }) => entity));
       return changes;
+    },
+  };
+}
+
+/** The pair the service sees: absent, or with the mailbox of a new pairing. */
+function sharingPairs(
+  pairs: Pick<PairRepository, "activePair">,
+  overrides: Overrides,
+): Pick<PairRepository, "activePair"> {
+  if (overrides.paired === false) {
+    return { activePair: () => Promise.resolve(null) };
+  }
+  return {
+    activePair: async () => {
+      const pair = await pairs.activePair();
+      return pair && overrides.mailbox
+        ? { ...pair, pairMailboxId: overrides.mailbox() }
+        : pair;
     },
   };
 }
@@ -66,10 +87,7 @@ export function withSharing(device: Device, overrides: Overrides = {}) {
   device.restart({ registry });
   const service = createSharePrivateService({
     database,
-    pairs:
-      overrides.paired === false
-        ? { activePair: () => Promise.resolve(null) }
-        : pairs,
+    pairs: sharingPairs(pairs, overrides),
     consent: {
       canSync: overrides.canSync ?? (() => Promise.resolve(true)),
       isShared: (category) =>

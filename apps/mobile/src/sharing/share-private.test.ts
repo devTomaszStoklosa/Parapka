@@ -65,4 +65,21 @@ describe("the question about private records", () => {
     expect(chores).toMatchObject([{ shared: true }]);
     expect((await pair.ua.items.list())[0]?.shared).toBe(false);
   });
+
+  it("is settled at the first check, even when nothing is private", async () => {
+    const pair = await setupSharePair();
+    expect(await pair.ua.service.candidates()).toBeNull();
+    await seedPrivate(pair.ua);
+    expect(await pair.ua.service.candidates()).toBeNull();
+  });
+
+  it("asks again after a new pairing, not for the same pair", async () => {
+    let mailbox = "first";
+    const pair = await setupSharePair({ mailbox: () => mailbox });
+    await seedPrivate(pair.ua);
+    await pair.ua.service.skip();
+    expect(await pair.ua.service.candidates()).toBeNull();
+    mailbox = "second";
+    expect(await pair.ua.service.candidates()).not.toBeNull();
+  });
 });
