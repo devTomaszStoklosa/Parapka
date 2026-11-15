@@ -79,6 +79,21 @@ it("shows no forecast marks without a forecast", () => {
   expect(screen.getByLabelText("28 listopada")).toBeTruthy();
 });
 
+it("keeps the month name on its own line above the labelled buttons", () => {
+  show(true);
+  const name = screen.getByRole("heading", { name: "listopad 2026" });
+  const previous = screen.getByRole("button", {
+    name: pl.cycle.calendar.previous,
+  });
+  expect(previous.textContent).toBe("‹");
+  expect(
+    screen.getByRole("button", { name: pl.cycle.calendar.next }).textContent,
+  ).toBe("›");
+  expect(
+    name.compareDocumentPosition(previous) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
 it("scrolls over the end of the year in both directions", () => {
   show(true, "2026-12-10");
   expect(screen.getByText("grudzień 2026")).toBeTruthy();
