@@ -42,7 +42,7 @@ async function open(given: boolean) {
     clock: { nowMs: () => time.now },
     profiles,
   });
-  return Object.assign(consent, { another });
+  return Object.assign(consent, { another, profiles });
 }
 
 it("says the consent comes after pairing when there is none", async () => {
@@ -162,4 +162,75 @@ it("shows the pairing note after the consent is cleared by another instance, and
     await Promise.resolve();
   });
   expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
+});
+
+const hints = () =>
+  screen.queryByRole("checkbox", { name: c.categories.CYCLE_HINTS.title });
+
+it("shows the cycle hints switch right after the cycle panel is turned on, and hides it when turned off", async () => {
+  const consent = await open(true);
+  const save = async (cycle: Profile["cycle"]) => {
+    await act(async () => {
+      await consent.profiles.save({
+        cycle,
+        shareGoalsWithPartner: false,
+      } as Profile);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  };
+  expect(hints()).not.toBeNull();
+  await save("no");
+  expect(hints()).toBeNull();
+  await save("yes");
+  expect(hints()?.getAttribute("aria-checked")).toBe("false");
+});
+
+it("refreshes the switches when a category is changed elsewhere", async () => {
+  const consent = await open(true);
+  const checkin = screen.getByRole("checkbox", {
+    name: c.categories.CHECKIN.title,
+  });
+  expect(checkin.getAttribute("aria-checked")).toBe("false");
+  await act(async () => {
+    await consent.setCategory("CHECKIN", true);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(
+    screen
+      .getByRole("checkbox", { name: c.categories.CHECKIN.title })
+      .getAttribute("aria-checked"),
+  ).toBe("true");
+});
+
+it("stops listening to the consent and the profile when unmounted", async () => {
+  const database = createMemoryDatabase();
+  const profiles = createProfileRepository(database);
+  const stopChanged = vi.fn();
+  const stopProfile = vi.fn();
+  const consent = {
+    current: () => Promise.resolve(undefined),
+    setCategory: vi.fn(),
+    onChange: () => stopChanged,
+  };
+  const watched = {
+    get: () => profiles.get(),
+    subscribe: () => stopProfile,
+  };
+  let view: ReturnType<typeof render> | undefined;
+  await act(async () => {
+    view = render(
+      <PrivacySettings
+        consent={
+          consent as unknown as Parameters<typeof PrivacySettings>[0]["consent"]
+        }
+        profiles={watched}
+      />,
+    );
+    await Promise.resolve();
+  });
+  view?.unmount();
+  expect(stopChanged).toHaveBeenCalledOnce();
+  expect(stopProfile).toHaveBeenCalledOnce();
 });
