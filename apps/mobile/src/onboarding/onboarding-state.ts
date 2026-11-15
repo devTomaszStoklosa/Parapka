@@ -118,7 +118,7 @@ function childrenValid(draft: Draft): boolean {
   return count !== null && count >= 1 && count <= MAX_CHILDREN;
 }
 
-function cycleSettingsOf(draft: Draft): CycleSettings | null {
+export function cycleSettingsOf(draft: Draft): CycleSettings | null {
   if (draft.cycleUnknown) return UNKNOWN_CYCLE_SETTINGS;
   return parseCycleSettings(
     {

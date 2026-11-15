@@ -15,6 +15,17 @@ export const plCycle = {
     luteal: "Faza lutealna",
     premenstrual: "Faza przedmiesiączkowa",
   },
+  panel: {
+    title: "Panel cyklu",
+    enable: "Włącz panel cyklu",
+    save: "Zapisz i włącz",
+    cancel: "Anuluj",
+    disable: "Wyłącz panel cyklu",
+    confirm:
+      "Usunąć z tego telefonu daty miesiączek, wpisy samopoczucia i wskazówki? Partner przestanie widzieć Twoje wskazówki.",
+    confirmDisable: "Usuń i wyłącz",
+    failed: "Nie udało się. Spróbuj jeszcze raz.",
+  },
   disclaimer: { button: "Ważne: to nie jest narzędzie medyczne" },
   calendar: {
     previous: "Poprzedni miesiąc",

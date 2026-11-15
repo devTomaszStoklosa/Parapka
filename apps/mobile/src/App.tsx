@@ -32,6 +32,23 @@ function Message({ text }: { text: TranslationKey }) {
 
 type ProfileState = Profile | null | undefined | "failed";
 
+/** The saved profile, read again after every save (the cycle panel is turned on and off in the settings). */
+function useProfile(database: Platform["database"]) {
+  const [profile, setProfile] = useState<ProfileState>();
+  useEffect(() => {
+    // The database opens lazily: a failed key or migration shows up here.
+    const profiles = createProfileRepository(database);
+    const load = () => {
+      profiles.get().then(setProfile, () => {
+        setProfile("failed");
+      });
+    };
+    load();
+    return profiles.subscribe(load);
+  }, [database]);
+  return [profile, setProfile] as const;
+}
+
 /**
  * Onboarding until a profile is saved, then the tabs (FR-ONB-06: no pair
  * needed). The lock gate is mounted anew when the PIN decision changes, to load
@@ -40,22 +57,13 @@ type ProfileState = Profile | null | undefined | "failed";
  */
 function Session({ platform }: { platform: Platform }) {
   const { database } = platform;
-  const [profile, setProfile] = useState<ProfileState>();
+  const [profile, setProfile] = useProfile(database);
   const [onboarded, setOnboarded] = useState(false);
   // The invitation text of an opened /pair link waits here until onboarding
   // and the PIN are done.
   const [invitation, setInvitation] = useState(
     () => platform.launchInvitation?.() ?? null,
   );
-
-  useEffect(() => {
-    // The database opens lazily: a failed key or migration shows up here.
-    createProfileRepository(database)
-      .get()
-      .then(setProfile, () => {
-        setProfile("failed");
-      });
-  }, [database]);
 
   if (profile === undefined) return <Message text="app.loading" />;
   if (profile === "failed") return <Message text="app.error" />;
