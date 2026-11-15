@@ -6,6 +6,7 @@ import { wireHead } from "./wiring";
 /** What the buttons of a row do; each one gets the id of the item. */
 export interface HeadActions {
   readonly onTakeOver: (itemId: string) => void;
+  readonly onConvert: (itemId: string) => void;
   readonly onDone: (itemId: string) => void;
   readonly onRequest: (itemId: string) => void;
   readonly onAccept: (requestId: string) => void;
@@ -14,7 +15,7 @@ export interface HeadActions {
 
 /** The row buttons call the services; a rejection only sets `failed`. */
 export function useHeadActions(platform: Platform) {
-  const { head, items, handover } = useMemo(
+  const { head, items, handover, convert } = useMemo(
     () => wireHead(platform),
     [platform],
   );
@@ -33,6 +34,9 @@ export function useHeadActions(platform: Platform) {
   const actions: HeadActions = {
     onTakeOver: (itemId) => {
       attempt(head.takeOver(itemId));
+    },
+    onConvert: (itemId) => {
+      attempt(convert(itemId));
     },
     onDone: (itemId) => {
       attempt(items.complete(itemId));

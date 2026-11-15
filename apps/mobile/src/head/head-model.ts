@@ -42,6 +42,10 @@ export const canRequestHandover = (item: HeadItem, paired: boolean) =>
   item.shared &&
   (item.carrier === "me" || item.carrier === "both");
 
+/** "Turn into a chore" is offered for an open item that has no chore yet. */
+export const canConvert = (item: HeadItem) =>
+  item.status === "open" && item.linkedChoreId === null;
+
 /** The details of an archived row: the category and the day it was closed. */
 export const archiveLines = (item: HeadItem) => [
   t(`head.categories.${item.category}`),
@@ -77,6 +81,7 @@ export function detailLines(item: HeadItem, partnerName: string | null) {
     ...(item.dueDate === null
       ? []
       : [t("head.due", { date: formatDate(item.dueDate) })]),
+    ...(item.linkedChoreId === null ? [] : [t("head.inPlanner")]),
   ];
 }
 

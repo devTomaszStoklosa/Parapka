@@ -16,8 +16,9 @@ const whoText = (row: Row, partnerName: string | null) =>
     ? partnerName
     : t(`planner.responsible.${row.responsible}`);
 
-/** The reminder and the note of the row, as lines of the muted text. */
+/** The origin, the reminder and the note of the row, as lines of the muted text. */
 const extraLines = (row: Row) => [
+  ...(row.fromHead ? [t("planner.actions.fromHead")] : []),
   ...(row.reminder === null
     ? []
     : [t("planner.actions.reminder", { time: row.reminder })]),
