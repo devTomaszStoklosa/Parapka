@@ -101,3 +101,22 @@ it("has no card of the own hint without the cycle panel", async () => {
   expect(screen.queryByText(pl.cycle.ownHint.title)).toBeNull();
   expect(screen.queryByText("Własna wskazówka")).toBeNull();
 });
+
+it("shows the pause switch under the check-in card with a pair", async () => {
+  const { platform } = await setupCheckin(true);
+  showToday(platform);
+  await waitFor(() => {
+    const text = document.body.textContent;
+    expect(text).toContain(pl.pause.hint);
+    expect(text.indexOf(pl.pause.hint)).toBeGreaterThan(
+      text.indexOf(pl.checkin.form.save),
+    );
+  });
+});
+
+it("has no pause switch without a pair", async () => {
+  const { platform } = await setupCheckin(false);
+  showToday(platform);
+  await screen.findByText(pl.checkin.card.noPair);
+  expect(screen.queryByText(pl.pause.hint)).toBeNull();
+});

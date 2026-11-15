@@ -6,10 +6,11 @@ import { AppText } from "../ui/AppText";
 import { spacing } from "../ui/theme";
 import { OwnHintCard } from "./OwnHintCard";
 import { PartnerHintCard } from "./PartnerHintCard";
+import { TodayPause } from "./TodayPause";
 
 /**
  * The "Today" tab: the hint of the partner, the preview of the own hint and
- * the check-in card. The own hint shows only with the cycle panel, i.e. when
+ * the check-in card and the pause switch. The own hint shows only with the cycle panel, i.e. when
  * `onOpenCycle` (the switch to the "Cycle" tab) is given.
  */
 export function TodayScreen({ onOpenCycle }: { onOpenCycle?: () => void }) {
@@ -24,6 +25,7 @@ export function TodayScreen({ onOpenCycle }: { onOpenCycle?: () => void }) {
       <PartnerHintCard />
       {onOpenCycle ? <OwnHintCard onOpenCycle={onOpenCycle} /> : null}
       <CheckinCard />
+      <TodayPause />
     </ScrollView>
   );
 }
