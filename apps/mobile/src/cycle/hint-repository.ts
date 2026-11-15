@@ -15,6 +15,7 @@ import {
   settle,
   stampPending,
   toMerge,
+  type HintStatus,
   type Pending,
   type SentHint,
 } from "./hint-codec";
@@ -46,6 +47,17 @@ export interface HintRepository {
    * save. Returns false and writes nothing when template and text are the same.
    */
   put(hint: GeneratedHint): Promise<boolean>;
+  /**
+   * Replaces template, text and category in the record of the day, keeping its
+   * `id`, and sets the status to scheduled. Returns false and writes nothing
+   * without a record of the day or when nothing would change.
+   */
+  replace(hint: GeneratedHint): Promise<boolean>;
+  /**
+   * Sets the status of the hint of the day. Returns false and writes nothing
+   * without a record of the day or when the status is the same.
+   */
+  setStatus(date: CalendarDate, status: HintStatus): Promise<boolean>;
   /** The hints from `from` to `to` inclusive, the oldest first. */
   range(from: CalendarDate, to: CalendarDate): Promise<StoredHint[]>;
   /** Removes the records of the days before `date`, without a tombstone. */
@@ -162,6 +174,70 @@ function exclusive<T>(database: LocalDatabase, task: () => Promise<T>) {
   return run;
 }
 
+type Found = { id: string; record: HintRecord } | undefined;
+
+/** Writes the new fields and local part of the record of `date`, if they differ. */
+async function change(
+  access: {
+    find: (date: CalendarDate) => Promise<Found>;
+    write: (id: string, record: HintRecord) => Promise<void>;
+  },
+  fields: SentHint,
+  local: Local,
+) {
+  const found = await access.find(fields.forDate);
+  if (!found) return false;
+  const current = currentHint(found.record);
+  const { templateId, contentVersion } = local;
+  const same =
+    templateId === current.templateId &&
+    (Object.keys(fields) as (keyof SentHint)[]).every(
+      (name) => fields[name] === current[name],
+    );
+  if (same) return false;
+  found.record.pending.fields = fields;
+  found.record.local = { templateId, contentVersion };
+  await access.write(found.id, found.record);
+  return true;
+}
+
+type Access = Parameters<typeof change>[0];
+
+async function withStatus(
+  access: Access,
+  date: CalendarDate,
+  status: HintStatus,
+) {
+  const found = await access.find(date);
+  if (!found) return false;
+  const { forDate, text, category, templateId, contentVersion } = currentHint(
+    found.record,
+  );
+  return change(
+    access,
+    { forDate, text, category, status },
+    { templateId, contentVersion },
+  );
+}
+
+async function putHint(
+  access: Access,
+  newId: () => string,
+  hint: GeneratedHint,
+) {
+  const found = await access.find(hint.date);
+  if (found && isSame(currentHint(found.record), hint)) return false;
+  const id = found?.id ?? newId();
+  const record = found?.record ?? emptyRecord(id, true);
+  record.pending.fields = fieldsOf(hint);
+  record.local = {
+    templateId: hint.templateId,
+    contentVersion: hint.contentVersion,
+  };
+  await access.write(id, record);
+  return true;
+}
+
 export function createHintRepository(deps: {
   database: LocalDatabase;
   newId: () => string;
@@ -170,19 +246,9 @@ export function createHintRepository(deps: {
   const { changes, all, write, sync } = createAccess(database);
   const find = async (date: CalendarDate) =>
     (await all()).find(({ record }) => currentHint(record).forDate === date);
-  const putHint = async (hint: GeneratedHint) => {
-    const found = await find(hint.date);
-    if (found && isSame(currentHint(found.record), hint)) return false;
-    const id = found?.id ?? newId();
-    const local = {
-      templateId: hint.templateId,
-      contentVersion: hint.contentVersion,
-    };
-    const record = found?.record ?? emptyRecord(id, true);
-    record.pending.fields = fieldsOf(hint);
-    record.local = local;
-    await write(id, record);
-    return true;
+  const forDate = async (date: CalendarDate) => {
+    const found = await find(date);
+    return found ? currentHint(found.record) : null;
   };
   const prune = async (date: CalendarDate) => {
     const old = (await all()).filter(
@@ -194,11 +260,18 @@ export function createHintRepository(deps: {
   return {
     subscribe: changes.subscribe,
     sync,
-    forDate: async (date) => {
-      const found = await find(date);
-      return found ? currentHint(found.record) : null;
-    },
-    put: (hint) => exclusive(database, () => putHint(hint)),
+    forDate,
+    put: (hint) =>
+      exclusive(database, () => putHint({ find, write }, newId, hint)),
+    replace: (hint) =>
+      exclusive(database, () =>
+        change({ find, write }, fieldsOf(hint), {
+          templateId: hint.templateId,
+          contentVersion: hint.contentVersion,
+        }),
+      ),
+    setStatus: (date, status) =>
+      exclusive(database, () => withStatus({ find, write }, date, status)),
     range: async (from, to) =>
       (await all())
         .map(({ record }) => currentHint(record))

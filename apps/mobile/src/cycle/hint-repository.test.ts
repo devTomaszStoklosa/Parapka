@@ -210,3 +210,38 @@ describe("resendFrom", () => {
     });
   });
 });
+
+describe("replace and setStatus", () => {
+  it("replaces the content in the same record and schedules it again", async () => {
+    const { database, hints } = setup();
+    await hints.put(hint("2026-11-08"));
+    await hints.setStatus("2026-11-08", "skipped");
+    expect(await hints.replace(hint("2026-11-08", "b", "inny"))).toBe(true);
+    const [stored] = await database.list(HINTS);
+    const record = stored?.value as unknown as HintRecord;
+    expect(stored?.id).toBe("id-1");
+    expect(record.pending.fields).toEqual({
+      forDate: "2026-11-08",
+      text: "inny",
+      category: "relief",
+      status: "scheduled",
+    });
+    expect(record.local.templateId).toBe("b");
+    expect(await database.list(HINTS)).toHaveLength(1);
+  });
+
+  it("writes nothing without a record or without a change", async () => {
+    const { hints } = setup();
+    expect(await hints.replace(hint("2026-11-08"))).toBe(false);
+    expect(await hints.setStatus("2026-11-08", "skipped")).toBe(false);
+    await hints.put(hint("2026-11-08"));
+    expect(await hints.replace(hint("2026-11-08"))).toBe(false);
+    expect(await hints.setStatus("2026-11-08", "scheduled")).toBe(false);
+    expect(await hints.setStatus("2026-11-08", "skipped")).toBe(true);
+    expect(await hints.forDate("2026-11-08")).toMatchObject({
+      status: "skipped",
+      templateId: "a",
+      text: "text",
+    });
+  });
+});

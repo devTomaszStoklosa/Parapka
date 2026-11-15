@@ -1,5 +1,12 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { defaultConsent } from "../consent/consent-model";
@@ -147,4 +154,73 @@ it("says so when the hints did not load and does not crash", async () => {
   await waitFor(() => {
     expect(screen.queryByRole("button", { name: c.openCycle })).toBeNull();
   });
+});
+
+/** A phone with a period and a saved hint for today (2026-11-11). */
+async function phoneWithHint() {
+  const platform = await phone(true);
+  await wireCycleHints(platform).hints.put(hintAt("2026-11-11", "Dzisiejsza"));
+  await wireCycle(platform).savePeriod({
+    id: "p1",
+    startDate: "2026-11-01",
+    endDate: null,
+  });
+  return platform;
+}
+
+it("skips the hint of today, tells so and brings it back", async () => {
+  showCard(await phoneWithHint());
+  await press(c.skip, "button");
+  expect(await screen.findByText(c.skipped)).toBeTruthy();
+  expect(screen.getByText(c.none)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: c.skip })).toBeNull();
+  await press(c.restore, "button");
+  expect(await screen.findByText("Dzisiejsza")).toBeTruthy();
+  expect(screen.queryByText(c.skipped)).toBeNull();
+});
+
+it("lets choose one of the candidates and sends it", async () => {
+  const platform = await phoneWithHint();
+  const [, second] =
+    await wireCycleHints(platform).choice.candidates("2026-11-11");
+  showCard(platform);
+  await press(c.chooseOther, "button");
+  expect(
+    await screen.findByRole("radiogroup", { name: c.candidates }),
+  ).toBeTruthy();
+  expect(screen.getAllByRole("radio")).toHaveLength(3);
+  expect(
+    screen.getByRole("button", { name: c.send }).hasAttribute("disabled"),
+  ).toBe(true);
+  await press(second?.text ?? "", "radio");
+  await press(c.send, "button");
+  await waitFor(() => {
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+  });
+  expect(screen.getAllByText(second?.text ?? "")).toHaveLength(1);
+  expect(screen.queryByText("Dzisiejsza")).toBeNull();
+});
+
+it("has no actions without a hint of today", async () => {
+  showCard(await phone(true));
+  await screen.findByText(c.none);
+  expect(screen.queryByRole("button", { name: c.skip })).toBeNull();
+  expect(screen.queryByRole("button", { name: c.chooseOther })).toBeNull();
+});
+
+it("shows a message and stays alive when a write or a choice fails", async () => {
+  const platform = await phoneWithHint();
+  const { choice } = wireCycleHints(platform);
+  vi.spyOn(choice, "skip").mockRejectedValue(new Error("broken"));
+  vi.spyOn(choice, "choose").mockResolvedValue(false);
+  showCard(platform);
+  await press(c.skip, "button");
+  expect((await screen.findByRole("alert")).textContent).toBe(c.actionFailed);
+  await press(c.chooseOther, "button");
+  await waitFor(() => {
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+  fireEvent.click((await screen.findAllByRole("radio"))[0] as HTMLElement);
+  await press(c.send, "button");
+  expect((await screen.findByRole("alert")).textContent).toBe(c.actionFailed);
 });
