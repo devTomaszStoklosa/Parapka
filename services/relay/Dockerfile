@@ -18,6 +18,7 @@ COPY services/relay/package.json services/relay/
 # tsx is a devDependency of the relay, so dev dependencies stay installed.
 RUN npm ci --ignore-scripts -w @parapka/relay
 
+COPY tsconfig.json ./
 COPY packages/domain packages/domain
 COPY packages/protocol packages/protocol
 COPY services/relay services/relay
