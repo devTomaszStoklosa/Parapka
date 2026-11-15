@@ -11,10 +11,12 @@ import { createProfileRepository } from "../data/profile-repository";
 import type { ProfileRepository } from "../data/profile-repository";
 import type { Platform } from "../platform/context";
 import { loadContent } from "./content";
+import { isFeedbackDue } from "./hint-feedback-due";
+import type { HintFeedbackRepository } from "./hint-feedback-repository";
 import type { PeriodLog } from "./period-validation";
 import type { CycleService } from "./cycle-service";
 import type { WellbeingEntry } from "./wellbeing-validation";
-import { wireCycle } from "./wiring";
+import { wireCycle, wireHintFeedback } from "./wiring";
 
 export interface CycleData {
   readonly today: CalendarDate;
@@ -30,6 +32,8 @@ export interface CycleData {
   /** The wellbeing entry of today; null before it is saved. */
   readonly wellbeing: WellbeingEntry | null;
   readonly wellbeingReminder: boolean;
+  /** Whether the survey on the hints is due (FR-CYC-12). */
+  readonly feedbackDue: boolean;
 }
 
 /** The data of the screen: null while loading, "failed" when it did not load. */
@@ -39,9 +43,10 @@ export type CycleState = CycleData | "failed" | null;
 async function loadCycle(
   service: CycleService,
   profiles: ProfileRepository,
+  feedback: HintFeedbackRepository,
 ): Promise<CycleData> {
   const today = service.today();
-  const [periods, cycle, forecast, phase, profile, wellbeing] =
+  const [periods, cycle, forecast, phase, profile, wellbeing, survey] =
     await Promise.all([
       service.periods(),
       service.profile(),
@@ -49,6 +54,7 @@ async function loadCycle(
       service.phaseOn(today, today),
       profiles.get(),
       service.wellbeingOn(today),
+      feedback.state(),
     ]);
   return {
     today,
@@ -62,6 +68,8 @@ async function loadCycle(
     form: profile?.form ?? "neutral",
     wellbeing,
     wellbeingReminder: cycle.wellbeingReminder,
+    feedbackDue:
+      profile?.cycle === "yes" && isFeedbackDue({ today, ...survey }),
   };
 }
 
@@ -75,6 +83,7 @@ export function useCycle(platform: Platform): CycleState {
     () => createProfileRepository(platform.database),
     [platform],
   );
+  const feedback = useMemo(() => wireHintFeedback(platform), [platform]);
   const [state, setState] = useState<CycleState>(null);
   useEffect(() => {
     let active = true;
@@ -85,7 +94,7 @@ export function useCycle(platform: Platform): CycleState {
       const settle = (next: CycleState) => {
         if (active && issued === latest) setState(next);
       };
-      loadCycle(service, profiles).then(settle, () => {
+      loadCycle(service, profiles, feedback).then(settle, () => {
         settle("failed");
       });
     };
@@ -94,11 +103,12 @@ export function useCycle(platform: Platform): CycleState {
       service.subscribe(load),
       service.subscribeWellbeing(load),
       profiles.subscribe(load),
+      feedback.subscribe(load),
     ];
     return () => {
       active = false;
       for (const stop of unsubscribe) stop();
     };
-  }, [service, profiles]);
+  }, [service, profiles, feedback]);
   return state;
 }

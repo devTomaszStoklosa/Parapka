@@ -9,6 +9,7 @@ import { spacing } from "../ui/theme";
 import { CycleCalendar } from "./CycleCalendar";
 import { CycleDisclaimer } from "./CycleDisclaimer";
 import { forecastText } from "./cycle-text";
+import { HintFeedbackCard } from "./HintFeedbackCard";
 import { PeriodForm } from "./PeriodForm";
 import { PhaseCard } from "./PhaseCard";
 import { WellbeingForm } from "./WellbeingForm";
@@ -64,6 +65,7 @@ function Content({ data }: { data: CycleData }) {
           form={data.form}
         />
       ) : null}
+      {data.feedbackDue ? <HintFeedbackCard today={data.today} /> : null}
       <WellbeingForm today={data.today} initial={data.wellbeing} />
       <ReminderToggle enabled={data.wellbeingReminder} />
     </>

@@ -7,6 +7,7 @@ import {
 import type { LocalDatabase } from "../data/local-database";
 import type { ProfileRepository } from "../data/profile-repository";
 import { PERIODS } from "./cycle-repository";
+import { HINT_FEEDBACK } from "./hint-feedback-repository";
 import { HINTS } from "./hint-repository";
 import { WELLBEING } from "./wellbeing-repository";
 
@@ -27,6 +28,7 @@ const OWN_DATA: readonly [collection: string, channel: string][] = [
   [PERIODS, "cycle"],
   [WELLBEING, "wellbeing"],
   [HINTS, HINTS],
+  [HINT_FEEDBACK, HINT_FEEDBACK],
 ];
 
 async function clearCollection(database: LocalDatabase, collection: string) {
