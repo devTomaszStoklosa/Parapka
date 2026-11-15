@@ -9,6 +9,11 @@ import { createCycleService, type CycleService } from "./cycle-service";
 import { createHintChoice, type HintChoice } from "./hint-choice";
 import { createHintGenerator, type HintGenerator } from "./hint-generator";
 import {
+  createHintFeedbackRepository,
+  followFirstHint,
+  type HintFeedbackRepository,
+} from "./hint-feedback-repository";
+import {
   createHintReactionRepository,
   type HintReactionRepository,
 } from "./hint-reaction-repository";
@@ -24,6 +29,7 @@ interface Wired {
   hints: HintRepository;
   received: ReceivedHintRepository;
   reactions: HintReactionRepository;
+  feedback: HintFeedbackRepository;
   generator: HintGenerator;
   choice: HintChoice;
 }
@@ -47,6 +53,8 @@ function build(platform: Platform): Wired {
     today: () => service.today(),
   });
   const reactions = createHintReactionRepository(database);
+  const feedback = createHintFeedbackRepository(database);
+  followFirstHint(hints, feedback);
   const profiles = createProfileRepository(database);
   const { checkin } = wireCheckin(platform);
   const generatorDeps = {
@@ -65,7 +73,7 @@ function build(platform: Platform): Wired {
     checkin,
     profiles,
   ]);
-  return { service, hints, received, reactions, generator, choice };
+  return { service, hints, received, reactions, feedback, generator, choice };
 }
 
 function wiredOf(platform: Platform): Wired {
@@ -96,4 +104,9 @@ export function wireCycleHints(platform: Platform) {
     choice,
     today: () => service.today(),
   };
+}
+
+/** The answers of the survey on the hints: local only, never synchronised. */
+export function wireHintFeedback(platform: Platform): HintFeedbackRepository {
+  return wiredOf(platform).feedback;
 }

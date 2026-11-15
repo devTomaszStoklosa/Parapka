@@ -103,6 +103,20 @@ export const plCycle = {
     privacy: "Wpis zostaje tylko na tym telefonie. Partner go nie zobaczy.",
     error: "Nie udało się. Spróbuj jeszcze raz.",
   },
+  feedback: {
+    title: "Krótka ankieta o wskazówkach",
+    accurate: "Czy wskazówki dla partnera były w tych 2 tygodniach trafne?",
+    notPushy: "Czy były nienachalne?",
+    accurateName: "Trafność wskazówek",
+    notPushyName: "Nienachalność wskazówek",
+    scale: "1 – wcale, 5 – zdecydowanie",
+    rating: "{question}: {value} z 5",
+    save: "Zapisz",
+    close: "Zamknij",
+    privacy:
+      "Odpowiedzi zostają tylko na tym telefonie. Możesz zamknąć ankietę bez odpowiedzi.",
+    error: "Nie udało się. Spróbuj jeszcze raz.",
+  },
   reminder: {
     label: "Przypominaj o wpisie",
     hint: "Domyślnie wyłączone.",

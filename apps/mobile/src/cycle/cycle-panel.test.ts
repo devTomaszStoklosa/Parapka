@@ -53,6 +53,8 @@ async function fill(database: LocalDatabase) {
   await database.put("cycle-hints", "h1", { text: "Moja wskazówka" });
   await database.put("cycle-hints-received", "r1", { text: "Od partnera" });
   await database.put("hint-reactions", "r1", { reaction: "done" });
+  await database.put("hint-feedback", "since", { date: "2026-10-28" });
+  await database.put("hint-feedback", "entry-2026-11-11", { closed: true });
 }
 
 const idsOf = async (database: LocalDatabase, collection: string) =>
@@ -66,6 +68,7 @@ it("removes the own cycle data and keeps what the partner sent", async () => {
   expect(await idsOf(database, "period-logs")).toEqual([]);
   expect(await idsOf(database, "wellbeing-entries")).toEqual([]);
   expect(await idsOf(database, "cycle-hints")).toEqual([]);
+  expect(await idsOf(database, "hint-feedback")).toEqual([]);
   expect(await idsOf(database, "cycle-hints-received")).toEqual(["r1"]);
   expect(await idsOf(database, "hint-reactions")).toEqual(["r1"]);
   expect((await profiles.get())?.cycle).toBe("no");
