@@ -21,6 +21,7 @@ export const plToday = {
   },
   chores: {
     title: "Obowiązki na dziś",
+    today: "Na dziś",
     none: "Na dziś nie masz obowiązków.",
     openPlanner: "Otwórz planer",
   },

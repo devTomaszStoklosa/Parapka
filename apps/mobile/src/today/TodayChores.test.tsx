@@ -61,6 +61,22 @@ describe("the chores of today", () => {
     show(platform);
     expect(await screen.findByText("Zmywanie")).toBeTruthy();
     expect(screen.queryByText(pl.planner.todo)).toBeNull();
+    expect(screen.queryByText(pl.todayChores.today)).toBeNull();
+  });
+
+  it("heads today's occurrences when there are overdue ones", async () => {
+    const { platform, chores, time } = await setup(true);
+    time.now = NOW - 40 * DAY;
+    await chores.add({
+      title: "Stare",
+      rule: { kind: "occasional", dueDate: "2026-11-05" },
+      assignment: ME,
+    });
+    time.now = NOW;
+    await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
+    show(platform);
+    expect(await screen.findByText(pl.todayChores.today)).toBeTruthy();
+    expect(screen.getByText("Zmywanie")).toBeTruthy();
   });
 
   it("ticks off, undoes and releases an occurrence", async () => {

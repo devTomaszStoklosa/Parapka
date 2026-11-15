@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { View } from "react-native";
 
 import { PlannerRow } from "../chores/PlannerRow";
@@ -9,6 +10,17 @@ import { Button } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
+
+function Section(props: { title: string; children: ReactNode }) {
+  return (
+    <View>
+      <AppText style={{ fontWeight: "bold" }} accessibilityRole="header">
+        {props.title}
+      </AppText>
+      {props.children}
+    </View>
+  );
+}
 
 /** The same rows as the planner's "Today" view with the filter "all". */
 function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
@@ -39,14 +51,13 @@ function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
         </AppText>
       ) : null}
       {todo.length > 0 ? (
-        <View>
-          <AppText style={{ fontWeight: "bold" }} accessibilityRole="header">
-            {t("planner.todo")}
-          </AppText>
-          {renderRows(todo)}
-        </View>
+        <Section title={t("planner.todo")}>{renderRows(todo)}</Section>
       ) : null}
-      {renderRows(rows)}
+      {todo.length > 0 && rows.length > 0 ? (
+        <Section title={t("todayChores.today")}>{renderRows(rows)}</Section>
+      ) : (
+        renderRows(rows)
+      )}
       {todo.length === 0 && rows.length === 0 ? (
         <AppText>{t("todayChores.none")}</AppText>
       ) : null}
