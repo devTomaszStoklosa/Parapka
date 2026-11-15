@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ComponentRef, useRef, useState } from "react";
 import { TextInput, View } from "react-native";
 
 import { t, type TranslationKey } from "../i18n";
@@ -15,6 +15,7 @@ function useDump() {
   const [title, setTitle] = useState("");
   const [added, setAdded] = useState<readonly string[]>([]);
   const [error, setError] = useState<TranslationKey | null>(null);
+  const field = useRef<ComponentRef<typeof TextInput>>(null);
   const submit = () => {
     const invalid = formError({ title, dueDate: "" });
     setError(invalid);
@@ -32,13 +33,14 @@ function useDump() {
         () => {
           setAdded((list) => [...list, clean]);
           setTitle("");
+          field.current?.focus();
         },
         () => {
           setError("head.add.errors.failed");
         },
       );
   };
-  return { title, setTitle, added, error, submit };
+  return { title, setTitle, added, error, submit, field };
 }
 
 /**
@@ -46,11 +48,16 @@ function useDump() {
  * defaults, the field cleared and kept for the next one.
  */
 export function BrainDump({ onClose }: { onClose: () => void }) {
-  const { title, setTitle, added, error, submit } = useDump();
+  const { title, setTitle, added, error, submit, field } = useDump();
   return (
     <View style={{ gap: spacing.sm }}>
       <AppText>{t("head.dump.title")}</AppText>
       <TextInput
+        ref={field}
+        submitBehavior="submit"
+        // react-native-web ignores submitBehavior and blurs on Enter.
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        blurOnSubmit={false}
         accessibilityLabel={t("head.dump.title")}
         value={title}
         onChangeText={setTitle}

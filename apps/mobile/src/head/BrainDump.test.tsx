@@ -42,9 +42,12 @@ describe("brain dump", () => {
     await press(add.submit);
     await screen.findAllByText("Pierwsza");
     expect(input().value).toBe("");
+    expect(document.activeElement).toBe(input());
+    input().blur();
     typeInto(dump.title, "Druga");
     fireEvent.keyDown(input(), { key: "Enter" });
     await screen.findAllByText("Druga");
+    expect(document.activeElement).toBe(input());
     expect(await head.list()).toMatchObject([
       { category: "other", weight: 2, carrier: "me", dueDate: null },
       { category: "other", weight: 2, carrier: "me", dueDate: null },
