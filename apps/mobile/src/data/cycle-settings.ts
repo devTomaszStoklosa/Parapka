@@ -75,6 +75,8 @@ export interface CycleSettingsRepository {
   /** The saved settings, or null when the user has no cycle settings. */
   get(): Promise<CycleSettings | null>;
   save(settings: CycleSettings): Promise<void>;
+  /** Removes the settings; the person has no cycle panel any more. */
+  clear(): Promise<void>;
 }
 
 export function createCycleSettingsRepository(
@@ -87,5 +89,6 @@ export function createCycleSettingsRepository(
     },
     save: (settings) =>
       db.put(COLLECTION, ID, settings as unknown as JsonValue),
+    clear: () => db.delete(COLLECTION, ID),
   };
 }

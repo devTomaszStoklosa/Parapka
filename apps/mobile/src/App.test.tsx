@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import type { Sodium } from "@parapka/crypto";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
 import { App } from "./App";
@@ -219,4 +226,20 @@ it("does not lock right after a PIN was set in onboarding, but does on the next 
   render(<App createPlatform={() => Promise.resolve(platform)} />);
   expect(await screen.findByText(pl.lock.pin.unlockTitle)).toBeTruthy();
   expect(screen.queryAllByRole("tab")).toHaveLength(0);
+});
+
+it("shows and hides the cycle tab when the profile changes, without a restart", async () => {
+  const platform = memoryPlatform();
+  const profiles = createProfileRepository(platform.database);
+  await profiles.save(profile);
+  render(<App createPlatform={() => Promise.resolve(platform)} />);
+  expect(await screen.findAllByRole("tab")).toHaveLength(4);
+
+  await act(() => profiles.save({ ...profile, cycle: "yes" }));
+  expect(await screen.findAllByRole("tab")).toHaveLength(5);
+
+  await act(() => profiles.save(profile));
+  await waitFor(() => {
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+  });
 });

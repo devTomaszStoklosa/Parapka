@@ -85,6 +85,15 @@ describe("CycleSettingsRepository", () => {
   });
 });
 
+describe("CycleSettingsRepository.clear", () => {
+  it("removes the saved settings", async () => {
+    const repo = createCycleSettingsRepository(createMemoryDatabase());
+    await repo.save(UNKNOWN_CYCLE_SETTINGS);
+    await repo.clear();
+    expect(await repo.get()).toBeNull();
+  });
+});
+
 describe("CycleSettings optional fields", () => {
   it("keeps the reminder and the seeded mark of a saved record", async () => {
     const repo = createCycleSettingsRepository(createMemoryDatabase());
