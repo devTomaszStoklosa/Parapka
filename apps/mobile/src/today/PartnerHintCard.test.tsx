@@ -1,5 +1,12 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { ContentChange } from "@parapka/protocol";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -175,4 +182,60 @@ it("says so when the reaction did not save and clears it on the next try", async
   await waitFor(() => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
+});
+
+const openHistory = () => {
+  fireEvent.click(screen.getByRole("button", { name: c.history }));
+};
+
+it("has no history section without past hints", async () => {
+  await rendered([hint("h1", TODAY)]);
+  expect(screen.queryByRole("button", { name: c.history })).toBeNull();
+});
+
+it("lists the past hints without today and the skipped ones, with the reactions", async () => {
+  const { platform } = await rendered([
+    hint("h1", TODAY),
+    hint("p1", "2026-11-10"),
+    hint("p2", "2026-11-09"),
+    hint("p3", "2026-11-08", "skipped"),
+  ]);
+  await wireCycleHints(platform).reactions.set("p1", "done");
+  const button = await screen.findByRole("button", { name: c.history });
+  expect(button.getAttribute("aria-expanded")).toBe("false");
+  openHistory();
+  expect(await screen.findByText("Tekst p1")).toBeTruthy();
+  expect(screen.getByText("wt., 10 listopada")).toBeTruthy();
+  expect(screen.getByText("Tekst p2")).toBeTruthy();
+  expect(screen.queryByText("Tekst p3")).toBeNull();
+  expect(screen.getAllByText(c.done)).toHaveLength(1);
+});
+
+it("refreshes the history after a change of a reaction or of the synchronization", async () => {
+  const { platform } = await rendered([
+    hint("h1", TODAY),
+    hint("p1", "2026-11-10"),
+  ]);
+  const { received, reactions } = wireCycleHints(platform);
+  openHistory();
+  expect(screen.queryByText(c.notToday)).toBeNull();
+  await act(() => reactions.set("p1", "notToday"));
+  await waitFor(() => {
+    expect(screen.getAllByText(c.notToday)).toHaveLength(1);
+  });
+  await act(() => received.merge(hint("p2", "2026-11-09")));
+  expect(await screen.findByText("Tekst p2")).toBeTruthy();
+  await act(() => received.forgetReceived());
+  await waitFor(() => {
+    expect(screen.queryByText("Tekst p2")).toBeNull();
+  });
+});
+
+it("says so when the history did not load and does not crash", async () => {
+  const { platform } = await setup(true);
+  const { received } = wireCycleHints(platform);
+  vi.spyOn(received, "history").mockRejectedValue(new Error("broken"));
+  showCard(platform);
+  expect((await screen.findByRole("alert")).textContent).toBe(c.failed);
+  expect(screen.queryByRole("button", { name: c.history })).toBeNull();
 });

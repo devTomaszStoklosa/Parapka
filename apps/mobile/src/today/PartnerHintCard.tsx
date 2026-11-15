@@ -6,6 +6,7 @@ import { Option } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
+import { PartnerHintHistory } from "./PartnerHintHistory";
 import { usePartnerHint, type PartnerHintData } from "./use-partner-hint";
 
 const CHOICES = [
@@ -77,6 +78,9 @@ export function PartnerHintCard() {
             void react(hintId, reaction);
           }}
         />
+      )}
+      {state === "failed" ? null : (
+        <PartnerHintHistory entries={state.history} />
       )}
       {failed ? (
         <AppText accessibilityRole="alert">{t("todayHint.failed")}</AppText>
