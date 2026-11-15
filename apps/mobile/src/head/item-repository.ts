@@ -15,7 +15,7 @@ import {
   type EntityState,
 } from "@parapka/sync";
 
-import { createRecordSync } from "../chores/record-sync";
+import { createShareableRecordSync } from "../chores/record-sync";
 import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { PairRepository } from "../pairing/pair-repository";
@@ -90,6 +90,8 @@ export interface ItemRepository {
     merge(change: ContentChange): Promise<void>;
     /** Marks every item as private; the copies stay. */
     makePrivate(): Promise<void>;
+    /** Makes the private items picked by `belongs` shared, with their whole state. */
+    share(belongs: (id: string) => boolean): Promise<void>;
   };
 }
 
@@ -280,7 +282,10 @@ export function createItemRepository(deps: Deps): ItemRepository {
         const item = toItem(id, record);
         return item === null ? [] : [item];
       }),
-    sync: createRecordSync({
+    sync: createShareableRecordSync({
+      reseed: (record) => {
+        record.pending.fields = currentFields(record);
+      },
       records,
       read: access.read,
       write,

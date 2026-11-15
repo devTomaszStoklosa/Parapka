@@ -10,6 +10,7 @@ import { AcceptEntry } from "./pairing/AcceptEntry";
 import { OnboardingFlow } from "./onboarding/OnboardingFlow";
 import { PlatformProvider, type Platform } from "./platform/context";
 import { createWebPlatform } from "./platform/web";
+import { SharePrivateGate } from "./sharing/SharePrivateGate";
 import { SyncRunner } from "./sync/SyncRunner";
 import { AppText } from "./ui/AppText";
 import { colors, spacing } from "./ui/theme";
@@ -93,7 +94,9 @@ function Session({ platform }: { platform: Platform }) {
       ) : (
         <>
           <SyncRunner />
-          <TabNavigator cycleEnabled={profile.cycle === "yes"} />
+          <SharePrivateGate>
+            <TabNavigator cycleEnabled={profile.cycle === "yes"} />
+          </SharePrivateGate>
         </>
       )}
     </LockGate>

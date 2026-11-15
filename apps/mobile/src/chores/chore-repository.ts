@@ -29,7 +29,7 @@ import {
   type Devices,
   type StoredAssignment,
 } from "./chore-codec";
-import { createRecordSync } from "./record-sync";
+import { createShareableRecordSync } from "./record-sync";
 
 const COLLECTION = "chores";
 const ENTITY = "Chore";
@@ -95,6 +95,8 @@ export interface ChoreRepository {
     merge(change: ContentChange): Promise<void>;
     /** Marks every chore as private; the copies stay. */
     makePrivate(): Promise<void>;
+    /** Makes the private chores picked by `belongs` shared, with their whole state. */
+    share(belongs: (id: string) => boolean): Promise<void>;
   };
 }
 
@@ -222,7 +224,10 @@ const newRecord = (id: string, shared: boolean): ChoreRecord => ({
 });
 
 function createSyncAccess(access: Access): ChoreRepository["sync"] {
-  return createRecordSync({
+  return createShareableRecordSync({
+    reseed: (record) => {
+      record.pending.fields = currentFields(record);
+    },
     records: access.records,
     read: access.read,
     write: access.write,

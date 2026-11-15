@@ -17,7 +17,7 @@ import type { Identity } from "../identity/identity";
 import type { NextHlc } from "../sync/handler-registry";
 import { ChoreDeviceError } from "./chore-codec";
 import type { ChoreRepository } from "./chore-repository";
-import { createRecordSync } from "./record-sync";
+import { createShareableRecordSync } from "./record-sync";
 
 const COLLECTION = "chore-completions";
 const ENTITY = "ChoreCompletion";
@@ -70,6 +70,8 @@ export interface CompletionRepository {
     merge(change: ContentChange): Promise<void>;
     /** Marks every check-off as private; the copies stay. */
     makePrivate(): Promise<void>;
+    /** Makes the private check-offs picked by `belongs` shared, with their whole state. */
+    share(belongs: (id: string) => boolean): Promise<void>;
   };
 }
 
@@ -163,6 +165,11 @@ function toCompletion(record: CompletionRecord): StoredCompletion | null {
     : null;
 }
 
+/** Queues the whole check-off as it is now, to be sent anew. */
+function reseed(record: CompletionRecord) {
+  record.pending.fields = toCompletion(record);
+}
+
 function createAccess({ database, identity }: Deps) {
   const changes = changeChannel(database, COLLECTION);
   return {
@@ -227,7 +234,8 @@ export function createCompletionRepository(deps: Deps): CompletionRepository {
         alive.map((c) => ({ ...c, hlc: parseHlc(c.completedAt) })),
       ).map(({ hlc, ...rest }) => ({ ...rest, completedAt: formatHlc(hlc) }));
     },
-    sync: createRecordSync({
+    sync: createShareableRecordSync({
+      reseed,
       records,
       read,
       write,
