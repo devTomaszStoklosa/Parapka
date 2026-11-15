@@ -2,6 +2,7 @@ import { plCheckin } from "./pl-checkin";
 import { plCycle } from "./pl-cycle";
 import { plHead } from "./pl-head";
 import { plannerEdit } from "./pl-planner";
+import { plShare } from "./pl-share";
 import { plToday } from "./pl-today";
 
 export const pl = {
@@ -57,6 +58,7 @@ export const pl = {
     failed: "Nie udało się wczytać obowiązków. Spróbuj ponownie później.",
   },
   head: plHead,
+  share: plShare,
   cycle: plCycle,
   checkin: plCheckin,
   todayHint: plToday.hint,

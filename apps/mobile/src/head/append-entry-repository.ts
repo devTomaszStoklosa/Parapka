@@ -10,7 +10,7 @@ import {
 } from "@parapka/sync";
 
 import { ChoreDeviceError } from "../chores/chore-codec";
-import { createRecordSync } from "../chores/record-sync";
+import { createShareableRecordSync } from "../chores/record-sync";
 import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 import type { Identity } from "../identity/identity";
@@ -64,8 +64,8 @@ export interface AppendEntryRepository {
   /** Every entry, ordered by key and moment. */
   list(): Promise<Entry[]>;
   subscribe(listener: () => void): () => void;
-  /** For the sync handler: collect, commit, merge and makePrivate. */
-  readonly sync: ReturnType<typeof createRecordSync>;
+  /** For the sync handler: collect, commit, merge, makePrivate and share. */
+  readonly sync: ReturnType<typeof createShareableRecordSync>;
 }
 
 const isText = (value: unknown): value is string =>
@@ -190,7 +190,10 @@ export function createAppendEntryRepository(
       const entries = (await records()).map(({ record }) => toEntry(record));
       return entries.sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
     },
-    sync: createRecordSync({
+    sync: createShareableRecordSync({
+      reseed: (record) => {
+        record.pending.fields = toEntry(record);
+      },
       records,
       read,
       write,
