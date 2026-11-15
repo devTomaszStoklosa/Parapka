@@ -15,6 +15,8 @@ export interface OwnHintsData {
   readonly sharing: Sharing;
   /** The hint for today; null when there is none (a skipped one counts as none). */
   readonly today: StoredHint | null;
+  /** Whether the hint of today is skipped, so the partner sees none. */
+  readonly todaySkipped: boolean;
   readonly tomorrow: StoredHint | null;
   readonly dayAfter: StoredHint | null;
   /** The hints of the last 14 days before today, the newest first. */
@@ -66,6 +68,9 @@ async function read(sources: Sources): Promise<OwnHintsData> {
   return {
     sharing,
     today: shown.find((hint) => hint.forDate === day) ?? null,
+    todaySkipped: all.some(
+      (hint) => hint.forDate === day && hint.status === "skipped",
+    ),
     tomorrow: shown.find((hint) => hint.forDate === addDays(day, 1)) ?? null,
     dayAfter: shown.find((hint) => hint.forDate === addDays(day, 2)) ?? null,
     history: shown.filter((hint) => hint.forDate < day).reverse(),

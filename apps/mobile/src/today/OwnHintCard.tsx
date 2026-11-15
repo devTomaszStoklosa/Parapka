@@ -7,6 +7,7 @@ import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
 import type { StoredHint } from "../cycle/hint-repository";
+import { OwnHintActions } from "./OwnHintActions";
 import { HintDays, HintHistory, type HintEntry } from "./HintHistory";
 import { useOwnHints, type OwnHintsData } from "./use-own-hints";
 
@@ -42,6 +43,7 @@ function Body({ data }: { data: OwnHintsData }) {
     <>
       <AppText>{c[data.sharing]}</AppText>
       <AppText>{today === null ? c.none : today.text}</AppText>
+      <OwnHintActions hasHint={today !== null} skipped={data.todaySkipped} />
       <HintDays title={c.upcoming} entries={days} />
       <HintHistory
         title={c.history}
