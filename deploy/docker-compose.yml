@@ -13,6 +13,11 @@ services:
       - relay-data:/data
     expose:
       - "3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   caddy:
     image: caddy:2
@@ -29,6 +34,11 @@ services:
       - ./web:/srv/web:ro
       - caddy-data:/data
       - caddy-config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   relay-data:

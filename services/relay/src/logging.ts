@@ -1,8 +1,9 @@
 import type { FastifyServerOptions } from "fastify";
 
 /**
- * The request log holds the method, the path without the query, the status
- * and the duration only. Bodies, headers (signature, device id), push tokens
+ * The request log holds the method, the route pattern (e.g.
+ * `/v1/pairs/:id/ws`, never the actual path with its ids or query), the
+ * status and the duration only. Bodies, headers (signature, device id), push tokens
  * and the client IP are never logged (NFR-PRV-05): the IP is omitted rather
  * than shortened, because the relay limits requests per device, not per IP.
  */
@@ -26,6 +27,14 @@ export function loggerOptions(
           ] as unknown as typeof args);
           return;
         }
+        // Fastify's 404 message quotes the raw method, path and query.
+        if (
+          typeof args[0] === "string" &&
+          /^Route .* not found$/.test(args[0])
+        ) {
+          method.apply(this, ["route not found"] as unknown as typeof args);
+          return;
+        }
         method.apply(this, args);
       },
     },
@@ -36,9 +45,17 @@ export function loggerOptions(
         code: error.code,
         statusCode: error.statusCode,
       })) as never,
-      req: (request: { method?: string; url?: string }) => ({
+      req: (request: {
+        method?: string;
+        is404?: boolean;
+        routeOptions?: { url?: string };
+      }) => ({
         method: request.method,
-        url: (request.url ?? "").split("?")[0],
+        // An unmatched request has no route pattern; its raw URL is never logged.
+        url:
+          request.is404 === true
+            ? "unmatched"
+            : (request.routeOptions?.url ?? "unmatched"),
       }),
       res: (reply: { statusCode?: number }) => ({
         statusCode: reply.statusCode,

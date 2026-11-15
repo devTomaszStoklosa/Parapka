@@ -35,7 +35,8 @@ describe("request log", () => {
     await app.close();
 
     const log = lines.join("");
-    expect(log).toContain("/v1/pairs/p1/envelopes");
+    expect(log).toContain("/v1/pairs/:id/envelopes");
+    expect(log).not.toContain("p1");
     for (const secret of [
       "CIPHERTEXT-VALUE",
       "NONCE-VALUE",
@@ -99,7 +100,8 @@ describe("request log", () => {
     await app.close();
 
     const log = lines.join("");
-    expect(log).toContain("/v1/pairs/p1/ws");
+    expect(log).toContain("/v1/pairs/:id/ws");
+    expect(log).not.toContain("p1");
     for (const secret of [
       "DEVICE-QUERY",
       "CHALLENGE-QUERY",
@@ -110,5 +112,73 @@ describe("request log", () => {
     ]) {
       expect(log).not.toContain(secret);
     }
+  });
+
+  it("logs route patterns, not ids, for devices and invitations", async () => {
+    const lines: string[] = [];
+    const stream = new Writable({
+      write(chunk: Buffer, _encoding, done) {
+        lines.push(chunk.toString("utf8"));
+        done();
+      },
+    });
+    const app = buildApp({
+      store: new MemoryStore(),
+      clock: { nowMs: () => 0 },
+      logger: loggerOptions(stream),
+    });
+    await app.inject({
+      method: "PUT",
+      url: "/v1/devices/DEVICE-ID-1/push-token?x=QUERYSECRET",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ pushToken: "PUSHTOKEN-BODY" }),
+    });
+    await app.inject({
+      method: "POST",
+      url: "/v1/invitations/INVITATION-ID-1/accept",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ signature: "SIGNATURE-BODY" }),
+    });
+    await app.close();
+
+    const log = lines.join("");
+    expect(log).toContain("/v1/devices/:id/push-token");
+    expect(log).toContain("/v1/invitations/:id/accept");
+    for (const secret of [
+      "DEVICE-ID-1",
+      "INVITATION-ID-1",
+      "PUSHTOKEN-BODY",
+      "SIGNATURE-BODY",
+      "QUERYSECRET",
+    ]) {
+      expect(log).not.toContain(secret);
+    }
+  });
+
+  it("logs a fixed marker for an unmatched route", async () => {
+    const lines: string[] = [];
+    const stream = new Writable({
+      write(chunk: Buffer, _encoding, done) {
+        lines.push(chunk.toString("utf8"));
+        done();
+      },
+    });
+    const app = buildApp({
+      store: new MemoryStore(),
+      clock: { nowMs: () => 0 },
+      logger: loggerOptions(stream),
+    });
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/nope/SECRET-ID?x=1",
+    });
+    await app.close();
+
+    expect(response.statusCode).toBe(404);
+    const log = lines.join("");
+    expect(log).toContain("unmatched");
+    expect(log).not.toContain("SECRET-ID");
+    expect(log).not.toContain("nope");
+    expect(log).not.toContain("x=1");
   });
 });

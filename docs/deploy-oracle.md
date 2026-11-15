@@ -88,6 +88,16 @@ Otwórz `https://<domena>` w przeglądarce. Relay działa jako użytkownik `node
 
 Ten sam zestaw uruchomisz lokalnie: w `.env` ustaw `PARAPKA_DOMAIN=localhost` i `RELAY_ALLOWED_ORIGINS=https://localhost`, zbuduj web z `EXPO_PUBLIC_RELAY_URL=https://localhost`, skopiuj go do `deploy/web` i uruchom `docker compose up -d --build`. Caddy użyje własnego, wewnętrznego certyfikatu (przeglądarka zgłosi ostrzeżenie). Otwórz dwa konteksty przeglądarki i sparuj je przez relay.
 
+### Logi
+
+Logi kontenerów rotują się automatycznie: każda usługa (`relay`, `caddy`) trzyma do 3 plików po 10 MB (sterownik `json-file`). Obejrzysz je poleceniem:
+
+```bash
+docker compose logs relay           # dodaj -f, aby śledzić na żywo
+```
+
+Relay loguje tylko metodę, wzorzec trasy (np. `/v1/pairs/:id/ws`), status i czas żądania. Nie loguje identyfikatorów skrzynek, urządzeń ani zaproszeń, podpisów, tokenów push, treści żądań ani adresów IP. Żądanie bez dopasowanej trasy (404) ma w logu znacznik `unmatched` zamiast adresu. Caddy nie ma logów dostępu.
+
 ## 7. Aktualizacja
 
 ```bash
