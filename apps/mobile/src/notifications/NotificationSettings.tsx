@@ -3,6 +3,7 @@ import { View } from "react-native";
 
 import { wireChores } from "../chores/wiring";
 import { useConsentWiring } from "../consent/wiring";
+import { wireCycle } from "../cycle/wiring";
 import { t } from "../i18n";
 import { usePlatform } from "../platform/context";
 import { AlertText } from "../ui/AlertText";
@@ -78,19 +79,24 @@ function useSaver(repository: NotificationSettingsRepository) {
     },
     [repository],
   );
-  const apply = (change: NotificationSettingsChange) => {
-    save(change).catch(() => {
+  const run = (action: () => Promise<void>) => {
+    setFailed(false);
+    action().catch(() => {
       setFailed(true);
     });
   };
-  return { failed, save, apply };
+  const apply = (change: NotificationSettingsChange) => {
+    run(() => repository.set(change));
+  };
+  return { failed, save, apply, run };
 }
 
 /** Settings section "Powiadomienia": mode, types, hours and the consent of the browser. */
 export function NotificationSettings() {
   const { loaded, repository } = useLoaded();
-  const { notifier } = usePlatform();
-  const { failed, save, apply } = useSaver(repository);
+  const platform = usePlatform();
+  const { notifier } = platform;
+  const { failed, save, apply, run } = useSaver(repository);
   if (!loaded) return null;
   const { settings, paired, cyclePanel } = loaded;
   const times = {
@@ -116,7 +122,12 @@ export function NotificationSettings() {
         cyclePanel={cyclePanel}
         paired={paired}
         onChange={(id, value) => {
-          apply({ enabled: { [id]: value } });
+          // The wellbeing lives in the cycle settings: save it as the cycle panel does.
+          if (id === "wellbeing") {
+            run(() => wireCycle(platform).setWellbeingReminder(value));
+          } else {
+            apply({ enabled: { [id]: value } });
+          }
         }}
       />
       <NotificationTimeFields times={times} paired={paired} onSave={save} />

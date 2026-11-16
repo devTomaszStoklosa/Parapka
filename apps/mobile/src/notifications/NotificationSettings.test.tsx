@@ -113,9 +113,21 @@ it("keeps the wellbeing in step with the cycle panel", async () => {
   await vi.waitFor(() => {
     expect(toggle(types.wellbeing).checked).toBe(true);
   });
+  const cycleListener = vi.fn();
+  cycleOf(platform).subscribe(cycleListener);
   fireEvent.click(toggle(types.wellbeing));
   await vi.waitFor(async () => {
     expect((await cycleOf(platform).profile()).wellbeingReminder).toBe(false);
+  });
+  expect(cycleListener).toHaveBeenCalled();
+});
+
+it("saves the wellbeing even without a stored cycle record", async () => {
+  const platform = await open({ cycle: true });
+  await platform.database.delete("cycle-settings", "me");
+  fireEvent.click(toggle(types.wellbeing));
+  await vi.waitFor(async () => {
+    expect((await cycleOf(platform).profile()).wellbeingReminder).toBe(true);
   });
 });
 
