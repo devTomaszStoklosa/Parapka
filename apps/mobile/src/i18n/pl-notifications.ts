@@ -11,6 +11,10 @@ export const plNotifications = {
     title: "Wskazówka na dziś",
     body: "Wskazówka na dziś jest gotowa",
   },
+  wellbeing: {
+    title: "Chwila dla siebie",
+    body: "Jak się dziś czujesz? Możesz zapisać krótką notatkę.",
+  },
   /** One text for every type in the discreet mode (FR-NOT-04). */
   discreet: {
     title: "Parapka",
