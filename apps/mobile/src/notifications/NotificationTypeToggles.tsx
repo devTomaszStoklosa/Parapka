@@ -1,4 +1,4 @@
-import { Switch, View } from "react-native";
+import { Pressable, Switch, View } from "react-native";
 
 import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
@@ -29,10 +29,20 @@ export function LabelledSwitch(props: {
         value={props.value}
         onValueChange={props.onChange}
       />
-      <View style={{ flex: 1 }}>
+      <Pressable
+        accessible={false}
+        onPress={() => {
+          props.onChange(!props.value);
+        }}
+        style={{
+          flex: 1,
+          minHeight: MIN_TOUCH_TARGET,
+          justifyContent: "center",
+        }}
+      >
         <AppText>{props.label}</AppText>
         {props.hint ? <AppText>{props.hint}</AppText> : null}
-      </View>
+      </Pressable>
     </View>
   );
 }

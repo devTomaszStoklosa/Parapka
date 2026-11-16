@@ -107,6 +107,22 @@ it("saves the discreet mode", async () => {
   });
 });
 
+it("switches the discreet mode by pressing its text", async () => {
+  const platform = await open();
+  fireEvent.click(screen.getByText(texts.discreet.label));
+  await vi.waitFor(async () => {
+    expect((await stored(platform)).discreet).toBe(false);
+  });
+});
+
+it("switches a type by pressing its label", async () => {
+  const platform = await open();
+  fireEvent.click(screen.getByText(types.checkin));
+  await vi.waitFor(async () => {
+    expect((await stored(platform)).enabled.checkin).toBe(false);
+  });
+});
+
 it("keeps the wellbeing in step with the cycle panel", async () => {
   const platform = await open({ cycle: true });
   await act(() => cycleOf(platform).setWellbeingReminder(true));
