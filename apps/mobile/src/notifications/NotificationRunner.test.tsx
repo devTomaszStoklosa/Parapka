@@ -220,9 +220,11 @@ it("does not show a result that arrives after the unmount", async () => {
 it("does not start a check while the previous one is still running", async () => {
   const { device, mount, advance, emit } = await setup();
   let release: (value: never[]) => void = () => undefined;
-  const list = vi.spyOn(device.chores, "list").mockImplementationOnce(
-    () => new Promise<never[]>((resolve) => (release = resolve)),
-  );
+  const list = vi
+    .spyOn(device.chores, "list")
+    .mockImplementationOnce(
+      () => new Promise<never[]>((resolve) => (release = resolve)),
+    );
   mount();
   await advance(0);
   await emit("active");
