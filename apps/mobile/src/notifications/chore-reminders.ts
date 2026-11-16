@@ -10,7 +10,7 @@ import type { PlannedNotification } from "./planned";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
-const dateOf = (day: Date): CalendarDate =>
+export const dateOf = (day: Date): CalendarDate =>
   [String(day.getFullYear()), pad(day.getMonth() + 1), pad(day.getDate())].join(
     "-",
   );
@@ -19,7 +19,7 @@ const addDays = (day: Date, count: number) =>
   new Date(day.getFullYear(), day.getMonth(), day.getDate() + count);
 
 /** The moment of `HH:MM` on a local day; the local calendar keeps a clock change safe. */
-function momentOf(date: CalendarDate, time: string): number {
+export function momentOf(date: CalendarDate, time: string): number {
   const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
   const [hour = 0, minute = 0] = time.split(":").map(Number);
   return new Date(year, month - 1, day, hour, minute).getTime();

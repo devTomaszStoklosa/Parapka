@@ -79,8 +79,11 @@ export function createCycleRepository(
         wellbeingReminder: current.wellbeingReminder ?? false,
       };
     },
-    setWellbeingReminder: (enabled) =>
-      change((current) => ({ ...current, wellbeingReminder: enabled })),
+    setWellbeingReminder: async (enabled) => {
+      await change((current) => ({ ...current, wellbeingReminder: enabled }));
+      // `enabled.wellbeing` of the notification settings reads this value.
+      changeChannel(database, "notification-settings").notify();
+    },
     periods: async () => {
       await seed();
       return stored();

@@ -9,8 +9,13 @@ import {
 import { AppState } from "react-native";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { currentCheckinWindow } from "@parapka/domain";
+
+import { toLocalDateTime } from "../checkin/local-time";
+import * as checkinWiring from "../checkin/wiring";
 import { ME, createSingleDevice } from "../chores/chore-test-support";
 import * as wiring from "../chores/wiring";
+import * as cycleWiring from "../cycle/wiring";
 import { t } from "../i18n";
 import { LockGate } from "../lock/LockGate";
 import { createPinStore } from "../lock/pin-store";
@@ -51,6 +56,20 @@ async function setup(reminder = "18:00", permission?: Notifier) {
     chores: device.chores,
     completions: { list: () => Promise.resolve([]) },
   } as unknown as ReturnType<typeof wiring.wireChores>);
+  const pairing = { paired: false };
+  vi.spyOn(checkinWiring, "wireCheckin").mockReturnValue({
+    checkin: {
+      current: () =>
+        Promise.resolve({
+          window: currentCheckinWindow(toLocalDateTime(Date.now())),
+          paired: pairing.paired,
+          status: "open",
+        }),
+    },
+  } as never);
+  vi.spyOn(cycleWiring, "wireCycleHints").mockReturnValue({
+    received: { today: () => Promise.resolve(null) },
+  } as never);
   const notifier = permission ?? createMemoryNotifier();
   const platform = {
     database: device.database,
@@ -75,6 +94,7 @@ async function setup(reminder = "18:00", permission?: Notifier) {
     });
   return {
     device,
+    pairing,
     platform,
     notifier: notifier as ReturnType<typeof createMemoryNotifier>,
     mount,
@@ -285,4 +305,16 @@ it("does not start a check while the previous one is still running", async () =>
   expect(list).toHaveBeenCalledTimes(1);
   release([]);
   await advance(0);
+});
+
+it("delivers the reminder of the check-in without a word about the partner", async () => {
+  const { notifier, pairing, platform, mount, advance } = await setup("19:00");
+  pairing.paired = true;
+  const settings = createNotificationSettingsRepository(platform.database);
+  await settings.set({ discreet: false });
+  mount();
+  await advance(0);
+  expect(notifier.shown).toMatchObject([
+    { title: "Check-in", tag: "checkin:2026-W46:first" },
+  ]);
 });

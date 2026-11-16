@@ -1,20 +1,13 @@
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 
-import { wireChores } from "../chores/wiring";
 import { usePlatform, type Platform } from "../platform/context";
 import type { NotifierMessage } from "../platform/notifier";
-import { planChoreReminders } from "./chore-reminders";
-import {
-  listQueued,
-  markDelivered,
-  messageFor,
-  RETENTION_MS,
-  takeDue,
-} from "./delivery";
+import { markDelivered, messageFor, RETENTION_MS, takeDue } from "./delivery";
 import { NotificationBanner } from "./NotificationBanner";
 import { createNotificationSettingsRepository } from "./notification-settings";
 import { planNotifications } from "./planned";
+import { collectSources } from "./sources";
 
 /** How often the open app looks for due notifications. */
 export const CHECK_MS = 60_000;
@@ -29,20 +22,11 @@ interface Due {
 /** One check: what is due now. Nothing is remembered before `remember` is called. */
 async function checkDue(platform: Platform): Promise<Due | null> {
   const { database, clock } = platform;
-  const { chores, completions } = wireChores(platform);
   const settings = await createNotificationSettingsRepository(database).get();
   const toMs = clock.nowMs();
   const fromMs = toMs - RETENTION_MS;
   const planned = planNotifications({
-    sources: [
-      planChoreReminders({
-        chores: await chores.list(),
-        completions: await completions.list(),
-        fromMs,
-        toMs,
-      }),
-      await listQueued(database),
-    ],
+    sources: await collectSources(platform, settings, { fromMs, toMs }),
     settings,
     fromMs,
     toMs,
