@@ -1,6 +1,8 @@
 import { currentCheckinWindow } from "@parapka/domain";
 import { afterEach, expect, it, vi } from "vitest";
 
+import { defaultConsent, NO_PROFILE } from "../consent/consent-model";
+import { wireConsent } from "../consent/wiring";
 import * as checkinWiring from "../checkin/wiring";
 import { createSingleDevice } from "../chores/chore-test-support";
 import * as choresWiring from "../chores/wiring";
@@ -17,7 +19,7 @@ afterEach(() => {
 const at = (day: number, hour: number) =>
   new Date(2026, 10, day, hour).getTime();
 
-async function setup(paired: boolean) {
+async function setup(paired: boolean, shared = true, partnerFilled = false) {
   const device = createSingleDevice();
   vi.spyOn(choresWiring, "wireChores").mockReturnValue({
     chores: device.chores,
@@ -36,6 +38,7 @@ async function setup(paired: boolean) {
           }),
           paired,
           status: "open",
+          partnerFilled,
         }),
     },
   } as unknown as ReturnType<typeof checkinWiring.wireCheckin>);
@@ -45,7 +48,13 @@ async function setup(paired: boolean) {
         Promise.resolve({ forDate: "2026-11-16", status: "scheduled" }),
     },
   } as unknown as ReturnType<typeof cycleWiring.wireCycleHints>);
-  const platform = { database: device.database } as unknown as Platform;
+  const platform = {
+    database: device.database,
+    clock: { nowMs: () => Date.now() },
+  } as unknown as Platform;
+  const { consent } = wireConsent(platform);
+  await consent.save(defaultConsent(NO_PROFILE));
+  await consent.setCategory("CHECKIN", shared);
   const settings = await createNotificationSettingsRepository(
     device.database,
   ).get();
@@ -78,4 +87,20 @@ it("collects no check-in reminder without a pair", async () => {
   expect(sources.flat().map(({ id }) => id)).toEqual([
     "partner-hint:2026-11-16",
   ]);
+});
+
+it("collects no check-in reminder while the check-in is turned off", async () => {
+  const { platform, settings } = await setup(true, false);
+  const sources = await collectSources(platform, settings, range);
+  expect(sources.flat().map(({ id }) => id)).toEqual([
+    "partner-hint:2026-11-16",
+  ]);
+});
+
+it("collects the same check-in reminders whether or not the partner filled in (FR-CHK-07)", async () => {
+  const waiting = await setup(true, true, false);
+  const filled = await setup(true, true, true);
+  expect(await collectSources(filled.platform, filled.settings, range)).toEqual(
+    await collectSources(waiting.platform, waiting.settings, range),
+  );
 });

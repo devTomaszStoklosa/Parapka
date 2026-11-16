@@ -37,7 +37,7 @@ const settings = (
   wellbeingTime: "20:00",
 });
 
-const open = { window, paired: true, status: "open" } as const;
+const open = { window, paired: true, shared: true, status: "open" } as const;
 
 it("plans one reminder at the opening and one 24 hours later", () => {
   const planned = planCheckinReminders(open);
@@ -58,12 +58,14 @@ it("plans nothing without a pair", () => {
 });
 
 it("is the same whether or not the partner filled in (FR-CHK-07)", () => {
-  // The view of an unfilled own check-in never carries the partner's state.
-  expect(planCheckinReminders(open)).toEqual(planCheckinReminders({ ...open }));
   // A filled in own check-in ends the reminders, locked by the partner or not.
   expect(planCheckinReminders({ ...open, status: "locked" })).toEqual(
     planCheckinReminders({ ...open, status: "filled" }),
   );
+});
+
+it("plans nothing while the check-in is turned off", () => {
+  expect(planCheckinReminders({ ...open, shared: false })).toEqual([]);
 });
 
 it("does not name the partner in any text of the reminder", () => {

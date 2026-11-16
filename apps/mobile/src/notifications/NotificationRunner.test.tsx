@@ -11,6 +11,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { currentCheckinWindow } from "@parapka/domain";
 
+import { defaultConsent, NO_PROFILE } from "../consent/consent-model";
+import { wireConsent } from "../consent/wiring";
 import { toLocalDateTime } from "../checkin/local-time";
 import * as checkinWiring from "../checkin/wiring";
 import { ME, createSingleDevice } from "../chores/chore-test-support";
@@ -130,9 +132,8 @@ it("delivers the notification once after 18:00, also after a reload", async () =
 
 it("shows the full text when the discreet mode is off", async () => {
   const { notifier, platform, mount, advance } = await setup("17:00");
-  await createNotificationSettingsRepository(platform.database).set({
-    discreet: false,
-  });
+  const settings = createNotificationSettingsRepository(platform.database);
+  await settings.set({ discreet: false });
   mount();
   await advance(0);
   expect(notifier.shown).toMatchObject([
@@ -310,6 +311,8 @@ it("does not start a check while the previous one is still running", async () =>
 it("delivers the reminder of the check-in without a word about the partner", async () => {
   const { notifier, pairing, platform, mount, advance } = await setup("19:00");
   pairing.paired = true;
+  await wireConsent(platform).consent.save(defaultConsent(NO_PROFILE));
+  await wireConsent(platform).consent.setCategory("CHECKIN", true);
   const settings = createNotificationSettingsRepository(platform.database);
   await settings.set({ discreet: false });
   mount();

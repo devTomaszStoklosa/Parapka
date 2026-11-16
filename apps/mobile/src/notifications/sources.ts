@@ -1,4 +1,5 @@
 import { wireCheckin } from "../checkin/wiring";
+import { wireConsent } from "../consent/wiring";
 import { wireChores } from "../chores/wiring";
 import { wireCycleHints } from "../cycle/wiring";
 import type { Platform } from "../platform/context";
@@ -23,13 +24,14 @@ export async function collectSources(
   const { checkin } = wireCheckin(platform);
   const { received } = wireCycleHints(platform);
   const { window, paired, status } = await checkin.current();
+  const shared = await wireConsent(platform).consent.isShared("CHECKIN");
   return [
     planChoreReminders({
       chores: await chores.list(),
       completions: await completions.list(),
       ...range,
     }),
-    planCheckinReminders({ window, paired, status }),
+    planCheckinReminders({ window, paired, shared, status }),
     planHintReminders({
       hint: await received.today(),
       time: settings.partnerHintTime,
