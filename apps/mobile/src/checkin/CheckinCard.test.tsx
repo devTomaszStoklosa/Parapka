@@ -147,7 +147,9 @@ describe("after saving", () => {
     await screen.findByText(pl.checkin.results.title);
     expect(screen.getByText(pl.checkin.results.partner)).toBeTruthy();
     expect(screen.queryByText(c.waiting)).toBeNull();
-    expect(screen.queryByRole("button")).toBeNull();
+    expect(
+      screen.getAllByRole("button").map((node) => node.textContent),
+    ).toEqual([pl.checkin.history.show]);
     expect(screen.queryByRole("radio")).toBeNull();
   });
 
@@ -180,5 +182,33 @@ it("reloads the card after a change from the synchronization", async () => {
   await act(() => checkin.submit({ mood: 4, energy: 3, closeness: 5 }));
   await waitFor(() => {
     expect(screen.getByText(pl.checkin.results.title)).toBeTruthy();
+  });
+});
+
+describe("the history button", () => {
+  const h = pl.checkin.history;
+
+  it.each([
+    ["without a pair", false, true],
+    ["with the check-in off", true, false],
+    ["with the open form", true, true],
+  ])("is in the card %s", async (_name, paired, shared) => {
+    const { platform } = await setupCheckin(paired, shared);
+    showCard(platform);
+    await press(h.show);
+    await screen.findByText(h.empty);
+    await press(h.hide);
+    expect(screen.queryByText(h.empty)).toBeNull();
+  });
+
+  it("is in the card after the reveal and shows the saved week", async () => {
+    const { platform, checkin } = await setupCheckin(true);
+    await checkin.submit({ mood: 2, energy: 3, closeness: 4 });
+    await withStatus(checkin, "revealed");
+    showCard(platform);
+    await screen.findByText(pl.checkin.results.title);
+    await press(h.show);
+    await screen.findByText(h.title);
+    expect(screen.getByRole("button", { name: h.hide })).toBeTruthy();
   });
 });

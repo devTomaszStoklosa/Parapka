@@ -9,6 +9,7 @@ import { AppText } from "../ui/AppText";
 import { colors, spacing } from "../ui/theme";
 import { CheckinResults } from "./CheckinResults";
 import { CheckinForm } from "./CheckinForm";
+import { CheckinHistory } from "./CheckinHistory";
 import type { CheckinInput } from "./checkin-service";
 import { useCheckin, type CheckinData } from "./use-checkin";
 
@@ -83,6 +84,7 @@ function Body(props: {
 /** The weekly check-in on the "Today" tab (FR-CHK-02, FR-CHK-04). */
 export function CheckinCard() {
   const { state, failed, submit } = useCheckin(usePlatform());
+  const [history, setHistory] = useState(false);
   if (state === null) return null;
   return (
     <View
@@ -102,6 +104,14 @@ export function CheckinCard() {
       {failed ? (
         <AppText accessibilityRole="alert">{t("checkin.failed")}</AppText>
       ) : null}
+      <Button
+        label={t(history ? "checkin.history.hide" : "checkin.history.show")}
+        expanded={history}
+        onPress={() => {
+          setHistory(!history);
+        }}
+      />
+      {history ? <CheckinHistory /> : null}
     </View>
   );
 }

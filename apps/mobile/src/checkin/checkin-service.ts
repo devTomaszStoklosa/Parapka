@@ -11,6 +11,7 @@ import {
 
 import type { PairRepository } from "../pairing/pair-repository";
 import type { AnswersRepository, StoredAnswers } from "./answers-repository";
+import { windowOfWeek, type HistoryEntry } from "./checkin-history-model";
 import type { ScheduleRepository } from "./schedule-repository";
 import type { Reveal } from "./reveal";
 import type { SealedRepository } from "./sealed-repository";
@@ -37,8 +38,11 @@ export interface CheckinService {
   current(): Promise<CheckinView>;
   /** Saves or edits the own answers of the current window. */
   submit(input: CheckinInput): Promise<void>;
-  /** The own answers of the latest weeks, the newest first. */
-  history(limit: number): Promise<StoredAnswers[]>;
+  /**
+   * The latest weeks with own answers, the newest first. The partner is only
+   * in the weeks that were revealed (spec 7.4).
+   */
+  history(limit: number): Promise<HistoryEntry[]>;
   /** The input of the hint engine: the own answers of the current week. */
   hintCheckin(): Promise<HintCheckin | null>;
   subscribe(listener: () => void): () => void;
@@ -96,6 +100,23 @@ async function statusOf(
   return { status: locked ? "locked" : "filled", partner: null };
 }
 
+/** The latest weeks with own answers; the partner only from `reveal.get`. */
+async function historyOf(
+  { schedule, answers, reveal }: Pick<Deps, "schedule" | "answers" | "reveal">,
+  limit: number,
+): Promise<HistoryEntry[]> {
+  const current = await schedule.get();
+  const latest = (await answers.list()).slice(0, limit);
+  return Promise.all(
+    latest.map(async ({ week, answers: own }) => ({
+      week,
+      window: windowOfWeek(week, current),
+      own,
+      partner: await reveal.get(week),
+    })),
+  );
+}
+
 export function createCheckinService(deps: Deps): CheckinService {
   const { clock, pairs, schedule, answers, sealed, reveal, windowEnd } = deps;
   const currentWindow = () => currentWindowOf(clock, schedule);
@@ -124,7 +145,7 @@ export function createCheckinService(deps: Deps): CheckinService {
       await sealed.submit(week, plaintextOf(saved));
       await reveal.settle();
     },
-    history: async (limit) => (await answers.list()).slice(0, limit),
+    history: (limit) => historyOf(deps, limit),
     hintCheckin: async () => {
       const { own, window } = await view();
       if (own === null) return null;
