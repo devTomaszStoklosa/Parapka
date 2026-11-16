@@ -46,6 +46,45 @@ export const plNotifications = {
     title: "Parapka",
     body: "Masz {count} nowe przypomnienia",
   },
+  settings: {
+    title: "Powiadomienia",
+    discreet: {
+      label: "Tryb dyskretny",
+      hint: "Poza aplikacją widać tylko słowo „Parapka” i tekst „masz nowe przypomnienie”. Szczegóły są dopiero w aplikacji.",
+    },
+    types: {
+      group: "Rodzaje powiadomień",
+      "chore-reminder": "Przypomnienia o obowiązkach",
+      checkin: "Przypomnienie o check-inie",
+      "partner-hint": "Wskazówka na dziś",
+      wellbeing: "Przypomnienie o wpisie samopoczucia",
+      "handover-taken": "Partner przejmuje rzecz",
+      "checkin-results": "Wyniki check-inu są gotowe",
+      "pair-status": "Zmiana stanu pary",
+    },
+    times: {
+      title: "Godziny",
+      quietFrom: "Cisza od (GG:MM)",
+      quietTo: "Cisza do (GG:MM)",
+      hintTime: "Godzina wskazówki dnia (GG:MM)",
+      hint: "W godzinach ciszy powiadomienia czekają do jej końca.",
+      save: "Zapisz godziny",
+      invalid: "Wpisz godzinę w formacie GG:MM, na przykład 07:30.",
+      failed: "Nie udało się zapisać. Spróbuj ponownie.",
+    },
+    permission: {
+      title: "Powiadomienia w przeglądarce",
+      enable: "Włącz powiadomienia",
+      granted: "Powiadomienia przeglądarki są włączone.",
+      denied:
+        "Powiadomienia są zablokowane w tej przeglądarce. Możesz to zmienić w ustawieniach strony: kliknij ikonę kłódki przy adresie i zezwól na powiadomienia.",
+      unsupported:
+        "Ta przeglądarka nie pokazuje powiadomień systemowych. Gdy aplikacja jest otwarta, pokażemy je jako baner.",
+      openTabOnly:
+        "W przeglądarce powiadomienia działają tylko przy otwartej karcie z Parapką.",
+    },
+    failed: "Nie udało się zapisać zmiany. Spróbuj ponownie.",
+  },
   banner: {
     close: "Zamknij",
   },

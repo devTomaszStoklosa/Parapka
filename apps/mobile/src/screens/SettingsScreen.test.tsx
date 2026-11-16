@@ -30,5 +30,8 @@ it("keeps the whole content in a scrollable container", async () => {
   await act(() => Promise.resolve());
   const scroll = screen.getByTestId("settings-scroll");
   expect(scroll.contains(screen.getByText(t("pairing.title")))).toBe(true);
+  expect(
+    scroll.contains(screen.getByText(t("notifications.settings.title"))),
+  ).toBe(true);
   expect(getComputedStyle(scroll).overflowY).toBe("auto");
 });

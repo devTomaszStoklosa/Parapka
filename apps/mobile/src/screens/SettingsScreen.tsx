@@ -5,6 +5,7 @@ import { CyclePanelSettings } from "../cycle/CyclePanelSettings";
 import { t } from "../i18n";
 import { PrivacySettings } from "../consent/PrivacySettings";
 import { useConsentWiring } from "../consent/wiring";
+import { NotificationSettings } from "../notifications/NotificationSettings";
 import { PairingEntry } from "../pairing/PairingEntry";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
@@ -27,6 +28,7 @@ export function SettingsScreen() {
       <CheckinScheduleEntry />
       <PrivacySettings consent={consent} profiles={profiles} />
       <CyclePanelSettings />
+      <NotificationSettings />
     </ScrollView>
   );
 }
