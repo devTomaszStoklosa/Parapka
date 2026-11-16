@@ -1,8 +1,9 @@
-import { currentCheckinWindow } from "@parapka/domain";
+import { DEFAULT_CHECKIN_SCHEDULE } from "@parapka/domain";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { defaultConsent, NO_PROFILE } from "../consent/consent-model";
 import { wireConsent } from "../consent/wiring";
+import { createCheckinService } from "../checkin/checkin-service";
 import * as checkinWiring from "../checkin/wiring";
 import { createSingleDevice } from "../chores/chore-test-support";
 import * as choresWiring from "../chores/wiring";
@@ -25,22 +26,21 @@ async function setup(paired: boolean, shared = true, partnerFilled = false) {
     chores: device.chores,
     completions: { list: () => Promise.resolve([]) },
   } as unknown as ReturnType<typeof choresWiring.wireChores>);
-  vi.spyOn(checkinWiring, "wireCheckin").mockReturnValue({
-    checkin: {
-      current: () =>
-        Promise.resolve({
-          window: currentCheckinWindow({
-            year: 2026,
-            month: 11,
-            day: 16,
-            hour: 9,
-            minute: 0,
-          }),
-          paired,
-          status: "open",
-          partnerFilled,
-        }),
+  const none = () => () => undefined;
+  const checkin = createCheckinService({
+    clock: { nowMs: () => new Date(2026, 10, 16, 9).getTime() },
+    pairs: { activePair: () => Promise.resolve(paired ? {} : null) },
+    schedule: {
+      get: () => Promise.resolve(DEFAULT_CHECKIN_SCHEDULE),
+      subscribe: none,
     },
+    answers: { get: () => Promise.resolve(null) },
+    sealed: { partnerFilled: () => Promise.resolve(partnerFilled) },
+    reveal: { get: () => Promise.resolve(null) },
+    windowEnd: { sweep: () => Promise.resolve() },
+  } as unknown as Parameters<typeof createCheckinService>[0]);
+  vi.spyOn(checkinWiring, "wireCheckin").mockReturnValue({
+    checkin,
   } as unknown as ReturnType<typeof checkinWiring.wireCheckin>);
   vi.spyOn(cycleWiring, "wireCycleHints").mockReturnValue({
     received: {
