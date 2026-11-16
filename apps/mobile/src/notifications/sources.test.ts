@@ -1,6 +1,7 @@
 import { DEFAULT_CHECKIN_SCHEDULE } from "@parapka/domain";
 import { afterEach, expect, it, vi } from "vitest";
 
+import { createConsentRepository } from "../consent/consent-repository";
 import { defaultConsent, NO_PROFILE } from "../consent/consent-model";
 import { wireConsent } from "../consent/wiring";
 import { createCheckinService } from "../checkin/checkin-service";
@@ -8,6 +9,14 @@ import * as checkinWiring from "../checkin/wiring";
 import { createSingleDevice } from "../chores/chore-test-support";
 import * as choresWiring from "../chores/wiring";
 import * as cycleWiring from "../cycle/wiring";
+import { createCyclePanel } from "../cycle/cycle-panel";
+import { createWellbeingRepository } from "../cycle/wellbeing-repository";
+import {
+  createCycleSettingsRepository,
+  UNKNOWN_CYCLE_SETTINGS,
+} from "../data/cycle-settings";
+import type { Profile } from "../data/profile";
+import { createProfileRepository } from "../data/profile-repository";
 import type { Platform } from "../platform/context";
 import { enqueueNotification } from "./delivery";
 import { createNotificationSettingsRepository } from "./notification-settings";
@@ -103,4 +112,86 @@ it("collects the same check-in reminders whether or not the partner filled in (F
   expect(await collectSources(filled.platform, filled.settings, range)).toEqual(
     await collectSources(waiting.platform, waiting.settings, range),
   );
+});
+
+const wellbeingIds = async (
+  platform: Platform,
+  settings: Awaited<ReturnType<typeof setup>>["settings"],
+) =>
+  (await collectSources(platform, settings, range))
+    .flat()
+    .filter(({ type }) => type === "wellbeing")
+    .map(({ id }) => id);
+
+const PROFILE: Profile = {
+  name: "Ola",
+  form: "feminine",
+  adultConfirmed: true,
+  relationshipTenure: "1-3",
+  hasChildren: false,
+  childrenCount: 0,
+  goals: [],
+  otherGoalText: null,
+  shareGoalsWithPartner: false,
+  cycle: "yes",
+  pinDecision: "skipped",
+};
+
+/** A person with a cycle panel; with `reminder` the wellbeing reminder is on. */
+async function withCycle(reminder: boolean) {
+  const result = await setup(true);
+  const { database } = result.platform;
+  const profiles = createProfileRepository(database);
+  await profiles.save(PROFILE);
+  await createCycleSettingsRepository(database).save({
+    ...UNKNOWN_CYCLE_SETTINGS,
+    wellbeingReminder: reminder,
+  });
+  return { ...result, profiles };
+}
+
+it("collects no wellbeing reminder while the switch is off", async () => {
+  const { platform, settings } = await withCycle(false);
+  expect(await wellbeingIds(platform, settings)).toEqual([]);
+});
+
+it("collects no wellbeing reminder after the cycle panel is turned off", async () => {
+  const { platform, settings, profiles } = await withCycle(true);
+  const { database } = platform;
+  const consent = createConsentRepository({
+    database,
+    clock: { nowMs: () => 1_000 },
+    profiles,
+  });
+  await createCyclePanel({ database, profiles, consent }).disable();
+  expect(await wellbeingIds(platform, settings)).toEqual([]);
+});
+
+it("collects no wellbeing reminder for a profile without a cycle", async () => {
+  const { platform, settings, profiles } = await withCycle(true);
+  await profiles.save({ ...PROFILE, cycle: "no" });
+  expect(
+    await createCycleSettingsRepository(platform.database).get(),
+  ).toMatchObject({ wellbeingReminder: true });
+  expect(await wellbeingIds(platform, settings)).toEqual([]);
+});
+
+it("collects the wellbeing reminder until the day has an entry, the rest unchanged", async () => {
+  const { platform, settings } = await withCycle(true);
+  const before = (await collectSources(platform, settings, range)).flat();
+  expect(before.filter(({ id }) => id === "wellbeing:2026-11-16")).toHaveLength(
+    1,
+  );
+  await createWellbeingRepository(platform.database).put({
+    date: "2026-11-16",
+    energy: 3,
+    mood: 3,
+    tension: 3,
+    tags: [],
+  });
+  const after = (await collectSources(platform, settings, range)).flat();
+  expect(after.filter(({ id }) => id === "wellbeing:2026-11-16")).toEqual([]);
+  const others = (items: typeof before) =>
+    items.filter(({ id }) => id !== "wellbeing:2026-11-16");
+  expect(others(after)).toEqual(others(before));
 });
