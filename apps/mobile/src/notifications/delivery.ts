@@ -36,26 +36,36 @@ async function prune(db: LocalDatabase, collection: string, nowMs: number) {
   }
 }
 
-/**
- * The notifications that are due (`atMs <= nowMs`) and not delivered yet. All
- * of them are remembered as delivered, so no later check returns them again,
- * but those older than 24 hours are left out of the result: they are skipped.
- */
+export interface DueNotifications {
+  /** Everything due and not delivered yet; `markDelivered` remembers it. */
+  due: PlannedNotification[];
+  /** The part of `due` not older than 24 hours: the one to show. Older ones are skipped. */
+  show: PlannedNotification[];
+}
+
+/** The notifications that are due (`atMs <= nowMs`) and not delivered yet. Writes nothing but the pruning. */
 export async function takeDue(
   db: LocalDatabase,
   planned: readonly PlannedNotification[],
   nowMs: number,
-): Promise<PlannedNotification[]> {
+): Promise<DueNotifications> {
   await prune(db, DELIVERED, nowMs);
   await prune(db, QUEUE, nowMs);
   const delivered = new Set((await db.list(DELIVERED)).map(({ id }) => id));
   const due = planned.filter(
     (item) => item.atMs <= nowMs && !delivered.has(item.id),
   );
-  for (const item of due) {
+  return { due, show: due.filter((item) => item.atMs >= nowMs - OVERDUE_MS) };
+}
+
+/** Remembers the notifications as delivered, so no later check returns them again. */
+export async function markDelivered(
+  db: LocalDatabase,
+  items: readonly PlannedNotification[],
+): Promise<void> {
+  for (const item of items) {
     await db.put(DELIVERED, item.id, { atMs: item.atMs });
   }
-  return due.filter((item) => item.atMs >= nowMs - OVERDUE_MS);
 }
 
 const translate = (text: NotificationText) =>

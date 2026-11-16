@@ -5,7 +5,13 @@ import { wireChores } from "../chores/wiring";
 import { usePlatform, type Platform } from "../platform/context";
 import type { NotifierMessage } from "../platform/notifier";
 import { planChoreReminders } from "./chore-reminders";
-import { listQueued, messageFor, RETENTION_MS, takeDue } from "./delivery";
+import {
+  listQueued,
+  markDelivered,
+  messageFor,
+  RETENTION_MS,
+  takeDue,
+} from "./delivery";
 import { NotificationBanner } from "./NotificationBanner";
 import { createNotificationSettingsRepository } from "./notification-settings";
 import { planNotifications } from "./planned";
@@ -13,8 +19,15 @@ import { planNotifications } from "./planned";
 /** How often the open app looks for due notifications. */
 export const CHECK_MS = 60_000;
 
-/** One check: what is due now, as the message to show, or null. */
-async function dueMessage(platform: Platform): Promise<NotifierMessage | null> {
+interface Due {
+  /** Remember these as delivered, once the message is really going to be shown. */
+  remember: () => Promise<void>;
+  /** The message to show, or null when everything due is skipped. */
+  message: NotifierMessage | null;
+}
+
+/** One check: what is due now. Nothing is remembered before `remember` is called. */
+async function checkDue(platform: Platform): Promise<Due | null> {
   const { database, clock } = platform;
   const { chores, completions } = wireChores(platform);
   const settings = await createNotificationSettingsRepository(database).get();
@@ -34,8 +47,13 @@ async function dueMessage(platform: Platform): Promise<NotifierMessage | null> {
     fromMs,
     toMs,
   });
-  const [first, ...rest] = await takeDue(database, planned, toMs);
-  return first ? messageFor([first, ...rest], settings.discreet) : null;
+  const { due, show } = await takeDue(database, planned, toMs);
+  if (due.length === 0) return null;
+  const [first, ...rest] = show;
+  return {
+    remember: () => markDelivered(database, due),
+    message: first ? messageFor([first, ...rest], settings.discreet) : null,
+  };
 }
 
 /**
@@ -56,9 +74,13 @@ export function NotificationRunner() {
     const check = () => {
       if (running) return;
       running = true;
-      dueMessage(platform)
-        .then((message) => {
-          if (!active || !message) return;
+      checkDue(platform)
+        .then(async (result) => {
+          // Unmounted meanwhile: nothing is remembered, the next mount delivers.
+          if (!active || !result) return;
+          await result.remember();
+          const { message } = result;
+          if (!message) return;
           if (platform.notifier?.permission() === "granted") {
             platform.notifier.show(message);
           } else {

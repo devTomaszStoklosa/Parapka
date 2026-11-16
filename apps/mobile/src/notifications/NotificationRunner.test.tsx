@@ -1,10 +1,21 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { AppState } from "react-native";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { ME, createSingleDevice } from "../chores/chore-test-support";
 import * as wiring from "../chores/wiring";
+import { t } from "../i18n";
+import { LockGate } from "../lock/LockGate";
+import { createPinStore } from "../lock/pin-store";
+import { createMemoryKeyStore } from "../platform/memory-key-store";
+import { createWebSodium } from "../platform/web-sodium";
 import { PlatformProvider, type Platform } from "../platform/context";
 import { createMemoryNotifier, type Notifier } from "../platform/notifier";
 import { enqueueNotification } from "./delivery";
@@ -207,14 +218,57 @@ it("stops checking after the unmount", async () => {
   expect(remove).toHaveBeenCalledTimes(1);
 });
 
-it("does not show a result that arrives after the unmount", async () => {
-  const { notifier, mount } = await setup("17:00");
+it("does not remember a result that arrives after the unmount", async () => {
+  const { notifier, mount, advance } = await setup("17:00");
   const view = mount();
   view.unmount();
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(0);
-  });
+  await advance(0);
   expect(notifier.shown).toEqual([]);
+  mount();
+  await advance(0);
+  expect(notifier.shown).toHaveLength(1);
+});
+
+it("delivers nothing in a locked app and once after the unlock", async () => {
+  const { notifier, platform } = await setup();
+  const sodium = await createWebSodium();
+  const clock = platform.clock;
+  const keyStore = createMemoryKeyStore();
+  await keyStore.set("secret", Uint8Array.of(1));
+  await createPinStore({ database: platform.database, sodium, clock }).setPin(
+    "123456",
+  );
+  render(
+    <PlatformProvider platform={platform}>
+      <LockGate
+        database={platform.database}
+        keyStore={keyStore}
+        sodium={sodium}
+        clock={clock}
+      >
+        <NotificationRunner />
+      </LockGate>
+    </PlatformProvider>,
+  );
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(3 * CHECK_MS);
+  });
+  expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
+  expect(notifier.shown).toEqual([]);
+  expect(screen.queryByRole("alert")).toBeNull();
+  "123456".split("").forEach((digit, index) => {
+    fireEvent.change(screen.getByLabelText(`Cyfra ${String(index + 1)} z 6`), {
+      target: { value: digit },
+    });
+  });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(CHECK_MS);
+  });
+  expect(notifier.shown).toHaveLength(1);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(3 * CHECK_MS);
+  });
+  expect(notifier.shown).toHaveLength(1);
 });
 
 it("does not start a check while the previous one is still running", async () => {

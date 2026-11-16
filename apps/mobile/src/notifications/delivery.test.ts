@@ -4,6 +4,7 @@ import { createMemoryDatabase } from "../data/memory-database";
 import {
   enqueueNotification,
   listQueued,
+  markDelivered,
   messageFor,
   OVERDUE_MS,
   RETENTION_MS,
@@ -27,32 +28,49 @@ const planned = (id: string, atMs: number): PlannedNotification => ({
 const ids = (items: readonly PlannedNotification[]) =>
   items.map((item) => item.id);
 
+const take = async (
+  db: ReturnType<typeof createMemoryDatabase>,
+  items: PlannedNotification[],
+  nowMs: number,
+) => {
+  const { due, show } = await takeDue(db, items, nowMs);
+  await markDelivered(db, due);
+  return ids(show);
+};
+
 it("returns a due notification once", async () => {
   const db = createMemoryDatabase();
   const item = planned("a", NOW - 1000);
-  expect(ids(await takeDue(db, [item], NOW))).toEqual(["a"]);
-  expect(await takeDue(db, [item], NOW + 60_000)).toEqual([]);
+  expect(await take(db, [item], NOW)).toEqual(["a"]);
+  expect(await take(db, [item], NOW + 60_000)).toEqual([]);
+});
+
+it("remembers nothing before markDelivered", async () => {
+  const db = createMemoryDatabase();
+  const item = planned("a", NOW - 1000);
+  await takeDue(db, [item], NOW);
+  expect(ids((await takeDue(db, [item], NOW)).due)).toEqual(["a"]);
 });
 
 it("keeps a notification that is not due yet", async () => {
   const db = createMemoryDatabase();
   const item = planned("a", NOW + 1000);
-  expect(await takeDue(db, [item], NOW)).toEqual([]);
-  expect(ids(await takeDue(db, [item], NOW + 1000))).toEqual(["a"]);
+  expect(await take(db, [item], NOW)).toEqual([]);
+  expect(await take(db, [item], NOW + 1000)).toEqual(["a"]);
 });
 
 it("skips and remembers a notification older than 24 hours", async () => {
   const db = createMemoryDatabase();
   const old = planned("old", NOW - OVERDUE_MS - 1);
   const recent = planned("recent", NOW - OVERDUE_MS);
-  expect(ids(await takeDue(db, [old, recent], NOW))).toEqual(["recent"]);
-  expect(await takeDue(db, [old], NOW)).toEqual([]);
+  expect(await take(db, [old, recent], NOW)).toEqual(["recent"]);
+  expect((await takeDue(db, [old], NOW)).due).toEqual([]);
 });
 
 it("forgets the delivered entries after 14 days", async () => {
   const db = createMemoryDatabase();
-  await takeDue(db, [planned("a", NOW), planned("b", NOW + 1)], NOW + 1);
-  await takeDue(db, [], NOW + RETENTION_MS + 1);
+  await take(db, [planned("a", NOW), planned("b", NOW + 1)], NOW + 1);
+  await take(db, [], NOW + RETENTION_MS + 1);
   expect((await db.list("notifications-delivered")).map((r) => r.id)).toEqual([
     "b",
   ]);
