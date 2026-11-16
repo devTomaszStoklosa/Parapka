@@ -5,6 +5,7 @@ import { usePlatform, type Platform } from "../platform/context";
 import type { NotifierMessage } from "../platform/notifier";
 import { markDelivered, messageFor, RETENTION_MS, takeDue } from "./delivery";
 import { NotificationBanner } from "./NotificationBanner";
+import { wireEventWatch } from "./event-watch";
 import { createNotificationSettingsRepository } from "./notification-settings";
 import { planNotifications } from "./planned";
 import { collectSources } from "./sources";
@@ -22,6 +23,10 @@ interface Due {
 /** One check: what is due now. Nothing is remembered before `remember` is called. */
 async function checkDue(platform: Platform): Promise<Due | null> {
   const { database, clock } = platform;
+  // The events that arrived since the last look go to the queue first.
+  await wireEventWatch(platform)
+    .scan()
+    .catch(() => undefined);
   const settings = await createNotificationSettingsRepository(database).get();
   const toMs = clock.nowMs();
   const fromMs = toMs - RETENTION_MS;
@@ -55,6 +60,7 @@ export function NotificationRunner() {
   useEffect(() => {
     let active = true;
     let running = false;
+    const stopWatching = wireEventWatch(platform).start();
     const check = () => {
       if (running) return;
       running = true;
@@ -84,6 +90,7 @@ export function NotificationRunner() {
     });
     return () => {
       active = false;
+      stopWatching();
       clearInterval(timer);
       subscription.remove();
     };
