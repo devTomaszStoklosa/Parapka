@@ -1,6 +1,7 @@
 import { plCheckin } from "./pl-checkin";
 import { plCycle } from "./pl-cycle";
 import { plHead } from "./pl-head";
+import { plNotifications } from "./pl-notifications";
 import { plannerEdit } from "./pl-planner";
 import { plShare } from "./pl-share";
 import { plToday } from "./pl-today";
@@ -61,6 +62,7 @@ export const pl = {
   share: plShare,
   cycle: plCycle,
   checkin: plCheckin,
+  notifications: plNotifications,
   todayHint: plToday.hint,
   todayChores: plToday.chores,
   pairing: {
