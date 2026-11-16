@@ -5,6 +5,7 @@ import {
   type CycleSettings,
 } from "../data/cycle-settings";
 import { createMemoryDatabase } from "../data/memory-database";
+import { createNotificationSettingsRepository } from "../notifications/notification-settings";
 import { createCycleRepository } from "./cycle-repository";
 
 const onboarded: CycleSettings = {
@@ -19,6 +20,16 @@ async function setup(settings?: CycleSettings) {
   if (settings) await createCycleSettingsRepository(database).save(settings);
   return createCycleRepository(database);
 }
+
+it("tells the subscribers of the notification settings about the reminder", async () => {
+  const database = createMemoryDatabase();
+  const notifications = createNotificationSettingsRepository(database);
+  const listener = vi.fn();
+  notifications.subscribe(listener);
+  await createCycleRepository(database).setWellbeingReminder(true);
+  expect(listener).toHaveBeenCalledTimes(1);
+  expect((await notifications.get()).enabled.wellbeing).toBe(true);
+});
 
 describe("profile", () => {
   it("has the defaults and no reminder before the onboarding", async () => {
