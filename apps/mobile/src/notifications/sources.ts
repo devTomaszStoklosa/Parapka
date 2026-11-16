@@ -32,8 +32,8 @@ export async function collectSources(
   const { database } = platform;
   const enabled =
     (await createProfileRepository(database).get())?.cycle === "yes" &&
-    (await createCycleSettingsRepository(database).get())
-      ?.wellbeingReminder === true;
+    (await createCycleSettingsRepository(database).get())?.wellbeingReminder ===
+      true;
   const entries = await createWellbeingRepository(database).range(
     dateOf(new Date(range.fromMs - 48 * 3_600_000)),
     dateOf(new Date(range.toMs)),
