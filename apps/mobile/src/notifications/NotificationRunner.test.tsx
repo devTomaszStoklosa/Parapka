@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/* eslint-disable max-lines -- one suite for the whole runner; the observer of the events pushed it over */
 import {
   act,
   cleanup,
@@ -26,6 +27,7 @@ import { createWebSodium } from "../platform/web-sodium";
 import { PlatformProvider, type Platform } from "../platform/context";
 import { createMemoryNotifier, type Notifier } from "../platform/notifier";
 import { enqueueNotification } from "./delivery";
+import * as eventWatch from "./event-watch";
 import { CHECK_MS, NotificationRunner } from "./NotificationRunner";
 import { createNotificationSettingsRepository } from "./notification-settings";
 
@@ -72,6 +74,12 @@ async function setup(reminder = "18:00", permission?: Notifier) {
   vi.spyOn(cycleWiring, "wireCycleHints").mockReturnValue({
     received: { today: () => Promise.resolve(null) },
   } as never);
+  // A failed look at the events does not stop the check.
+  const idle = {
+    scan: () => Promise.reject(new Error("look")),
+    start: () => () => undefined,
+  };
+  vi.spyOn(eventWatch, "wireEventWatch").mockReturnValue(idle);
   const notifier = permission ?? createMemoryNotifier();
   const platform = {
     database: device.database,
