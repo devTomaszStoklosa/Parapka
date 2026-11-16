@@ -20,6 +20,7 @@ import { ME, createSingleDevice } from "../chores/chore-test-support";
 import * as wiring from "../chores/wiring";
 import * as cycleWiring from "../cycle/wiring";
 import { t } from "../i18n";
+import { pl } from "../i18n/pl";
 import { LockGate } from "../lock/LockGate";
 import { createPinStore } from "../lock/pin-store";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
@@ -29,6 +30,7 @@ import { createMemoryNotifier, type Notifier } from "../platform/notifier";
 import { enqueueNotification } from "./delivery";
 import * as eventWatch from "./event-watch";
 import { CHECK_MS, NotificationRunner } from "./NotificationRunner";
+import { NotificationSettings } from "./NotificationSettings";
 import { createNotificationSettingsRepository } from "./notification-settings";
 
 const at = (hour: number, minute = 0, day = 16) =>
@@ -59,6 +61,10 @@ async function setup(reminder = "18:00", permission?: Notifier) {
   vi.spyOn(wiring, "wireChores").mockReturnValue({
     chores: device.chores,
     completions: { list: () => Promise.resolve([]) },
+    pairs: {
+      activePair: () => Promise.resolve(null),
+      subscribe: () => () => undefined,
+    },
   } as unknown as ReturnType<typeof wiring.wireChores>);
   const pairing = { paired: false };
   vi.spyOn(checkinWiring, "wireCheckin").mockReturnValue({
@@ -193,6 +199,26 @@ it("delivers nothing for a type that is turned off", async () => {
     enabled: { "chore-reminder": false },
   });
   mount();
+  await advance(CHECK_MS);
+  expect(notifier.shown).toEqual([]);
+});
+
+it("stops a type that is turned off on the screen without a reload", async () => {
+  const { notifier, platform, mount, advance } = await setup("18:00");
+  mount();
+  await advance(0);
+  render(
+    <PlatformProvider platform={platform}>
+      <NotificationSettings />
+    </PlatformProvider>,
+  );
+  await advance(0);
+  fireEvent.click(
+    screen.getByRole("switch", {
+      name: pl.notifications.settings.types["chore-reminder"],
+    }),
+  );
+  await advance(0);
   await advance(CHECK_MS);
   expect(notifier.shown).toEqual([]);
 });

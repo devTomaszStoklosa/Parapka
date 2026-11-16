@@ -13,3 +13,9 @@ it("does not give away the cycle in the wellbeing reminder (FR-NOT-05, R-1)", ()
   const found = texts.flatMap((text) => findPhrases(text, [...revealing]));
   expect(found).toEqual([]);
 });
+
+it("does not use revealing phrases in the texts of the settings", () => {
+  const { revealing } = parseForbiddenLists(forbidden);
+  const texts = JSON.stringify(plNotifications.settings);
+  expect(findPhrases(texts, [...revealing])).toEqual([]);
+});
