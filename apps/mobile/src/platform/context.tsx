@@ -4,6 +4,7 @@ import type { LocalDatabase } from "../data/local-database";
 import { createContext, useContext, type ReactNode } from "react";
 import type { SocketLike } from "../net/relay-socket";
 import type { KeyStore } from "./key-store";
+import type { Notifier } from "./notifier";
 import type { Sha256 } from "./sha256";
 
 /** Platform dependencies that screens receive through context (spec 7.2). */
@@ -22,6 +23,8 @@ export interface Platform {
   createSocket?: (url: string) => SocketLike;
   /** The invitation text the app was opened with (`/pair#<text>`), read once; web only. */
   launchInvitation?: () => string | null;
+  /** Shows notifications outside the app; without it only the in-app banner is shown. */
+  notifier?: Notifier;
 }
 
 const PlatformContext = createContext<Platform | null>(null);

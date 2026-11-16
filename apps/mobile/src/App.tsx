@@ -6,6 +6,7 @@ import type { Profile } from "./data/profile";
 import { t, type TranslationKey } from "./i18n";
 import { LockGate } from "./lock/LockGate";
 import { TabNavigator } from "./navigation/TabNavigator";
+import { NotificationRunner } from "./notifications/NotificationRunner";
 import { AcceptEntry } from "./pairing/AcceptEntry";
 import { OnboardingFlow } from "./onboarding/OnboardingFlow";
 import { PlatformProvider, type Platform } from "./platform/context";
@@ -94,6 +95,7 @@ function Session({ platform }: { platform: Platform }) {
       ) : (
         <>
           <SyncRunner />
+          <NotificationRunner />
           <SharePrivateGate>
             <TabNavigator cycleEnabled={profile.cycle === "yes"} />
           </SharePrivateGate>
