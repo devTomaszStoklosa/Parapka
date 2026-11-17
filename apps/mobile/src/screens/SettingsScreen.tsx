@@ -1,6 +1,7 @@
 import { ScrollView } from "react-native";
 
 import { CheckinScheduleEntry } from "../checkin/CheckinScheduleSettings";
+import { ExportData } from "../data-control/ExportData";
 import { CyclePanelSettings } from "../cycle/CyclePanelSettings";
 import { t } from "../i18n";
 import { PrivacySettings } from "../consent/PrivacySettings";
@@ -29,6 +30,7 @@ export function SettingsScreen() {
       <PrivacySettings consent={consent} profiles={profiles} />
       <CyclePanelSettings />
       <NotificationSettings />
+      <ExportData />
     </ScrollView>
   );
 }

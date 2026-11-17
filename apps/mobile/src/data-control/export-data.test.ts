@@ -39,6 +39,7 @@ const clock = { nowMs: () => NOW };
 const OWN = "OWNDEVICEID";
 const PARTNER = "PARTNERDEVICEID";
 const hlc = (deviceId: string) => formatHlc(createHlc(NOW, 0, deviceId));
+const field = (value: unknown) => ({ value, hlc: hlc(PARTNER) });
 const profile = { name: "Ola", cycle: "yes" } as unknown as Profile;
 
 let sodium: Sodium;
@@ -154,6 +155,16 @@ async function fillSharedData(
     rule: { kind: "daily" },
     assignment: { kind: "person", person: "me" },
   });
+  await chores.sync.merge({
+    entity: "Chore",
+    id: "chore-partner",
+    op: "upsert",
+    fields: {
+      title: field("PARTNER-CHORE"),
+      rule: field({ kind: "daily" }),
+      assignment: field({ kind: "person", deviceId: PARTNER }),
+    },
+  });
   await createCompletionRepository({
     database,
     chores,
@@ -190,15 +201,15 @@ async function fillPartnerData(database: LocalDatabase) {
     id: "hint-partner",
     op: "upsert",
     fields: {
-      forDate: { value: "2026-11-16", hlc: hlc(PARTNER) },
-      text: { value: "PARTNER-HINT-TEXT", hlc: hlc(PARTNER) },
-      category: { value: "relief", hlc: hlc(PARTNER) },
-      status: { value: "scheduled", hlc: hlc(PARTNER) },
+      forDate: field("2026-11-16"),
+      text: field("PARTNER-HINT-TEXT"),
+      category: field("relief"),
+      status: field("scheduled"),
     },
   });
   await createPartnerProfileRepository(database).merge({
-    name: { value: "PARTNER-NAME", hlc: hlc(PARTNER) },
-    form: { value: "neutral", hlc: hlc(PARTNER) },
+    name: field("PARTNER-NAME"),
+    form: field("neutral"),
   });
   const raw = [
     ["checkin-revealed", { mood: 1, need: "PARTNER-NEED" }],
@@ -224,8 +235,8 @@ describe("buildExport", () => {
     expect(document.cycleSettings).toMatchObject({ cycleLength: 29 });
     expect(document.periodLogs).toHaveLength(2);
     expect(document.wellbeingEntries).toHaveLength(1);
-    expect(document.ownHints).toEqual([
-      expect.objectContaining({ id: "hint-own", text: "OWN-HINT-TEXT" }),
+    expect(document.ownHints).toMatchObject([
+      { id: "hint-own", text: "OWN-HINT-TEXT" },
     ]);
     expect(document.hintReactions).toHaveLength(1);
     expect(document.hintSurvey).toHaveLength(1);
@@ -235,35 +246,34 @@ describe("buildExport", () => {
       checkInTime: "18:30",
     });
     expect(document.notificationSettings).toMatchObject({ discreet: false });
-  });
 
-  it("names the people instead of the devices", async () => {
-    const { database } = await filledDatabase();
-    const document = await buildExport({ database, clock });
-    expect(document.chores).toEqual([
-      expect.objectContaining({
-        title: "OWN-CHORE",
-        assignment: { kind: "person", person: "me" },
-      }),
+    // The people are named instead of the devices.
+    expect(document.chores).toMatchObject([
+      { title: "OWN-CHORE", assignment: { kind: "person", person: "me" } },
+      {
+        title: "PARTNER-CHORE",
+        assignment: { kind: "person", person: "partner" },
+      },
     ]);
-    expect(document.choreCompletions).toEqual([
-      expect.objectContaining({ completedBy: "me" }),
-    ]);
-    expect(document.mentalLoadItems).toEqual([
-      expect.objectContaining({ title: "OWN-ITEM" }),
-    ]);
+    expect(document.choreCompletions).toMatchObject([{ completedBy: "me" }]);
+    expect(document.mentalLoadItems).toMatchObject([{ title: "OWN-ITEM" }]);
     expect(document.carrierChanges).toMatchObject([
       { carrier: "partner", changedBy: "partner" },
       { carrier: "both", changedBy: "partner" },
     ]);
-    expect(document.handoverRequests).toEqual([
-      expect.objectContaining({ requestedBy: "partner", status: "pending" }),
+    expect(document.handoverRequests).toMatchObject([
+      { requestedBy: "partner", status: "pending" },
     ]);
   });
 
-  it("keeps the partner out of the document", async () => {
+  it("keeps the partner out of a clean JSON", async () => {
     const { database } = await filledDatabase();
-    const text = JSON.stringify(await buildExport({ database, clock }));
+    const document = await buildExport({ database, clock });
+    const text = JSON.stringify(document);
+    expect(JSON.parse(text)).toEqual(document);
+    for (const name of ['"state":', '"pending":', '"hlc":', '"deletedAt":']) {
+      expect(text).not.toContain(name);
+    }
     for (const marker of [
       "PARTNER-HINT-TEXT",
       "PARTNER-NEED",
@@ -295,16 +305,6 @@ describe("buildExport", () => {
     ];
     expect(secrets.length).toBeGreaterThan(5);
     for (const secret of secrets) expect(text).not.toContain(secret);
-  });
-
-  it("survives JSON and carries no sync markers", async () => {
-    const { database } = await filledDatabase();
-    const document = await buildExport({ database, clock });
-    const text = JSON.stringify(document);
-    expect(JSON.parse(text)).toEqual(document);
-    for (const name of ['"state":', '"pending":', '"hlc":', '"deletedAt":']) {
-      expect(text).not.toContain(name);
-    }
   });
 
   it("classifies every collection that the repositories wrote", async () => {
