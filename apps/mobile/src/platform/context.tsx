@@ -3,6 +3,7 @@ import type { Clock } from "@parapka/domain";
 import type { LocalDatabase } from "../data/local-database";
 import { createContext, useContext, type ReactNode } from "react";
 import type { SocketLike } from "../net/relay-socket";
+import type { FileShare } from "./file-share";
 import type { KeyStore } from "./key-store";
 import type { Notifier } from "./notifier";
 import type { Sha256 } from "./sha256";
@@ -25,6 +26,8 @@ export interface Platform {
   launchInvitation?: () => string | null;
   /** Shows notifications outside the app; without it only the in-app banner is shown. */
   notifier?: Notifier;
+  /** Saves or shares a file through the system; without it the export is hidden. */
+  fileShare?: FileShare;
 }
 
 const PlatformContext = createContext<Platform | null>(null);

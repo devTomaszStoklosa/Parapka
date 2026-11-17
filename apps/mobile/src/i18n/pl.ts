@@ -1,5 +1,6 @@
 import { plCheckin } from "./pl-checkin";
 import { plCycle } from "./pl-cycle";
+import { plData } from "./pl-data";
 import { plHead } from "./pl-head";
 import { plNotifications } from "./pl-notifications";
 import { plannerEdit } from "./pl-planner";
@@ -63,6 +64,7 @@ export const pl = {
   cycle: plCycle,
   checkin: plCheckin,
   notifications: plNotifications,
+  data: plData,
   todayHint: plToday.hint,
   todayChores: plToday.chores,
   pairing: {
@@ -71,10 +73,7 @@ export const pl = {
     cancel: "Anuluj",
     retry: "Spróbuj ponownie",
     close: "Zamknij",
-    paste: {
-      label: "Wklej link zaproszenia",
-      connect: "Połącz",
-    },
+    paste: { label: "Wklej link zaproszenia", connect: "Połącz" },
     newInvite: "Nowe zaproszenie",
     disconnected: "Para została rozłączona.",
     ok: "OK",

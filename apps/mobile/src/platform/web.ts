@@ -6,6 +6,7 @@ import { configuredRelayUrl } from "../net/relay-config";
 import { createLaunchLinkReader } from "./launch-link";
 import type { SocketLike } from "../net/relay-socket";
 import { webSha256 } from "./sha256";
+import { createWebFileShare } from "./web-file-share";
 import { createWebNotifier } from "./web-notifier";
 import { createWebSodium } from "./web-sodium";
 
@@ -27,5 +28,6 @@ export async function createWebPlatform(): Promise<Platform> {
     createSocket: (url) => new WebSocket(url) as SocketLike,
     launchInvitation: createLaunchLinkReader(location, history),
     notifier: createWebNotifier(),
+    fileShare: createWebFileShare(),
   };
 }
