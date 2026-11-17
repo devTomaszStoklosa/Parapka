@@ -18,7 +18,10 @@ function download({ name, mimeType, text }: SharedFile): void {
   link.href = url;
   link.download = name;
   link.click();
-  URL.revokeObjectURL(url);
+  // Safari and Firefox can abort the download when the URL is revoked at once.
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 async function shareFile(file: SharedFile): Promise<void> {

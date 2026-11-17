@@ -8,6 +8,7 @@ const file = { name: "a.json", mimeType: "application/json", text: "{}" };
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 function stubNavigator(nav: object) {
@@ -15,6 +16,7 @@ function stubNavigator(nav: object) {
 }
 
 function stubDownload() {
+  vi.useFakeTimers();
   const created = vi.fn(() => "blob:x");
   const revoked = vi.fn();
   vi.stubGlobal("URL", { createObjectURL: created, revokeObjectURL: revoked });
@@ -61,6 +63,10 @@ it("downloads the file when files cannot be shared", async () => {
   expect(clicked).toHaveLength(1);
   expect(clicked[0]?.download).toBe("a.json");
   expect(clicked[0]?.href).toBe("blob:x");
+  expect(revoked).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(999);
+  expect(revoked).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(1);
   expect(revoked).toHaveBeenCalledWith("blob:x");
 });
 
