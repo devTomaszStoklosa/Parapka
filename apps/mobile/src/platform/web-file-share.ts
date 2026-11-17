@@ -24,18 +24,18 @@ function download({ name, mimeType, text }: SharedFile): void {
 async function shareFile(file: SharedFile): Promise<void> {
   const { name, mimeType, text } = file;
   const files = [new File([text], name, { type: mimeType })];
-  const { canShare, share } = nav();
-  if (canShare?.({ files }) === true && share) {
-    await share.call(nav(), { files }).catch(ignoreCancel);
+  const n = nav();
+  if (n.canShare?.({ files }) === true && n.share) {
+    await n.share({ files }).catch(ignoreCancel);
     return;
   }
   download(file);
 }
 
 async function shareText(text: string): Promise<void> {
-  const { share } = nav();
-  if (share) {
-    await share.call(nav(), { text }).catch(ignoreCancel);
+  const n = nav();
+  if (n.share) {
+    await n.share({ text }).catch(ignoreCancel);
     return;
   }
   download({ name: "parapka.txt", mimeType: "text/plain", text });

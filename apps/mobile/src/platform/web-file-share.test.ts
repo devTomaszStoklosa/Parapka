@@ -84,3 +84,19 @@ it("shares a text, and downloads it without the share API", async () => {
   await createWebFileShare().shareText("hi");
   expect(clicked[0]?.download).toBe("parapka.txt");
 });
+
+it("calls canShare and share on the navigator itself", async () => {
+  const nav = {
+    canShare(this: unknown) {
+      if (this !== nav) throw new TypeError("Illegal invocation");
+      return true;
+    },
+    share(this: unknown) {
+      if (this !== nav) throw new TypeError("Illegal invocation");
+      return Promise.resolve();
+    },
+  };
+  stubNavigator(nav);
+  await createWebFileShare().shareFile(file);
+  await createWebFileShare().shareText("hi");
+});
