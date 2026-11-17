@@ -33,11 +33,12 @@ const one = ({ database }: Source, collection: string, id: string) =>
 const rowsOf = async (
   { database }: Source,
   collection: string,
-  map: (id: string, values: Record<string, unknown>) => JsonValue,
+  map: (id: string, values: Record<string, unknown>) => JsonValue | undefined,
 ) =>
-  (await syncedRows(database, collection)).map(({ id, values }) =>
-    map(id, values),
-  );
+  (await syncedRows(database, collection)).flatMap(({ id, values }) => {
+    const mapped = map(id, values);
+    return mapped === undefined ? [] : [mapped];
+  });
 
 /**
  * The collections that go into the document: the own data of the person and
@@ -64,11 +65,18 @@ const EXPORTED: Record<string, Exported> = {
     section: "choreCompletions",
     why: "the check-offs of the chores, of both people",
     build: (source) =>
-      rowsOf(source, "chore-completions", (_id, values) => ({
-        ...pick(values, ["choreId", "occurrenceDate"]),
-        completedBy: personOf(String(values.completedBy), source.devices),
-        completedAt: momentOf(String(values.completedAt)),
-      })),
+      rowsOf(source, "chore-completions", (_id, values) => {
+        const completedAt = momentOf(values.completedAt);
+        // Like the repository: a partial record from the partner stays out.
+        if (typeof values.completedBy !== "string" || completedAt === null) {
+          return undefined;
+        }
+        return {
+          ...pick(values, ["choreId", "occurrenceDate"]),
+          completedBy: personOf(values.completedBy, source.devices),
+          completedAt,
+        };
+      }),
   },
   "mental-load-items": {
     section: "mentalLoadItems",
@@ -98,7 +106,7 @@ const EXPORTED: Record<string, Exported> = {
             ? "both"
             : personOf(String(values.carrier), source.devices),
         changedBy: personOf(String(values.changedBy), source.devices),
-        changedAt: momentOf(String(values.changedAt)),
+        changedAt: momentOf(values.changedAt),
       })),
   },
   "handover-requests": {
@@ -108,7 +116,7 @@ const EXPORTED: Record<string, Exported> = {
       rowsOf(source, "handover-requests", (_id, values) => ({
         ...pick(values, ["requestId", "itemId", "status"]),
         requestedBy: personOf(String(values.requestedBy), source.devices),
-        changedAt: momentOf(String(values.changedAt)),
+        changedAt: momentOf(values.changedAt),
       })),
   },
   "checkin-own": {

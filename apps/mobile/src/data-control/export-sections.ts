@@ -1,13 +1,13 @@
 import { isAlive, parseHlc, type EntityState } from "@parapka/sync";
 
+import {
+  decodeAssignment,
+  type Devices,
+  type StoredAssignment,
+} from "../chores/chore-codec";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
 
-/** The device ids of the two people; they never reach the document. */
-export interface Devices {
-  readonly own: string | null;
-  readonly partner: string | null;
-}
-
+export type { Devices };
 export type Person = "me" | "partner";
 
 /** A synced record as the repositories keep it. */
@@ -29,9 +29,17 @@ export function personOf(deviceId: string, { own, partner }: Devices): Person {
   return deviceId === partner ? "partner" : "me";
 }
 
-/** The moment of an HLC (text form) as a date; the device in it is dropped. */
-export const momentOf = (hlc: string) =>
-  new Date(parseHlc(hlc).physical).toISOString();
+/**
+ * The moment of an HLC (text form) as a date; the device in it is dropped.
+ * Null for a value that is no HLC: the partner's records are not trusted.
+ */
+export function momentOf(hlc: unknown): string | null {
+  try {
+    return new Date(parseHlc(String(hlc)).physical).toISOString();
+  } catch {
+    return null;
+  }
+}
 
 /** The record that is not deleted, as its id and the values of its fields. */
 function toRow(id: string, record: SyncedRecord): Row | null {
@@ -75,24 +83,13 @@ export function pick(
   return picked;
 }
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
 /** An assignment with people ("me"/"partner") instead of device ids. */
 export function personalAssignment(
   assignment: unknown,
   devices: Devices,
 ): JsonValue {
-  if (!isObject(assignment)) return null;
-  const { kind, deviceId, firstDeviceId, startDate } = assignment;
-  if (kind === "person") {
-    return { kind, person: personOf(String(deviceId), devices) };
-  }
-  if (kind === "alternating") {
-    const firstPerson = personOf(String(firstDeviceId), devices);
-    return { kind, firstPerson, startDate: startDate as string };
-  }
-  return { kind: kind as string };
+  if (typeof assignment !== "object" || assignment === null) return null;
+  return decodeAssignment(assignment as StoredAssignment, devices);
 }
 
 /** The values of the records of a collection that are kept by their `id`. */

@@ -1,6 +1,7 @@
 import { createHlc, formatHlc } from "@parapka/sync";
 import { describe, expect, it } from "vitest";
 
+import { createCompletionRepository } from "../chores/completion-repository";
 import { createChoreRepository } from "../chores/chore-repository";
 import { createMemoryDatabase } from "../data/memory-database";
 import { createPairRepository } from "../pairing/pair-repository";
@@ -57,6 +58,10 @@ describe("export sections", () => {
   it("turns an HLC into a moment without the device", () => {
     const text = formatHlc(createHlc(NOW, 3, "secretdevice"));
     expect(momentOf(text)).toBe(new Date(NOW).toISOString());
+  });
+
+  it("gives no moment for a value that is no HLC", () => {
+    expect(momentOf(undefined)).toBeNull();
   });
 
   it("picks the named fields that exist", () => {
@@ -145,5 +150,28 @@ describe("export sections", () => {
     });
     expect(document).toMatchObject({ profile: null, chores: [] });
     expect(document.checkinSchedule).toBeNull();
+  });
+
+  it("skips a partial check-off of the partner instead of failing", async () => {
+    const database = createMemoryDatabase();
+    const completions = createCompletionRepository({
+      database,
+      chores: {} as never,
+      identity: { deviceId: () => Promise.resolve("dev-own") },
+      clock: { nowMs: () => NOW },
+    });
+    await completions.sync.merge({
+      entity: "ChoreCompletion",
+      id: "partial",
+      op: "upsert",
+      fields: {
+        choreId: { value: "chore-1", hlc: formatHlc(createHlc(NOW, 0, "d")) },
+      },
+    });
+    const document = await buildExport({
+      database,
+      clock: { nowMs: () => NOW },
+    });
+    expect(document.choreCompletions).toEqual([]);
   });
 });
