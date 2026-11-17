@@ -47,10 +47,18 @@ export class MemoryStore implements RelayStore {
       if (c.deviceId === deviceId) this.challenges.delete(id);
     }
     for (const [id, i] of this.invitations) {
-      if (i.deviceId === deviceId) this.invitations.delete(id);
+      if (i.deviceId === deviceId || i.acceptedByDeviceId === deviceId) {
+        this.invitations.delete(id);
+      }
     }
     for (const [id, row] of this.envelopes) {
-      if (row.envelope.senderDeviceId === deviceId) this.envelopes.delete(id);
+      const mailbox = this.mailboxes.get(row.envelope.pairMailboxId);
+      if (
+        row.envelope.senderDeviceId === deviceId &&
+        mailbox?.closedAtMs === undefined
+      ) {
+        this.envelopes.delete(id);
+      }
     }
     return Promise.resolve(this.devices.delete(deviceId));
   }

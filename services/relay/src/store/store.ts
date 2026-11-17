@@ -61,8 +61,10 @@ export interface RelayStore {
   /** Returns false when the device does not exist. */
   setPushToken(deviceId: string, push: PushToken): Promise<boolean>;
   /**
-   * Deletes the device with its push token, challenges, invitations and the
-   * envelopes it sent. Returns false when the device does not exist.
+   * Deletes the device with its push token, challenges, invitations (as
+   * creator or acceptor) and the envelopes it sent, except those in a closed
+   * mailbox: they stay for the partner (the disconnect command) until drained
+   * or purged. Returns false when the device does not exist.
    */
   deleteDevice(deviceId: string): Promise<boolean>;
 
