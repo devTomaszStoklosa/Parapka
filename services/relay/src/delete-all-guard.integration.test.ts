@@ -117,7 +117,13 @@ it("logs only route patterns during the whole delete-all scenario", async () => 
     expect(request.url).toMatch(/^(\/v1\/[a-z:/-]+|unmatched)$/);
 
   const text = lines.join("\n");
-  for (const secret of [a.deviceId, b.deviceId, pairMailboxId, publicKey, pushToken]) {
+  for (const secret of [
+    a.deviceId,
+    b.deviceId,
+    pairMailboxId,
+    publicKey,
+    pushToken,
+  ]) {
     expect(text).not.toContain(secret as string);
   }
 });
