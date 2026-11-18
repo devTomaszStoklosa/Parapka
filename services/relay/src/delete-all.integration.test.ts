@@ -2,10 +2,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { deleteAllData } from "../../../apps/mobile/src/data-control/delete-all";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import {
   createPairWorld,
+  deleteAllOf,
   type Device,
   type PairWorld,
 } from "./pair-test-support.js";
@@ -67,16 +67,6 @@ async function pairedDevices() {
   await a.client.setPushToken({ platform: "fcm", pushToken: PUSH_TOKEN });
   return { a, b, pairMailboxId };
 }
-
-const deleteAllOf = (a: Device) =>
-  deleteAllData({
-    database: a.database,
-    keyStore: a.keyStore,
-    pairs: a.pairs,
-    disconnect: () => a.disconnect(),
-    credentials: () => a.identity.credentials(),
-    client: () => a.client,
-  });
 
 it("deletes everything of A: 404 for the device, the partner learns, no trace left", async () => {
   const { a, b, pairMailboxId } = await pairedDevices();
