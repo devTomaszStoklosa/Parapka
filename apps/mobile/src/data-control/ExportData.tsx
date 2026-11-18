@@ -18,8 +18,8 @@ function fileName(nowMs: number): string {
   return `parapka-eksport-${date}.json`;
 }
 
-/** Settings section "Twoje dane": exports the own data to a JSON file (FR-SEC-05). */
-export function ExportData() {
+/** Builds the export file and hands it to the file share; null without a file share. */
+export function useExportData() {
   const { database, clock, fileShare } = usePlatform();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -42,6 +42,14 @@ export function ExportData() {
         setBusy(false);
       });
   };
+  return { run, busy, failed };
+}
+
+/** Settings section "Twoje dane": exports the own data to a JSON file (FR-SEC-05). */
+export function ExportData() {
+  const exporter = useExportData();
+  if (!exporter) return null;
+  const { run, busy, failed } = exporter;
   return (
     <View style={{ gap: spacing.md, marginTop: spacing.md }}>
       <AppText style={{ fontWeight: "bold" }}>{t("data.title")}</AppText>

@@ -18,6 +18,7 @@ interface Options {
   closingFails?: boolean;
   markerWithoutPair?: boolean;
   deleteDevice?: () => Promise<void>;
+  probe?: () => Promise<unknown>;
   localOnly?: boolean;
 }
 
@@ -34,12 +35,18 @@ async function setup(options: Options = {}) {
     calls.push("deleteDevice");
     return options.deleteDevice?.() ?? Promise.resolve();
   });
+  const fetchEnvelopes = vi.fn((...args: unknown[]) => {
+    calls.push(`probe:${String(args[0])}:${String(args[1])}`);
+    return (options.probe?.() ?? Promise.resolve({})) as never;
+  });
   const deps: DeleteAllDeps = {
     database,
     keyStore,
     pairs: {
       activePair: () =>
-        Promise.resolve(options.pair === false ? null : ({} as never)),
+        Promise.resolve(
+          options.pair === false ? null : ({ pairMailboxId: "m" } as never),
+        ),
     },
     disconnect: async () => {
       calls.push("disconnect");
@@ -55,7 +62,7 @@ async function setup(options: Options = {}) {
       calls.push("credentials");
       return Promise.resolve(options.registered === false ? null : credentials);
     }),
-    client: () => ({ deleteDevice }),
+    client: () => ({ deleteDevice, fetchEnvelopes }),
     ...(options.localOnly ? { localOnly: true } : {}),
   };
   const clear = database.clear.bind(database);
@@ -63,7 +70,7 @@ async function setup(options: Options = {}) {
     calls.push("clear");
     await clear();
   });
-  return { deps, calls, database, keyStore, deleteDevice };
+  return { deps, calls, database, keyStore, deleteDevice, fetchEnvelopes };
 }
 
 const kept = async (s: Awaited<ReturnType<typeof setup>>) =>
@@ -74,6 +81,8 @@ it("disconnects, closes the mailbox, deletes the device and clears, in this orde
   const s = await setup();
   expect(await deleteAllData(s.deps)).toBe("done");
   expect(s.calls).toEqual([
+    "credentials",
+    "probe:m:null",
     "disconnect",
     "closeMailbox",
     "credentials",
@@ -141,4 +150,36 @@ it("makes no network call in the local-only variant", async () => {
   const s = await setup({ localOnly: true });
   expect(await deleteAllData(s.deps)).toBe("done");
   expect(s.calls).toEqual(["clear"]);
+});
+
+it("stays offline before ending the pair when the relay is unreachable", async () => {
+  const s = await setup({
+    probe: () => Promise.reject(new RelayError("network")),
+  });
+  expect(await deleteAllData(s.deps)).toBe("offline");
+  expect(s.calls).toEqual(["credentials", "probe:m:null"]);
+  expect(await kept(s)).toBe(true);
+});
+
+it("stays offline when the probe fails with a non-relay error", async () => {
+  const s = await setup({ probe: () => Promise.reject(new Error("x")) });
+  expect(await deleteAllData(s.deps)).toBe("offline");
+  expect(s.calls).not.toContain("disconnect");
+});
+
+it.each(["notFound", "unauthorized"] as const)(
+  "goes on when the probe answers %s",
+  async (kind) => {
+    const s = await setup({
+      probe: () => Promise.reject(new RelayError(kind)),
+    });
+    expect(await deleteAllData(s.deps)).toBe("done");
+    expect(s.calls).toContain("disconnect");
+  },
+);
+
+it("skips the probe without credentials", async () => {
+  const s = await setup({ registered: false });
+  expect(await deleteAllData(s.deps)).toBe("done");
+  expect(s.fetchEnvelopes).not.toHaveBeenCalled();
 });
