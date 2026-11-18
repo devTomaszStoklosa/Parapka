@@ -1,7 +1,9 @@
 import type { PairKeys } from "@parapka/crypto";
+import type { Clock } from "@parapka/domain";
 
 import { changeChannel } from "../data/change-listeners";
 import type { JsonValue, LocalDatabase } from "../data/local-database";
+import { systemClock } from "../platform/clock";
 import type { KeyStore } from "../platform/key-store";
 
 const COLLECTION = "pair";
@@ -20,6 +22,8 @@ export interface Pair {
   readonly signingPublicKey: string;
   readonly agreementPublicKey: string;
   readonly state: PairState;
+  /** When the pair was confirmed; absent in records from before it was kept. */
+  readonly confirmedAtMs?: number;
 }
 
 export interface PairRepository {
@@ -41,6 +45,7 @@ export interface PairRepository {
 export function createPairRepository(
   database: LocalDatabase,
   keyStore: KeyStore,
+  clock: Clock = systemClock,
 ): PairRepository {
   const changes = changeChannel(database, COLLECTION);
   const current = async () =>
@@ -64,7 +69,11 @@ export function createPairRepository(
     confirm: async () => {
       const pair = await current();
       if (!pair) return;
-      await write({ ...pair, state: "confirmed" });
+      await write({
+        ...pair,
+        state: "confirmed",
+        confirmedAtMs: clock.nowMs(),
+      });
       changes.notify();
     },
     keys: async () => {

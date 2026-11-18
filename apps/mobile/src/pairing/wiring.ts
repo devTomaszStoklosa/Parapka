@@ -80,7 +80,7 @@ export async function wire(platform: Platform): Promise<Wiring | null> {
   if ((await identity.ensureRegistered()) !== "registered") return null;
   const credentials = await identity.credentials();
   if (!credentials) return null;
-  const pairs = createPairRepository(database, keyStore);
+  const pairs = createPairRepository(database, keyStore, clock);
   const inviter = createInviter({
     sodium,
     relay: client(credentials),

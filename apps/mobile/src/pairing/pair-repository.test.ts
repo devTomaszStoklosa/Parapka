@@ -75,7 +75,19 @@ describe("PairRepository", () => {
     expect(await repository.activePair()).toEqual({
       ...pair,
       state: "confirmed",
+      confirmedAtMs: expect.any(Number) as number,
     });
+  });
+
+  it("saves the moment of the confirmation from the clock", async () => {
+    const { database, keyStore } = setup();
+    const repository = createPairRepository(database, keyStore, {
+      nowMs: () => 5_000,
+    });
+    await repository.savePending(pair, keys);
+    expect((await repository.current())?.confirmedAtMs).toBeUndefined();
+    await repository.confirm();
+    expect((await repository.current())?.confirmedAtMs).toBe(5_000);
   });
 
   it("ignores confirm() without a pair", async () => {

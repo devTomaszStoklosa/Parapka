@@ -12,6 +12,7 @@ import { AcceptEntry } from "./pairing/AcceptEntry";
 import { OnboardingFlow } from "./onboarding/OnboardingFlow";
 import { PlatformProvider, type Platform } from "./platform/context";
 import { createWebPlatform } from "./platform/web";
+import { ActivityRecorder } from "./research/ActivityRecorder";
 import { SharePrivateGate } from "./sharing/SharePrivateGate";
 import { SyncRunner } from "./sync/SyncRunner";
 import { AppText } from "./ui/AppText";
@@ -96,6 +97,7 @@ function Session({ platform }: { platform: Platform }) {
       ) : (
         <>
           <SyncRunner />
+          <ActivityRecorder />
           <NotificationRunner />
           <SharePrivateGate>
             <TabNavigator cycleEnabled={profile.cycle === "yes"} />
