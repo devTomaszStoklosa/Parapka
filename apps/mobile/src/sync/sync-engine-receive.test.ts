@@ -140,3 +140,53 @@ describe("SyncEngine receive", () => {
     expect(handler.applied).toBe(applied);
   });
 });
+
+describe("SyncEngine end of the pair", () => {
+  async function endingDevices(failAck = false) {
+    const devices = await createPairedDevices();
+    const acked: string[][] = [];
+    const { transport } = devices.b;
+    const handler = devices.b.handler;
+    handler.apply = async () => {
+      handler.applied += 1;
+      if (handler.applied === 2) await devices.b.pairs.remove();
+    };
+    devices.b.restart({
+      transport: {
+        ...transport,
+        fetch: (after) => transport.fetch(after),
+        ack: (ids) => {
+          acked.push([...ids]);
+          return failAck
+            ? Promise.reject(new Error("offline"))
+            : transport.ack(ids);
+        },
+      },
+    });
+    for (const id of ["e1", "e2", "e3"]) {
+      await sendRaw(devices, id, content(choreDelete));
+    }
+    return { devices, acked };
+  }
+
+  it("acknowledges the envelopes up to the one that ends the pair", async () => {
+    const { devices, acked } = await endingDevices();
+    await devices.b.engine.pull();
+    expect(await devices.b.pairs.activePair()).toBeNull();
+    expect(acked).toEqual([["e1", "e2"]]);
+  });
+
+  it("keeps the pair ended when the acknowledgement fails", async () => {
+    const { devices, acked } = await endingDevices(true);
+    await devices.b.engine.pull();
+    expect(await devices.b.pairs.activePair()).toBeNull();
+    expect(acked).toEqual([["e1", "e2"]]);
+  });
+
+  it("does not acknowledge an envelope whose handler fails", async () => {
+    const { devices, acked } = await endingDevices();
+    devices.b.handler.apply = () => Promise.reject(new Error("broken"));
+    await devices.b.engine.pull().catch(() => undefined);
+    expect(acked).toEqual([]);
+  });
+});

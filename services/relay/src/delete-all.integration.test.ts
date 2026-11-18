@@ -90,12 +90,6 @@ it("deletes everything of A: 404 for the device, the partner learns, no trace le
   expect(tablesHolding(trace)).toEqual(["envelopes", "mailboxes"]);
 
   await world.expectEndedByPartner(b);
-  // The sync engine of B does not acknowledge the command that ended the pair
-  // (it returns first), so the acknowledgement comes from the client.
-  await b.client.ack(
-    pairMailboxId,
-    waiting.envelopes.map((e) => e.envelope.envelopeId),
-  );
   expect(tablesHolding(trace)).toEqual([]);
 });
 

@@ -94,11 +94,6 @@ it("logs only route patterns during the whole delete-all scenario", async () => 
 
   expect(await deleteAllOf(a)).toBe("done");
   await world.expectEndedByPartner(b);
-  const waiting = await b.client.fetchEnvelopes(pairMailboxId, null);
-  await b.client.ack(
-    pairMailboxId,
-    waiting.envelopes.map((e) => e.envelope.envelopeId),
-  );
 
   const entries = lines.map(
     (line) => JSON.parse(line) as { req?: { method: string; url: string } },
@@ -112,6 +107,10 @@ it("logs only route patterns during the whole delete-all scenario", async () => 
   expect(requests).toContainEqual({
     method: "GET",
     url: "/v1/pairs/:id/envelopes",
+  });
+  expect(requests).toContainEqual({
+    method: "POST",
+    url: "/v1/pairs/:id/acks",
   });
   for (const request of requests)
     expect(request.url).toMatch(/^(\/v1\/[a-z:/-]+|unmatched)$/);
