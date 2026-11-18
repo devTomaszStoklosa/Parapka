@@ -1,5 +1,6 @@
 import type { Envelope } from "@parapka/protocol";
 import { beforeEach, describe, expect, it } from "vitest";
+import { deviceCascadeTests } from "./store-contract-delete.js";
 import type { RelayStore } from "./store.js";
 
 type GetStore = () => RelayStore;
@@ -274,27 +275,6 @@ function closingTests(store: GetStore): void {
     expect(await store().getMailbox("mb2")).not.toBeNull();
     expect(await store().getMailbox("mb3")).not.toBeNull();
     expect(ids(await store().listEnvelopes("mb2", null, 10))).toEqual(["e2"]);
-  });
-}
-
-function deviceCascadeTests(store: GetStore): void {
-  it("deletes the challenges, invitations and envelopes of a device", async () => {
-    await store().putDevice({
-      deviceId: "dev1",
-      signingPublicKey: "k",
-      createdAtMs: 1,
-    });
-    const c = { nonce: "n", expiresAtMs: 9 };
-    await store().putChallenge({ ...c, challengeId: "c1", deviceId: "dev1" });
-    await store().putChallenge({ ...c, challengeId: "c2", deviceId: "other" });
-    await store().putInvitation({ ...INVITATION, deviceId: "dev1" });
-    await store().addEnvelope(envelope("e1"), 1);
-    await store().addEnvelope({ ...envelope("e2"), senderDeviceId: "x" }, 1);
-    expect(await store().deleteDevice("dev1")).toBe(true);
-    expect(await store().takeChallenge("c1")).toBeNull();
-    expect(await store().takeChallenge("c2")).not.toBeNull();
-    expect(await store().getInvitation("i1")).toBeNull();
-    expect(await listed(store())).toBe("e2");
   });
 }
 

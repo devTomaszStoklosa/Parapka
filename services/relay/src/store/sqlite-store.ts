@@ -70,9 +70,15 @@ export class SqliteStore implements RelayStore {
 
   deleteDevice(deviceId: string): Promise<boolean> {
     this.changed("DELETE FROM challenges WHERE device_id = ?", deviceId);
-    this.changed("DELETE FROM invitations WHERE device_id = ?", deviceId);
     this.changed(
-      "DELETE FROM envelopes WHERE json_extract(body, '$.senderDeviceId') = ?",
+      "DELETE FROM invitations WHERE device_id = ? OR accepted_by_device_id = ?",
+      deviceId,
+      deviceId,
+    );
+    this.changed(
+      `DELETE FROM envelopes WHERE json_extract(body, '$.senderDeviceId') = ?
+        AND pair_mailbox_id NOT IN
+          (SELECT pair_mailbox_id FROM mailboxes WHERE closed_at_ms IS NOT NULL)`,
       deviceId,
     );
     const n = this.changed("DELETE FROM devices WHERE device_id = ?", deviceId);
