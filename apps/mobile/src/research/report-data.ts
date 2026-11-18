@@ -16,8 +16,7 @@ export interface ReportSources {
   nowMs: number;
 }
 
-const isRating = (value: unknown): value is number =>
-  typeof value === "number";
+const isRating = (value: unknown): value is number => typeof value === "number";
 
 /** The saved answers; the closings without an answer are left out. */
 async function ratings(database: LocalDatabase): Promise<FeedbackRating[]> {
