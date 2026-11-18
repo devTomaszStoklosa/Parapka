@@ -166,6 +166,30 @@ it("keeps the launch link until onboarding is done", async () => {
   vi.unstubAllGlobals();
 });
 
+it("returns to onboarding with an empty database after all data is deleted", async () => {
+  const platform = memoryPlatform();
+  await createProfileRepository(platform.database).save(profile);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.reject(new Error("offline"))),
+  );
+  render(<App createPlatform={() => Promise.resolve(platform)} />);
+  fireEvent.click(
+    await screen.findByRole("tab", { name: pl.screens.settings.title }),
+  );
+  const texts = pl.data.deleteAll;
+  const press = (name: string) => {
+    fireEvent.click(screen.getByRole("button", { name }));
+  };
+  press(texts.open);
+  press(texts.next);
+  press(texts.confirm);
+  expect(await screen.findByText(pl.onboarding.name.title)).toBeTruthy();
+  expect(await createProfileRepository(platform.database).get()).toBeNull();
+  expect(await platform.database.list("profile")).toEqual([]);
+  vi.unstubAllGlobals();
+});
+
 it("shows an error when the database cannot be opened", async () => {
   const platform = memoryPlatform();
   platform.database = {

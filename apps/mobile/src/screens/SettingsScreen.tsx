@@ -1,6 +1,7 @@
 import { ScrollView } from "react-native";
 
 import { CheckinScheduleEntry } from "../checkin/CheckinScheduleSettings";
+import { DeleteAllData } from "../data-control/DeleteAllData";
 import { ExportData } from "../data-control/ExportData";
 import { CyclePanelSettings } from "../cycle/CyclePanelSettings";
 import { t } from "../i18n";
@@ -31,6 +32,7 @@ export function SettingsScreen() {
       <CyclePanelSettings />
       <NotificationSettings />
       <ExportData />
+      <DeleteAllData />
     </ScrollView>
   );
 }

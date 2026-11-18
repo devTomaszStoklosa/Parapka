@@ -34,4 +34,5 @@ it("keeps the whole content in a scrollable container", async () => {
     scroll.contains(screen.getByText(t("notifications.settings.title"))),
   ).toBe(true);
   expect(getComputedStyle(scroll).overflowY).toBe("auto");
+  expect(screen.getByText(t("data.deleteAll.open"))).toBeTruthy();
 });

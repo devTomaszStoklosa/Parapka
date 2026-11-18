@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 
+import { RestartProvider } from "./data-control/restart";
 import { createProfileRepository } from "./data/profile-repository";
 import type { Profile } from "./data/profile";
 import { t, type TranslationKey } from "./i18n";
@@ -108,12 +109,18 @@ function Session({ platform }: { platform: Platform }) {
 function usePlatformLoader(create: () => Promise<Platform>) {
   const [platform, setPlatform] = useState<Platform | null>(null);
   const [failed, setFailed] = useState(false);
+  const [generation, setGeneration] = useState(0);
   useEffect(() => {
     create().then(setPlatform, () => {
       setFailed(true);
     });
-  }, [create]);
-  return { platform, failed };
+  }, [create, generation]);
+  // Creates the platform anew: Session and its profile are mounted from zero.
+  const restart = useCallback(() => {
+    setPlatform(null);
+    setGeneration((value) => value + 1);
+  }, []);
+  return { platform, failed, restart };
 }
 
 /**
@@ -126,12 +133,14 @@ export function App({
 }: {
   createPlatform?: () => Promise<Platform>;
 }) {
-  const { platform, failed } = usePlatformLoader(createPlatform);
+  const { platform, failed, restart } = usePlatformLoader(createPlatform);
   if (failed) return <Message text="app.error" />;
   if (!platform) return <Message text="app.loading" />;
   return (
     <PlatformProvider platform={platform}>
-      <Session platform={platform} />
+      <RestartProvider value={restart}>
+        <Session platform={platform} />
+      </RestartProvider>
     </PlatformProvider>
   );
 }
