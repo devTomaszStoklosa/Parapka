@@ -42,17 +42,30 @@ function Effects({
 
 type DeleteState = ReturnType<typeof useDeleteAll>;
 
+function OfflineNotice({ pairEnded }: { pairEnded: boolean }) {
+  return (
+    <>
+      <AlertText>{t("data.deleteAll.offline")}</AlertText>
+      {pairEnded ? (
+        <AppText>{t("data.deleteAll.offlinePairEnded")}</AppText>
+      ) : null}
+      <AppText>
+        {t(
+          pairEnded
+            ? "data.deleteAll.localOnlyHintEnded"
+            : "data.deleteAll.localOnlyHint",
+        )}
+      </AppText>
+    </>
+  );
+}
+
 function Confirm({ state }: { state: DeleteState }) {
-  const { busy, offline, failed, cancel, run } = state;
+  const { busy, offline, pairEnded, failed, cancel, run } = state;
   return (
     <>
       <AppText>{t("data.deleteAll.confirmText")}</AppText>
-      {offline ? (
-        <>
-          <AlertText>{t("data.deleteAll.offline")}</AlertText>
-          <AppText>{t("data.deleteAll.localOnlyHint")}</AppText>
-        </>
-      ) : null}
+      {offline ? <OfflineNotice pairEnded={pairEnded} /> : null}
       {failed ? <AlertText>{t("data.failed")}</AlertText> : null}
       {busy ? (
         <AppText accessibilityRole="alert">

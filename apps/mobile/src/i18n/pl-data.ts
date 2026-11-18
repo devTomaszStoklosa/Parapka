@@ -28,9 +28,13 @@ export const plData = {
     confirm: "Tak, usuń wszystko",
     deleting: "Usuwanie…",
     offline: "Nie udało się połączyć z serwerem. Spróbuj jeszcze raz.",
+    offlinePairEnded:
+      "Para jest już rozłączona na tym telefonie. Partner dowie się o tym, gdy połączenie wróci. Pozostałe dane nadal są na tym urządzeniu.",
     retry: "Spróbuj ponownie",
     localOnly: "Usuń tylko z tego urządzenia",
     localOnlyHint:
       "Nic nie zostało usunięte. Jeśli usuniesz dane tylko z tego urządzenia, dane na serwerze wygasną same.",
+    localOnlyHintEnded:
+      "Jeśli usuniesz dane tylko z tego urządzenia, dane na serwerze wygasną same.",
   },
 };

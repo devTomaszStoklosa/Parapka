@@ -11,14 +11,19 @@ import { DeleteAllData } from "./DeleteAllData";
 import { RestartProvider } from "./restart";
 
 vi.mock("./delete-all", () => ({ deleteAllData: vi.fn() }));
+const pairs = { activePair: vi.fn() };
 vi.mock("./wiring", () => ({
-  wireDeleteAll: (_platform: unknown, options: object = {}) => options,
+  wireDeleteAll: (_platform: unknown, options: object = {}) => ({
+    ...options,
+    pairs,
+  }),
 }));
 
 useSodium();
 afterEach(() => {
   cleanup();
   vi.mocked(deleteAllData).mockReset();
+  pairs.activePair.mockReset();
 });
 
 const texts = pl.data.deleteAll;
@@ -87,7 +92,9 @@ it("deletes after the second confirmation and restarts the app", async () => {
   toConfirm();
   click(texts.confirm);
   await flush();
-  expect(mocked).toHaveBeenCalledWith({ localOnly: false });
+  expect(mocked).toHaveBeenCalledWith(
+    expect.objectContaining({ localOnly: false }),
+  );
   expect(restart).toHaveBeenCalledTimes(1);
 });
 
@@ -117,7 +124,9 @@ it("offers a retry and a local-only deletion when offline", async () => {
   mocked.mockResolvedValueOnce("done");
   click(texts.localOnly);
   await flush();
-  expect(mocked).toHaveBeenLastCalledWith({ localOnly: true });
+  expect(mocked).toHaveBeenLastCalledWith(
+    expect.objectContaining({ localOnly: true }),
+  );
   expect(restart).toHaveBeenCalledTimes(1);
 });
 
@@ -151,4 +160,15 @@ it("hides the export button without a file share", async () => {
   await open({ noShare: true });
   click(texts.open);
   expect(screen.queryByRole("button", { name: texts.exportFirst })).toBeNull();
+});
+
+it("does not say nothing was deleted when the pair ended before offline", async () => {
+  pairs.activePair.mockResolvedValueOnce({}).mockResolvedValueOnce(null);
+  mocked.mockResolvedValueOnce("offline");
+  await open();
+  toConfirm();
+  click(texts.confirm);
+  await screen.findByText(texts.offlinePairEnded);
+  expect(screen.queryByText(texts.localOnlyHint)).toBeNull();
+  expect(screen.getByText(texts.localOnlyHintEnded)).toBeTruthy();
 });

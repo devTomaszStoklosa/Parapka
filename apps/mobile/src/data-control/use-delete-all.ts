@@ -15,30 +15,34 @@ export function useDeleteAll() {
   const [busy, setBusy] = useState(false);
   const [offline, setOffline] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [pairEnded, setPairEnded] = useState(false);
 
   const cancel = () => {
     setStep("closed");
     setOffline(false);
+    setPairEnded(false);
     setFailed(false);
   };
   const run = (localOnly: boolean) => {
     setBusy(true);
     setOffline(false);
+    setPairEnded(false);
     setFailed(false);
-    deleteAllData(wireDeleteAll(platform, { localOnly })).then(
-      (result) => {
-        if (result === "done") {
-          restart();
-          return;
-        }
-        setOffline(true);
-        setBusy(false);
-      },
-      () => {
-        setFailed(true);
-        setBusy(false);
-      },
-    );
+    const deps = wireDeleteAll(platform, { localOnly });
+    (async () => {
+      const hadPair = (await deps.pairs.activePair()) !== null;
+      const result = await deleteAllData(deps);
+      if (result === "done") {
+        restart();
+        return;
+      }
+      setPairEnded(hadPair && (await deps.pairs.activePair()) === null);
+      setOffline(true);
+      setBusy(false);
+    })().catch(() => {
+      setFailed(true);
+      setBusy(false);
+    });
   };
-  return { step, setStep, busy, offline, failed, cancel, run };
+  return { step, setStep, busy, offline, pairEnded, failed, cancel, run };
 }

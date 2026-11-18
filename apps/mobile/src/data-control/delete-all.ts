@@ -16,7 +16,7 @@ export interface DeleteAllDeps {
   readonly credentials: () => Promise<DeviceCredentials | null>;
   readonly client: (
     credentials: DeviceCredentials,
-  ) => Pick<RelayClient, "deleteDevice">;
+  ) => Pick<RelayClient, "deleteDevice" | "fetchEnvelopes">;
   /** Wipes the phone only; the relay forgets the device by retention. */
   readonly localOnly?: boolean;
 }
@@ -42,6 +42,24 @@ async function deleteRemoteDevice(deps: DeleteAllDeps): Promise<boolean> {
 }
 
 /**
+ * A read-only signed request: false when the relay cannot be reached, so the
+ * pair is not ended on this phone while the partner cannot be told.
+ */
+async function relayReachable(
+  deps: DeleteAllDeps,
+  pairMailboxId: string,
+): Promise<boolean> {
+  const credentials = await deps.credentials();
+  if (credentials === null) return true;
+  try {
+    await deps.client(credentials).fetchEnvelopes(pairMailboxId, null);
+    return true;
+  } catch (error) {
+    return isGone(error);
+  }
+}
+
+/**
  * Deletes all data of the person (FR-SEC-04). The order matters: the relay
  * removes the open mailbox of a deleted device with its envelopes, so the
  * device goes only after the mailbox is closed and the command of the
@@ -52,7 +70,11 @@ export async function deleteAllData(
   deps: DeleteAllDeps,
 ): Promise<"done" | "offline"> {
   if (deps.localOnly !== true) {
-    if ((await deps.pairs.activePair()) !== null) await deps.disconnect();
+    const pair = await deps.pairs.activePair();
+    if (pair !== null) {
+      if (!(await relayReachable(deps, pair.pairMailboxId))) return "offline";
+      await deps.disconnect();
+    }
     // The marker stays after a failed closing, also when the pair is gone.
     if ((await deps.database.get(CLOSING.collection, CLOSING.id)) !== null) {
       return "offline";
