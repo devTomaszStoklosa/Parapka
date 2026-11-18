@@ -9,6 +9,7 @@ import {
   type DeviceCredentials,
   type RelayFetch,
 } from "../../../apps/mobile/src/net/relay-client";
+import { deleteAllData } from "../../../apps/mobile/src/data-control/delete-all";
 import { clearPairLocally } from "../../../apps/mobile/src/pairing/clear-pair";
 import {
   disconnect,
@@ -31,7 +32,7 @@ import {
 import { createTickingClock } from "../../../apps/mobile/src/sync/sync-test-support";
 import { derivePairKeys, type PairKeys, type Sodium } from "@parapka/crypto";
 import type { Envelope } from "@parapka/protocol";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyServerOptions } from "fastify";
 import { expect } from "vitest";
 import { buildApp } from "./app.js";
 import type { RelayStore } from "./store/store.js";
@@ -261,9 +262,27 @@ async function expectEndedByPartner(device: Device) {
   expect(await device.pairs.current()).toBeNull();
 }
 
+// "Delete all my data" of the device, through the real `deleteAllData`.
+export const deleteAllOf = (device: Device) =>
+  deleteAllData({
+    database: device.database,
+    keyStore: device.keyStore,
+    pairs: device.pairs,
+    disconnect: () => device.disconnect(),
+    credentials: () => device.identity.credentials(),
+    client: () => device.client,
+  });
+
 /** Real clients of the mobile app on a relay app with the given store. */
-export async function createPairWorld(options: { store: RelayStore }) {
-  const app = buildApp({ store: options.store, clock: { nowMs: () => 1e12 } });
+export async function createPairWorld(options: {
+  store: RelayStore;
+  logger?: FastifyServerOptions["logger"];
+}) {
+  const app = buildApp({
+    store: options.store,
+    clock: { nowMs: () => 1e12 },
+    ...(options.logger === undefined ? {} : { logger: options.logger }),
+  });
   await app.ready();
   const world: World = {
     sodium: await createWebSodium(),
