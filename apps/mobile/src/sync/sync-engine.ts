@@ -151,16 +151,17 @@ class Engine implements SyncEngine {
       after: string | null;
     } | null;
     const fetched = await transport.fetch(state?.after ?? null);
-    for (const { envelope } of fetched.envelopes) {
+    const ids = fetched.envelopes.map((e) => e.envelope.envelopeId);
+    for (const [index, { envelope }] of fetched.envelopes.entries()) {
       await this.receive(session, envelope);
-      if (await this.pairEnded()) return;
+      if (await this.pairEnded()) {
+        return transport.ack(ids.slice(0, index + 1)).catch(() => undefined);
+      }
     }
     if (fetched.nextCursor !== null) {
       await database.put(STATE, CURSOR, { after: fetched.nextCursor });
     }
-    if (fetched.envelopes.length > 0) {
-      await transport.ack(fetched.envelopes.map((e) => e.envelope.envelopeId));
-    }
+    if (ids.length > 0) await transport.ack(ids);
   }
 
   async sync(): Promise<void> {
