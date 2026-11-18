@@ -7,7 +7,7 @@ export const plResearch = {
   excludes:
     "Raport nie zawiera treści, dat, imion ani innych danych prywatnych. Dziennik aktywności zostaje na tym telefonie i nie trafia do partnera.",
   manual:
-    "Nic nie jest wysyłane samo. Raport wyjdzie z telefonu dopiero wtedy, gdy wybierzesz „Udostępnij raport” i sam wskażesz, gdzie go wysłać.",
+    "Nic nie jest wysyłane samo. Raport wyjdzie z telefonu dopiero wtedy, gdy wybierzesz „Udostępnij raport” i wskażesz, gdzie go wysłać.",
   noPair: "Raport ma sens po sparowaniu. Wróć tu, gdy będziecie w parze.",
   loading: "Wczytywanie liczb…",
   share: "Udostępnij raport",
