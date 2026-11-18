@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { setup, useSodium } from "../chores/planner-test-support";
@@ -91,11 +91,12 @@ it("deletes after the second confirmation and restarts the app", async () => {
   const { restart } = await open();
   toConfirm();
   click(texts.confirm);
-  await flush();
+  await waitFor(() => {
+    expect(restart).toHaveBeenCalledTimes(1);
+  });
   expect(mocked).toHaveBeenCalledWith(
     expect.objectContaining({ localOnly: false }),
   );
-  expect(restart).toHaveBeenCalledTimes(1);
 });
 
 it("shows the busy state and disables the buttons while deleting", async () => {
@@ -123,11 +124,12 @@ it("offers a retry and a local-only deletion when offline", async () => {
 
   mocked.mockResolvedValueOnce("done");
   click(texts.localOnly);
-  await flush();
+  await waitFor(() => {
+    expect(restart).toHaveBeenCalledTimes(1);
+  });
   expect(mocked).toHaveBeenLastCalledWith(
     expect.objectContaining({ localOnly: true }),
   );
-  expect(restart).toHaveBeenCalledTimes(1);
 });
 
 it("shows an error and re-enables the buttons when deleting fails", async () => {
