@@ -89,6 +89,8 @@ it("logs only route patterns during the whole delete-all scenario", async () => 
   await world.exchangeProfiles(a, b);
   const publicKey = (await store.getDevice(a.deviceId))?.signingPublicKey;
   expect(publicKey).toBeTruthy();
+  const pushToken = "push-token-unique-for-the-log-test";
+  await a.client.setPushToken({ platform: "fcm", pushToken });
 
   expect(await deleteAllOf(a)).toBe("done");
   await world.expectEndedByPartner(b);
@@ -104,6 +106,10 @@ it("logs only route patterns during the whole delete-all scenario", async () => 
   const requests = entries.flatMap((e) => (e.req === undefined ? [] : [e.req]));
   expect(requests).toContainEqual({ method: "DELETE", url: "/v1/devices/:id" });
   expect(requests).toContainEqual({
+    method: "PUT",
+    url: "/v1/devices/:id/push-token",
+  });
+  expect(requests).toContainEqual({
     method: "GET",
     url: "/v1/pairs/:id/envelopes",
   });
@@ -111,7 +117,7 @@ it("logs only route patterns during the whole delete-all scenario", async () => 
     expect(request.url).toMatch(/^(\/v1\/[a-z:/-]+|unmatched)$/);
 
   const text = lines.join("\n");
-  for (const secret of [a.deviceId, b.deviceId, pairMailboxId, publicKey]) {
+  for (const secret of [a.deviceId, b.deviceId, pairMailboxId, publicKey, pushToken]) {
     expect(text).not.toContain(secret as string);
   }
 });
