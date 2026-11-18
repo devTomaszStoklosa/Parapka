@@ -169,6 +169,8 @@ it("keeps the launch link until onboarding is done", async () => {
 it("returns to onboarding with an empty database after all data is deleted", async () => {
   const platform = memoryPlatform();
   await createProfileRepository(platform.database).save(profile);
+  await platform.keyStore.set("identity", new Uint8Array([1]));
+  await platform.database.put("notes", "n1", { text: "x" });
   vi.stubGlobal(
     "fetch",
     vi.fn(() => Promise.reject(new Error("offline"))),
@@ -187,6 +189,8 @@ it("returns to onboarding with an empty database after all data is deleted", asy
   expect(await screen.findByText(pl.onboarding.name.title)).toBeTruthy();
   expect(await createProfileRepository(platform.database).get()).toBeNull();
   expect(await platform.database.list("profile")).toEqual([]);
+  expect(await platform.database.list("notes")).toEqual([]);
+  expect(await platform.keyStore.get("identity")).toBeNull();
   vi.unstubAllGlobals();
 });
 
