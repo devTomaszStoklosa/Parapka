@@ -2,6 +2,8 @@ import { expect, it } from "vitest";
 
 import { createMemoryDatabase } from "../data/memory-database";
 import { createActivityLog } from "./activity-log";
+import { createMemoryKeyStore } from "../platform/memory-key-store";
+import { createPairRepository } from "../pairing/pair-repository";
 
 const at = (month: number, day: number, hour: number, minute = 0) =>
   new Date(2026, month - 1, day, hour, minute).getTime();
@@ -28,4 +30,26 @@ it("drops the entries older than 120 days on a write", async () => {
   await log.recordOpen(at(11, 14, 12));
   // 120 days before 14 November is 17 July: 1 July goes, 20 July stays.
   expect(await log.days()).toEqual(["2026-07-20", "2026-11-14"]);
+});
+
+it("keeps the log when the pair is removed and drops it with the database", async () => {
+  const database = createMemoryDatabase();
+  const pairs = createPairRepository(database, createMemoryKeyStore());
+  const log = createActivityLog(database);
+  await log.recordOpen(at(11, 14, 12));
+  await pairs.savePending(
+    {
+      pairMailboxId: "mailbox",
+      deviceId: "device-b",
+      signingPublicKey: "sig",
+      agreementPublicKey: "agr",
+    },
+    { sendKey: Uint8Array.from([1]), receiveKey: Uint8Array.from([2]) },
+  );
+  await pairs.confirm();
+  await pairs.remove();
+  expect(await pairs.current()).toBeNull();
+  expect(await log.days()).toEqual(["2026-11-14"]);
+  await database.clear();
+  expect(await log.days()).toEqual([]);
 });
