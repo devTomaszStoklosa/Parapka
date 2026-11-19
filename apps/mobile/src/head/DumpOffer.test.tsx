@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { pl } from "../i18n/pl";
@@ -63,13 +63,21 @@ describe("brain dump offer", () => {
   it("hides when the record cannot be read", async () => {
     const { platform } = await setup(true);
     const get = platform.database.get.bind(platform.database);
-    vi.spyOn(platform.database, "get").mockImplementation((collection, id) =>
-      collection === "dump-offer"
-        ? Promise.reject(new Error("boom"))
-        : get(collection, id),
-    );
+    const spy = vi
+      .spyOn(platform.database, "get")
+      .mockImplementation((collection, id) =>
+        collection === "dump-offer"
+          ? Promise.reject(new Error("boom"))
+          : get(collection, id),
+      );
     show(platform);
     await screen.findByText(pl.head.empty);
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith("dump-offer", expect.anything());
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     expect(offer()).toBeNull();
   });
 
