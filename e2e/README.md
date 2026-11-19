@@ -17,12 +17,15 @@ serves `apps/mobile/dist` on port 8100 with a fallback to `index.html`
 Locally, running servers on these ports are reused; in CI (`CI` set) they are
 always started.
 
-Chromium must be installed once: `npx playwright install chromium`. The
+Chromium must be installed once: `npx playwright install chromium`. When the
+browser is already installed (`PLAYWRIGHT_BROWSERS_PATH`, with the revision that
+matches the pinned `@playwright/test` 1.63.0), no installation is needed.
+`npm run e2e -- --trace off` turns off trace recording. The
 tests use the new headless mode (`channel: "chromium"`) and grant the clipboard
 and notification permissions, so the invitation link is read from the clipboard.
 
 `npx playwright test --list` lists the scenarios without a browser. Traces of
 failed tests land in `test-results/`, the HTML report in `playwright-report/`.
 
-Helpers in `e2e/support/app.ts` (`newUser`, `onboard`, `pair`) give each test its
+Helpers in `e2e/support/app.ts` (`newUser`, `onboard`, `addChore`, `pair`) give each test its
 own contexts and pair, so tests do not depend on the relay state.
