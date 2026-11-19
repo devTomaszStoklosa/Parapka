@@ -34,12 +34,31 @@ export interface PairRepository {
   /** Saves the pair as `pending-confirmation` with its keys. */
   savePending(pair: Omit<Pair, "state">, keys: PairKeys): Promise<void>;
   confirm(): Promise<void>;
+  /**
+   * Fills in the device id of the partner when it is still unknown; never
+   * overwrites a known one. Returns the pair after the call, or null.
+   */
+  setPartnerDeviceId(deviceId: string): Promise<Pair | null>;
   /** The keys of the current pair, or null. */
   keys(): Promise<PairKeys | null>;
   /** Removes the pair and its keys. */
   remove(): Promise<void>;
   /** Calls the listener after every change of the pair; returns the unsubscribe. */
   subscribe(listener: () => void): () => void;
+}
+
+async function fillDeviceId(
+  deviceId: string,
+  current: () => Promise<Pair | null>,
+  write: (pair: Pair) => Promise<void>,
+  notify: () => void,
+): Promise<Pair | null> {
+  const pair = await current();
+  if (!pair || pair.deviceId !== null) return pair;
+  const updated = { ...pair, deviceId };
+  await write(updated);
+  notify();
+  return updated;
 }
 
 export function createPairRepository(
@@ -76,6 +95,8 @@ export function createPairRepository(
       });
       changes.notify();
     },
+    setPartnerDeviceId: (deviceId) =>
+      fillDeviceId(deviceId, current, write, changes.notify),
     keys: async () => {
       const sendKey = await keyStore.get(SEND_KEY);
       const receiveKey = await keyStore.get(RECEIVE_KEY);
