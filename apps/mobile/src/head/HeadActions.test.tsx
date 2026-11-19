@@ -109,6 +109,24 @@ describe("I take it", () => {
   });
 });
 
+describe("action row", () => {
+  it("wraps the three buttons of a partner's thing in one row", async () => {
+    const { platform, time } = await setup(true);
+    await headOf(platform, time).add({ title: "Dentysta", carrier: "partner" });
+    show(platform);
+    await screen.findByText("Dentysta");
+    const buttons = [takeOver, pl.head.actions.convert, done].map((label) =>
+      screen.getByRole("button", { name: new RegExp(`^${label}`) }),
+    );
+    const row = buttons[2]?.parentElement;
+    expect(row).toBeTruthy();
+    for (const button of buttons) {
+      expect(button.parentElement).toBe(row);
+    }
+    expect(getComputedStyle(row as Element).flexWrap).toBe("wrap");
+  });
+});
+
 describe("done", () => {
   it("closes a thing with one touch and clears an earlier error", async () => {
     const { platform, time } = await setup(false);
