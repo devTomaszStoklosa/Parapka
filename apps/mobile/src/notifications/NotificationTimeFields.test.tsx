@@ -6,13 +6,19 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { pl } from "../i18n/pl";
 import { NotificationTimeFields } from "./NotificationTimeFields";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document.body.replaceChildren();
+});
 
+// No type declarations are installed for react-dom.
+const clientModule: string = "react-dom/client";
 const label = pl.notifications.settings.times.quietTo;
 const times = { from: "22:00", to: "07:00", hint: "08:00" };
 const field = () =>
@@ -22,7 +28,20 @@ const fields = (value: typeof times) => (
 );
 
 it("keeps the text typed right after mounting", async () => {
-  render(fields(times), { reactStrictMode: false });
+  // Mounted outside act: the commit lands before the passive effects run.
+  const container = document.body.appendChild(document.createElement("div"));
+  const appeared = new Promise<void>((resolve) => {
+    const observer = new MutationObserver(() => {
+      observer.disconnect();
+      resolve();
+    });
+    observer.observe(container, { childList: true, subtree: true });
+  });
+  const { createRoot } = (await import(/* @vite-ignore */ clientModule)) as {
+    createRoot: (el: Element) => { render: (node: ReactNode) => void };
+  };
+  createRoot(container).render(fields(times));
+  await appeared;
   fireEvent.change(field(), { target: { value: "7" } });
   await act(async () => {});
   expect(field().value).toBe("7");
