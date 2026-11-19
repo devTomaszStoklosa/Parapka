@@ -21,33 +21,50 @@ import {
 /** Reads the report from the local data once the section is open; nothing leaves the phone. */
 function useReport(open: boolean) {
   const platform = usePlatform();
-  const [report, setReport] = useState<Report | null>(null);
+  const [result, setResult] = useState<{
+    report: Report;
+    paired: boolean;
+  } | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
+    setFailed(false);
+    setResult(null);
     const { database, clock } = platform;
+    const { pairs } = wireChores(platform);
+    let paired = false;
     collectReportInput({
       database,
-      pairs: wireChores(platform).pairs,
+      pairs: {
+        current: async () => {
+          const pair = await pairs.current();
+          paired = pair?.state === "confirmed";
+          return pair;
+        },
+      },
       activity: createActivityLog(database),
       profile: createProfileRepository(database),
       head: wireHead(platform).head,
       nowMs: clock.nowMs(),
     })
       .then((input) => {
-        setReport(computeReport(input));
+        if (!cancelled) setResult({ report: computeReport(input), paired });
       })
       .catch(() => {
-        setFailed(true);
+        if (!cancelled) setFailed(true);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [open, platform]);
-  return { report, failed };
+  return { result, failed };
 }
 
-function ReportBody({ report }: { report: Report }) {
+function ReportBody({ report, paired }: { report: Report; paired: boolean }) {
   const { fileShare } = usePlatform();
   const [shareFailed, setShareFailed] = useState(false);
-  if (report.weeksSincePairing === null) {
+  if (!paired) {
     return <AppText>{t("research.noPair")}</AppText>;
   }
   const share = fileShare
@@ -60,6 +77,9 @@ function ReportBody({ report }: { report: Report }) {
     : null;
   return (
     <>
+      {report.weeksSincePairing === null ? (
+        <AppText>{t("research.pairDateUnknown")}</AppText>
+      ) : null}
       {reportRows(report).map(({ label, value }) => (
         <AppText key={label}>{`${label}: ${value}`}</AppText>
       ))}
@@ -74,7 +94,7 @@ function ReportBody({ report }: { report: Report }) {
 /** Settings section "Raport do badania": a preview of the numbers and a conscious share (spec 10). */
 export function ResearchReport() {
   const [open, setOpen] = useState(false);
-  const { report, failed } = useReport(open);
+  const { result, failed } = useReport(open);
   return (
     <View style={{ gap: spacing.md, marginTop: spacing.md }}>
       <AppText style={{ fontWeight: "bold" }} accessibilityRole="header">
@@ -93,10 +113,12 @@ export function ResearchReport() {
           <AppText>{t("research.excludes")}</AppText>
           <AppText>{t("research.manual")}</AppText>
           {failed ? <AlertText>{t("research.failed")}</AlertText> : null}
-          {!failed && report === null ? (
+          {!failed && result === null ? (
             <AppText>{t("research.loading")}</AppText>
           ) : null}
-          {report ? <ReportBody report={report} /> : null}
+          {result ? (
+            <ReportBody report={result.report} paired={result.paired} />
+          ) : null}
         </>
       ) : null}
     </View>

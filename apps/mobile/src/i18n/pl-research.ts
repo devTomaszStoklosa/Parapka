@@ -9,6 +9,8 @@ export const plResearch = {
   manual:
     "Nic nie jest wysyłane samo. Raport wyjdzie z telefonu dopiero wtedy, gdy wybierzesz „Udostępnij raport” i wskażesz, gdzie go wysłać.",
   noPair: "Raport ma sens po sparowaniu. Wróć tu, gdy będziecie w parze.",
+  pairDateUnknown:
+    "Data sparowania nie jest znana, więc część liczb jest pusta.",
   loading: "Wczytywanie liczb…",
   share: "Udostępnij raport",
   failed: "Nie udało się. Możesz spróbować jeszcze raz, kiedy chcesz.",
