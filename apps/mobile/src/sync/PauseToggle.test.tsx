@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -48,4 +49,34 @@ it("shows a message when the save fails and ignores a failed read", async () => 
   render(<PauseToggle pause={pause} />);
   fireEvent.click(await screen.findByRole("switch", { name: "Pauza" }));
   await screen.findByText("Nie udało się zmienić pauzy. Spróbuj jeszcze raz.");
+});
+
+it("switches by pressing the label or the hint and back", async () => {
+  const pause = createPauseRepository(createMemoryDatabase());
+  render(<PauseToggle pause={pause} />);
+  await screen.findByRole("switch", { name: "Pauza" });
+  expect(screen.getAllByRole("switch", { name: "Pauza" })).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: "Pauza" })).toBeNull();
+  fireEvent.click(screen.getByText("Pauza"));
+  await vi.waitFor(async () => {
+    expect(await pause.isPaused()).toBe(true);
+  });
+  await waitFor(() => {
+    expect(
+      screen.getByRole<HTMLInputElement>("switch", { name: "Pauza" }).checked,
+    ).toBe(true);
+  });
+  fireEvent.click(screen.getByText("Pauza"));
+  await vi.waitFor(async () => {
+    expect(await pause.isPaused()).toBe(false);
+  });
+  await waitFor(() => {
+    expect(
+      screen.getByRole<HTMLInputElement>("switch", { name: "Pauza" }).checked,
+    ).toBe(false);
+  });
+  fireEvent.click(screen.getByText(/nie dostanie powiadomienia/));
+  await vi.waitFor(async () => {
+    expect(await pause.isPaused()).toBe(true);
+  });
 });

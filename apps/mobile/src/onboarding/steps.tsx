@@ -1,4 +1,4 @@
-import { Switch, View } from "react-native";
+import { View } from "react-native";
 
 import {
   GOAL_IDS,
@@ -9,6 +9,7 @@ import {
 } from "../data/profile";
 import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
+import { LabelledSwitch } from "../ui/LabelledSwitch";
 import { spacing } from "../ui/theme";
 import { Button, Field, Option } from "./controls";
 import type { Draft } from "./onboarding-state";
@@ -157,25 +158,14 @@ export function GoalsStep({ draft, patch }: StepProps) {
           }}
         />
       ) : null}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: spacing.md,
+      <LabelledSwitch
+        label={t("onboarding.goals.share")}
+        hint={t("onboarding.goals.shareHint")}
+        value={draft.shareGoalsWithPartner}
+        onChange={(shareGoalsWithPartner) => {
+          patch({ shareGoalsWithPartner });
         }}
-      >
-        <Switch
-          accessibilityLabel={t("onboarding.goals.share")}
-          value={draft.shareGoalsWithPartner}
-          onValueChange={(shareGoalsWithPartner) => {
-            patch({ shareGoalsWithPartner });
-          }}
-        />
-        <View style={{ flex: 1 }}>
-          <AppText>{t("onboarding.goals.share")}</AppText>
-          <AppText>{t("onboarding.goals.shareHint")}</AppText>
-        </View>
-      </View>
+      />
     </Group>
   );
 }
