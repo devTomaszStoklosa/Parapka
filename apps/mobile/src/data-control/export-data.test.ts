@@ -27,6 +27,7 @@ import { createNotificationSettingsRepository } from "../notifications/notificat
 import { createPairRepository } from "../pairing/pair-repository";
 import { createMemoryKeyStore } from "../platform/memory-key-store";
 import { createWebSodium } from "../platform/web-sodium";
+import { createActivityLog } from "../research/activity-log";
 import { createPartnerProfileRepository } from "../sync/partner-profile-repository";
 import {
   buildExport,
@@ -95,6 +96,7 @@ async function filledDatabase() {
     ONBOARDING_GOALS: false,
   });
   await createNotificationSettingsRepository(database).set({ discreet: false });
+  await createActivityLog(database).recordOpen(NOW);
   await createCycleSettingsRepository(database).save({
     unknown: false,
     lastPeriodStart: "2026-11-01",
@@ -246,6 +248,7 @@ describe("buildExport", () => {
       checkInTime: "18:30",
     });
     expect(document.notificationSettings).toMatchObject({ discreet: false });
+    expect(document.activityLog).toEqual([{ date: "2026-11-16" }]);
 
     // The people are named instead of the devices.
     expect(document.chores).toMatchObject([
@@ -310,8 +313,6 @@ describe("buildExport", () => {
   it("classifies every collection that the repositories wrote", async () => {
     const { written } = await filledDatabase();
     const classified = [...EXPORTED_COLLECTIONS, ...SKIPPED_COLLECTIONS];
-    expect([...written].filter((name) => !classified.includes(name))).toEqual(
-      [],
-    );
+    expect([...written].filter((c) => !classified.includes(c))).toEqual([]);
   });
 });
