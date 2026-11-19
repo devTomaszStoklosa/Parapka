@@ -38,13 +38,21 @@ it("keeps the text typed right after mounting", async () => {
     observer.observe(container, { childList: true, subtree: true });
   });
   const { createRoot } = (await import(/* @vite-ignore */ clientModule)) as {
-    createRoot: (el: Element) => { render: (node: ReactNode) => void };
+    createRoot: (el: Element) => {
+      render: (node: ReactNode) => void;
+      unmount: () => void;
+    };
   };
-  createRoot(container).render(fields(times));
+  const root = createRoot(container);
+  root.render(fields(times));
   await appeared;
   fireEvent.change(field(), { target: { value: "7" } });
   await act(async () => {});
   expect(field().value).toBe("7");
+  await act(() => {
+    root.unmount();
+    return Promise.resolve();
+  });
 });
 
 it("keeps the typed text when the same times are loaded again", () => {
