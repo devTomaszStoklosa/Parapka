@@ -10,8 +10,9 @@ export interface ChoreFields {
 /** Touching the row of a chore in the Planner opens "Edycja obowiązku". */
 async function openChore(page: Page, title: string) {
   await openTab(page, "Planer");
+  const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await page
-    .getByRole("button", { name: new RegExp(`^${title}, `) })
+    .getByRole("button", { name: new RegExp(`^${escaped}, `) })
     .first()
     .click();
 }
