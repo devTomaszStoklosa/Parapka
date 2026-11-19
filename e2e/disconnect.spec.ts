@@ -67,10 +67,11 @@ test("disconnecting while the partner is offline reaches them later", async ({
     expect(relay.warnings).toEqual([]);
 
     await b.page.reload();
-    await openTab(b.page, "Dziś");
-    await expect(b.page.getByText(NEED_A)).toHaveCount(0);
+    // SHARED visible is the sign that local data has loaded.
     await openTab(b.page, "Planer");
     await expect(b.page.getByText(SHARED)).toBeVisible();
+    await openTab(b.page, "Dziś");
+    await expect(b.page.getByText(NEED_A)).toHaveCount(0);
 
     await addChore(a.page, LATER);
     await b.page.reload();
