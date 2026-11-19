@@ -12,6 +12,8 @@ Dane leżą w lokalnej bazie rekordów JSON pogrupowanych w kolekcje (`apps/mobi
 
 **Eksport.** Kolumna „W eksporcie” pochodzi z `data-control/export-data.ts` (`EXPORTED` i `SKIPPED`).
 
+**Magazyn kluczy.** Klucze nie leżą w kolekcjach, tylko w osobnym magazynie kluczy (`apps/mobile/src/platform/key-store.ts`, w wersji web `indexeddb-key-store.ts`). Są tam: klucze prywatne urządzenia (podpis i uzgadnianie kluczy; `identity/identity.ts`), klucze pary do wysyłania i odbioru (`pairing/pair-repository.ts`) oraz klucz bazy (`data/indexeddb-database.ts`). Leżą poza bazą rekordów, nie są synchronizowane ani eksportowane, a `keyStore.clear()` czyści je przy usunięciu danych i resecie.
+
 Oznaczenia: „wspólne” to dane widoczne dla obojga partnerów; „sync” to wysyłane do partnera jako zaszyfrowane koperty przez relay.
 
 ### 1.1 Dane osoby i pary
@@ -62,7 +64,7 @@ Oznaczenia: „wspólne” to dane widoczne dla obojga partnerów; „sync” to
 | `cycle-hints` | wskazówki, które aplikacja przygotowała dla partnera | częściowo (treść wskazówki) | tak | usunięciu danych | tak |
 | `cycle-hints-received` | wskazówki otrzymane od partnera | dane partnera | tak (odbierane) | usunięciu danych | nie (dane partnera) |
 | `hint-feedback` | własne odpowiedzi ankiety o wskazówkach | nie | nie | usunięciu danych | tak |
-| `hint-reactions` | własne reakcje na wskazówki | nie | do potwierdzenia przy pisaniu polityki | usunięciu danych | tak |
+| `hint-reactions` | własne reakcje na wskazówki | nie | nie (tylko na tym telefonie, bez obsługi synchronizacji; `apps/mobile/src/cycle/hint-reaction-repository.ts`, ZP-2) | usunięciu danych | tak |
 | `hint-withdrawal` | stan wycofania wskazówek | nie | nie | usunięciu danych | nie (stan techniczny) |
 
 ### 1.5 Powiadomienia i stan synchronizacji
@@ -79,7 +81,7 @@ Oznaczenia: „wspólne” to dane widoczne dla obojga partnerów; „sync” to
 | `sync-errors` | błędy przetwarzania kopert | nie | nie | zmianie pary, usunięciu danych | nie (stan techniczny) |
 | `sync-state` | kursor synchronizacji | nie | nie | zmianie pary, usunięciu danych | nie (stan techniczny) |
 | `hlc` | zegar logiczny | nie | nie | usunięciu danych | nie (stan techniczny) |
-| `meta`, `schema-version` | wersja schematu i klucz bazy (adapter IndexedDB, `data/indexeddb-database.ts`) | nie | nie | `clear()` | nie (stan techniczny) |
+| `meta`, `schema-version` | tylko wersja schematu bazy (magazyn `meta` adaptera IndexedDB, `data/indexeddb-database.ts`); klucz bazy (`database-key`) leży w magazynie kluczy, nie w `meta` (zob. „Magazyn kluczy”) | nie | nie | `clear()` | nie (stan techniczny) |
 
 ### 1.6 Raport badawczy
 
@@ -111,7 +113,8 @@ Logi relaya (`services/relay/src/logging.ts`) zawierają wyłącznie:
 
 | Pole | Zawartość |
 |---|---|
-| `level`, `time`, `msg` | poziom, czas, stały komunikat (błędy: `request error`, brak trasy: `route not found`) |
+| `level`, `time`, `msg` | poziom, czas, stały komunikat: `incoming request`, `request completed`, `request error`, `route not found` |
+| `reqId` | kolejny numer żądania w obrębie procesu (np. `req-1`), dodawany domyślnie przez Fastify |
 | `req.method` | metoda HTTP |
 | `req.url` | wzorzec trasy, np. `/v1/pairs/:id/ws`; dla nieznanej trasy `unmatched` |
 | `res.statusCode` | status odpowiedzi |
