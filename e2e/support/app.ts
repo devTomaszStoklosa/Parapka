@@ -70,12 +70,14 @@ export async function openTab(page: Page, tab: string) {
 }
 
 /**
- * Adds a daily chore from the empty Planner, so that today's occurrence shows
+ * Adds a daily chore from the Planner, so that today's occurrence shows
  * in the "Dziś" view (the default kind has no due date and shows nowhere).
  */
 export async function addChore(page: Page, title: string) {
   await openTab(page, "Planer");
-  await page.getByRole("button", { name: "Dodaj pierwszy obowiązek" }).click();
+  await page
+    .getByRole("button", { name: /^Dodaj (pierwszy )?obowiązek$/ })
+    .click();
   await page.getByLabel("Tytuł", { exact: true }).fill(title);
   await page.getByRole("radio", { name: "Codziennie" }).click();
   await page.getByRole("button", { name: "Zapisz", exact: true }).click();
