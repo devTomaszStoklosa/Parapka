@@ -46,6 +46,27 @@ async function checkDue(platform: Platform): Promise<Due | null> {
 }
 
 /**
+ * The system notification, or the banner when it was not shown; only then the
+ * result is remembered. A rejection of `show` skips `remember`: the next check
+ * tries again. Unmounted meanwhile: nothing is remembered.
+ */
+async function deliver(
+  platform: Platform,
+  { message, remember }: Due,
+  isActive: () => boolean,
+  setBanner: (message: NotifierMessage) => void,
+): Promise<void> {
+  if (message) {
+    const { notifier } = platform;
+    const shown =
+      notifier?.permission() === "granted" ? await notifier.show(message) : false;
+    if (!isActive()) return;
+    if (!shown) setBanner(message);
+  }
+  await remember();
+}
+
+/**
  * No UI of its own: while the app is open it looks every minute, and when the
  * tab comes back to the front, for the notifications that are due (FR-NOT-01).
  * The browser notification is used when the browser allows it, otherwise the
@@ -68,14 +89,7 @@ export function NotificationRunner() {
         .then(async (result) => {
           // Unmounted meanwhile: nothing is remembered, the next mount delivers.
           if (!active || !result) return;
-          await result.remember();
-          const { message } = result;
-          if (!message) return;
-          if (platform.notifier?.permission() === "granted") {
-            platform.notifier.show(message);
-          } else {
-            setBanner(message);
-          }
+          await deliver(platform, result, () => active, setBanner);
         })
         // A failed check is repeated by the next one; nothing is delivered twice.
         .catch(() => undefined)

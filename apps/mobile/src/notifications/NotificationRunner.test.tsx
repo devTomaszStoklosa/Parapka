@@ -171,6 +171,41 @@ it("shows the banner without the permission of the browser", async () => {
   expect(screen.queryByRole("alert")).toBeNull();
 });
 
+it("shows the banner when the system notification was not shown", async () => {
+  const notifier = createMemoryNotifier("granted", "granted", false);
+  const { mount, advance } = await setup("17:00", notifier);
+  mount();
+  await advance(0);
+  expect(screen.getByText("masz nowe przypomnienie")).toBeTruthy();
+  await advance(2 * CHECK_MS);
+  expect(notifier.shown).toHaveLength(1);
+});
+
+it("shows no banner when the system notification was shown", async () => {
+  const notifier = createMemoryNotifier();
+  const { mount, advance } = await setup("17:00", notifier);
+  mount();
+  await advance(0);
+  await advance(2 * CHECK_MS);
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(notifier.shown).toHaveLength(1);
+});
+
+it("does not remember a notification whose show rejected", async () => {
+  const notifier = createMemoryNotifier();
+  const show = vi
+    .spyOn(notifier, "show")
+    .mockRejectedValueOnce(new Error("broken"));
+  const { mount, advance } = await setup("17:00", notifier);
+  mount();
+  await advance(0);
+  expect(show).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("alert")).toBeNull();
+  await advance(CHECK_MS);
+  expect(show).toHaveBeenCalledTimes(2);
+  expect(notifier.shown).toHaveLength(1);
+});
+
 it("shows the banner when the platform has no notifier", async () => {
   const { platform, mount, advance } = await setup("17:00");
   delete platform.notifier;
