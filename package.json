@@ -13,7 +13,8 @@
     "services/*"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit && tsc --noEmit -p services/relay && tsc --noEmit -p apps/mobile",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p services/relay && tsc --noEmit -p apps/mobile && tsc --noEmit -p e2e",
+    "e2e": "playwright test",
     "lint": "eslint --max-warnings=0 .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -25,6 +26,7 @@
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
     "@vitest/coverage-v8": "5.0.4",
     "eslint": "10.12.0",
     "eslint-config-prettier": "10.1.8",

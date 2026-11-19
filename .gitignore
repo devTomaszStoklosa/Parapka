@@ -5,3 +5,5 @@ dist/
 deploy/.env
 deploy/backups/
 deploy/web/
+test-results/
+playwright-report/

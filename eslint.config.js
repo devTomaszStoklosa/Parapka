@@ -8,7 +8,15 @@ import tseslint from "typescript-eslint";
 const maxComplexity = Number(process.env.SDLC_MAX_FUNCTION_COMPLEXITY ?? 10);
 
 export default defineConfig(
-  { ignores: ["coverage/", "**/dist/", "**/.expo/"] },
+  {
+    ignores: [
+      "coverage/",
+      "**/dist/",
+      "**/.expo/",
+      "test-results/",
+      "playwright-report/",
+    ],
+  },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   {
@@ -31,6 +39,18 @@ export default defineConfig(
         "error",
         { max: 50, skipBlankLines: true, skipComments: true },
       ],
+    },
+  },
+  {
+    // The root tsconfig.json leaves out the Playwright config, so these files
+    // are typed by the one in e2e/.
+    files: ["e2e/**/*.ts", "playwright.config.ts"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: "./e2e/tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
   {
