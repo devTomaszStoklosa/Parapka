@@ -155,3 +155,96 @@ it("collapses again and reports a failed read", async () => {
   fireEvent.click(screen.getByRole("button", { name: texts.hide }));
   expect(screen.queryByText(texts.contains)).toBeNull();
 });
+
+const hide = () =>
+  fireEvent.click(screen.getByRole("button", { name: texts.hide }));
+const weeks = texts.labels.weeksSincePairing + ": 0";
+
+it("reads again after a failure and drops the old error", async () => {
+  const { render: show, platform } = await open(true);
+  const list = platform.database.list.bind(platform.database);
+  platform.database.list = () => Promise.reject(new Error("boom"));
+  show();
+  toggle();
+  await screen.findByText(texts.failed);
+  hide();
+  platform.database.list = list;
+  toggle();
+  await screen.findByText(weeks);
+  expect(screen.queryByText(texts.failed)).toBeNull();
+});
+
+it("still shows the error when the second read fails too", async () => {
+  const { render: show, platform } = await open(true);
+  platform.database.list = () => Promise.reject(new Error("boom"));
+  show();
+  toggle();
+  await screen.findByText(texts.failed);
+  hide();
+  toggle();
+  await screen.findByText(texts.failed);
+});
+
+it("ignores a read that fails after the section was collapsed", async () => {
+  const { render: show, platform } = await open(true);
+  const list = platform.database.list.bind(platform.database);
+  let rejectFirst: (error: Error) => void = () => {};
+  let hung = false;
+  platform.database.list = (...args) => {
+    if (hung) return list(...args);
+    hung = true;
+    return new Promise((_resolve, reject) => {
+      rejectFirst = reject;
+    });
+  };
+  show();
+  toggle();
+  hide();
+  toggle();
+  await screen.findByText(weeks);
+  rejectFirst(new Error("late"));
+  await flush();
+  expect(screen.queryByText(texts.failed)).toBeNull();
+  expect(screen.getByText(weeks)).toBeTruthy();
+});
+
+it("shows the error of a read that fails while the section stays open", async () => {
+  const { render: show, platform } = await open(true);
+  let rejectFirst: (error: Error) => void = () => {};
+  platform.database.list = () =>
+    new Promise((_resolve, reject) => {
+      rejectFirst = reject;
+    });
+  show();
+  toggle();
+  await flush();
+  rejectFirst(new Error("late"));
+  await screen.findByText(texts.failed);
+});
+
+it("tells a confirmed pair without a date from no pair", async () => {
+  const { render: show, platform } = await open(true);
+  await platform.database.put("pair", "current", {
+    pairMailboxId: "mailbox",
+    deviceId: "device-partner",
+    signingPublicKey: "s",
+    agreementPublicKey: "a",
+    state: "confirmed",
+  });
+  show();
+  toggle();
+  await screen.findByText(texts.pairDateUnknown);
+  expect(screen.queryByText(texts.noPair)).toBeNull();
+  expect(screen.getAllByText(new RegExp(texts.noData)).length).toBeGreaterThan(
+    0,
+  );
+  expect(shareButton()).toBeTruthy();
+});
+
+it("does not mention an unknown pair date when the pair has one", async () => {
+  const { render: show } = await open(true);
+  show();
+  toggle();
+  await screen.findByText(weeks);
+  expect(screen.queryByText(texts.pairDateUnknown)).toBeNull();
+});
