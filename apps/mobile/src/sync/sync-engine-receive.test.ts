@@ -1,5 +1,5 @@
 import type { Envelope } from "@parapka/protocol";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createHandlerRegistry } from "./handler-registry";
 import {
@@ -98,9 +98,12 @@ describe("SyncEngine receive", () => {
   it("learns the device id of the partner from the first readable envelope", async () => {
     const devices = await createPairedDevices();
     expect((await devices.b.pairs.current())?.deviceId).toBeNull();
+    const listener = vi.fn();
+    devices.b.pairs.subscribe(listener);
     await sendRaw(devices, "e1", content(choreDelete));
     await sendRaw(devices, "e2", content(choreDelete));
     await devices.b.engine.pull();
+    expect(listener).toHaveBeenCalledTimes(1);
     expect(await devices.b.pairs.current()).toMatchObject({
       deviceId: "device-a",
       state: "confirmed",

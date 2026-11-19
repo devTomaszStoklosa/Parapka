@@ -25,9 +25,6 @@ import {
 import { removeForeignEnvelopes } from "./outbox-guard";
 import type { SyncTransport } from "./transport";
 
-// The pair repository owns this record; the engine only fills in `deviceId`.
-const PAIR = { collection: "pair", id: "current" };
-
 const PAUSED: unknown[] = ["CYCLE_HINTS", "CHECKIN"];
 
 const decoder = new TextDecoder();
@@ -352,7 +349,7 @@ class Engine implements SyncEngine {
   ): Promise<void> {
     if (session.pair.deviceId !== null) return;
     session.pair = { ...session.pair, deviceId: senderDeviceId };
-    await this.o.database.put(PAIR.collection, PAIR.id, asJson(session.pair));
+    await this.o.pairs.setPartnerDeviceId(senderDeviceId);
   }
 }
 
