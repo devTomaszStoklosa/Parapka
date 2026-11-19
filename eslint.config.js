@@ -52,7 +52,6 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: { "max-lines-per-function": "off" },
   },
   {
     files: ["**/*.test.ts", "**/*.test.tsx"],
