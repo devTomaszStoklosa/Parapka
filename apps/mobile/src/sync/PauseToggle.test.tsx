@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -60,7 +61,7 @@ it("switches by pressing the label or the hint and back", async () => {
   await vi.waitFor(async () => {
     expect(await pause.isPaused()).toBe(true);
   });
-  await vi.waitFor(() => {
+  await waitFor(() => {
     expect(
       screen.getByRole<HTMLInputElement>("switch", { name: "Pauza" }).checked,
     ).toBe(true);
@@ -69,7 +70,7 @@ it("switches by pressing the label or the hint and back", async () => {
   await vi.waitFor(async () => {
     expect(await pause.isPaused()).toBe(false);
   });
-  await vi.waitFor(() => {
+  await waitFor(() => {
     expect(
       screen.getByRole<HTMLInputElement>("switch", { name: "Pauza" }).checked,
     ).toBe(false);

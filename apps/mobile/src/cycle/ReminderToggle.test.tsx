@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { pl } from "../i18n/pl";
@@ -59,14 +59,14 @@ it("switches by pressing the label or the hint and back", async () => {
   await vi.waitFor(async () => {
     expect(await reminder()).toBe(true);
   });
-  await vi.waitFor(() => {
+  await waitFor(() => {
     expect(toggle().checked).toBe(true);
   });
   fireEvent.click(screen.getByText(pl.cycle.reminder.label));
   await vi.waitFor(async () => {
     expect(await reminder()).toBe(false);
   });
-  await vi.waitFor(() => {
+  await waitFor(() => {
     expect(toggle().checked).toBe(false);
   });
   fireEvent.click(screen.getByText(pl.cycle.reminder.hint));
