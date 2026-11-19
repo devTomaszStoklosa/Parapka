@@ -85,24 +85,18 @@ describe("the chores of today", () => {
     show(platform);
     await press(action(pl.planner.actions.done));
     await press(action(pl.planner.actions.undo));
-    await waitFor(
-      async () => {
-        expect(await completions.list()).toEqual([]);
-      },
-      { timeout: 5000 },
-    );
+    await waitFor(async () => {
+      expect(await completions.list()).toEqual([]);
+    });
     await press(action(pl.planner.actions.release));
-    await waitFor(
-      () => {
-        expect(
-          screen.queryByRole("button", {
-            name: action(pl.planner.actions.release),
-          }),
-        ).toBeNull();
-      },
-      { timeout: 5000 },
-    );
-  }, 15000);
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", {
+          name: action(pl.planner.actions.release),
+        }),
+      ).toBeNull();
+    });
+  });
 
   it("says so when an action fails", async () => {
     const { platform, chores, completions } = await setup(false);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View } from "react-native";
 
 import { isValidReminder } from "../chores/chore-extras";
@@ -35,9 +35,15 @@ function changeOf(
 /** The typed times; a change from elsewhere replaces them, an unrelated reload does not. */
 function useDraft(times: Times) {
   const [draft, setDraft] = useState(times);
-  useEffect(() => {
+  const [seen, setSeen] = useState(times);
+  if (
+    seen.from !== times.from ||
+    seen.to !== times.to ||
+    seen.hint !== times.hint
+  ) {
+    setSeen(times);
     setDraft({ from: times.from, to: times.to, hint: times.hint });
-  }, [times.from, times.to, times.hint]);
+  }
   return {
     draft,
     patch: (change: Partial<Times>) => {

@@ -197,7 +197,9 @@ it("lets choose one of the candidates and sends it", async () => {
   await waitFor(() => {
     expect(screen.queryByRole("radiogroup")).toBeNull();
   });
-  expect(screen.getAllByText(second?.text ?? "")).toHaveLength(1);
+  await waitFor(() => {
+    expect(screen.getAllByText(second?.text ?? "")).toHaveLength(1);
+  });
   expect(screen.queryByText("Dzisiejsza")).toBeNull();
 });
 

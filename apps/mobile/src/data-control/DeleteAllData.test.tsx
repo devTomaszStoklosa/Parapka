@@ -126,7 +126,10 @@ it("offers a retry and a local-only deletion when offline", async () => {
 
   mocked.mockResolvedValueOnce("offline");
   click(texts.retry);
-  await screen.findByText(texts.offline);
+  await waitFor(() => {
+    expect(mocked).toHaveBeenCalledTimes(2);
+    expect(isDisabled(texts.localOnly)).toBe(false);
+  });
 
   mocked.mockResolvedValueOnce("done");
   click(texts.localOnly);
