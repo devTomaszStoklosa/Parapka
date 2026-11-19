@@ -92,7 +92,7 @@ export function HeadRow(props: {
         {details.join(" · ")}
       </AppText>
       <WaitingNote request={request} />
-      <View style={{ flexDirection: "row", gap: spacing.sm }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
         {request !== "incoming" && canTakeOver(item, paired) ? (
           <Button
             label={t("head.actions.takeOver")}
