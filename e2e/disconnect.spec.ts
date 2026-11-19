@@ -71,6 +71,12 @@ test("disconnecting while the partner is offline reaches them later", async ({
     await openTab(b.page, "Planer");
     await expect(b.page.getByText(SHARED)).toBeVisible();
     await openTab(b.page, "Dziś");
+    // The UI hides check-in results without a pair, so this alone does not
+    // prove the data is gone; the missing relay refusal above proves that the
+    // command arrived. The no-pair text is the sign that the card has loaded.
+    await expect(
+      b.page.getByText("Check-in działa, gdy połączycie się w parę."),
+    ).toBeVisible();
     await expect(b.page.getByText(NEED_A)).toHaveCount(0);
 
     await addChore(a.page, LATER);
