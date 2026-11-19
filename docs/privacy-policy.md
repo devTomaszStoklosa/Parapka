@@ -16,7 +16,9 @@ Dane przetwarzają trzy miejsca: **Twój telefon**, **relay** (serwer, przez kt�
 
 ### Na Twoim telefonie
 
-Prawie wszystkie Twoje dane zostają na telefonie, w lokalnej bazie (inwentarz §1; `apps/mobile/src/data/local-database.ts`). Są to m.in. profil, zgody, obowiązki, rzeczy do pamiętania, odpowiedzi check-inu, ustawienia powiadomień i dane cyklu.
+Twoje dane leżą w lokalnej bazie na telefonie (inwentarz §1; `apps/mobile/src/data/local-database.ts`). Nie są synchronizowane z partnerem m.in.: zgody, dane cyklu, reakcje na wskazówki, własne odpowiedzi ankiety o wskazówkach, ustawienia powiadomień i blokady oraz prywatne obowiązki i rzeczy do pamiętania (inwentarz §1.1–§1.5).
+
+- **Do partnera trafiają, jako zaszyfrowane koperty przez relay**: Twój profil z onboardingu (dopiero po zgodzie, `sync-profile`; inwentarz §1.1), wspólne obowiązki, ich odhaczenia i wspólne rzeczy do pamiętania (inwentarz §1.2), wspólny harmonogram check-inu oraz Twoje odpowiedzi check-inu po zapieczętowaniu i ujawnieniu (inwentarz §1.3) i gotowa wskazówka (niżej).
 
 - **Dane cyklu** (`cycle-settings`, `period-logs`, `wellbeing-entries`) nie opuszczają telefonu (inwentarz §1.4). To dane o zdrowiu (RODO art. 9).
 - **Do partnera trafia tylko gotowa wskazówka**: jej tekst, kategoria, dzień i status (`apps/mobile/src/cycle/hint-codec.ts`, typ `SentHint`). Nie wysyłamy fazy cyklu, szablonu wskazówki ani dat miesiączki (inwentarz §1.4, kolekcja `cycle-hints`).
@@ -57,7 +59,7 @@ Relay nie zna imion, e-maili ani numerów telefonu (inwentarz §2; NFR-PRV-03). 
 
 - Dostawca hostingu relaya: Oracle (inwentarz §4). Umowa powierzenia: stan podpisania `[DO UZUPEŁNIENIA]` (`docs/release-checklist.md`, poz. 4).
 - Od etapu M9: Apple i Google jako operatorzy powiadomień push. Ładunek push to stały znacznik bez treści i identyfikatorów (inwentarz §2, „Push”; `services/relay/src/push.ts`). Wersja web nie używa pushy. Analiza przekazywania tokenów: do weryfikacji z prawnikiem.
-- Partner z pary dostaje dane, które sam/sama zdecydujesz się z nim dzielić (inwentarz §1).
+- Partner z pary dostaje dane wymienione w sekcji 2 jako wysyłane do partnera (inwentarz §1.1–§1.4).
 
 ## 5. Brak profilowania i analityki
 
