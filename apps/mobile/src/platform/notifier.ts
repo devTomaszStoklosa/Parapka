@@ -15,13 +15,18 @@ export interface NotifierMessage {
 export interface Notifier {
   permission(): NotifierPermission;
   requestPermission(): Promise<NotifierPermission>;
-  show(message: NotifierMessage): void;
+  /**
+   * Resolves `true` when the system notification was shown, `false` when it was
+   * not (no API, no permission, a failure). It does not reject.
+   */
+  show(message: NotifierMessage): Promise<boolean>;
 }
 
 /** A notifier that keeps the shown messages, for tests. */
 export function createMemoryNotifier(
   initial: NotifierPermission = "granted",
   answer: NotifierPermission = initial,
+  result = true,
 ): Notifier & { readonly shown: NotifierMessage[] } {
   let permission = initial;
   const shown: NotifierMessage[] = [];
@@ -34,6 +39,7 @@ export function createMemoryNotifier(
     },
     show: (message) => {
       shown.push(message);
+      return Promise.resolve(result);
     },
   };
 }
