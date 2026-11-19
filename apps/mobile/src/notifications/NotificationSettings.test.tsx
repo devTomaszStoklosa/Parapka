@@ -14,7 +14,7 @@ import {
   createCycleSettingsRepository,
   UNKNOWN_CYCLE_SETTINGS,
 } from "../data/cycle-settings";
-import { setup, useSodium } from "../chores/planner-test-support";
+import { settle, setup, useSodium } from "../chores/planner-test-support";
 import { pl } from "../i18n/pl";
 import { PlatformProvider, type Platform } from "../platform/context";
 import { NotificationSettings } from "./NotificationSettings";
@@ -43,6 +43,7 @@ async function open(options: { paired?: boolean; cycle?: boolean } = {}) {
     </PlatformProvider>,
   );
   await screen.findByText(texts.title);
+  await settle();
   return platform;
 }
 
@@ -188,6 +189,19 @@ it("saves a valid hour on confirmation", async () => {
     expect(settings.partnerHintTime).toBe("09:30");
   });
   expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("replaces the typed hour when the hours are saved elsewhere", async () => {
+  const platform = await open();
+  fireEvent.change(time(texts.times.quietTo), { target: { value: "7" } });
+  await act(async () => {
+    await createNotificationSettingsRepository(platform.database).set({
+      quietHours: { from: "22:00", to: "06:30" },
+    });
+  });
+  await vi.waitFor(() => {
+    expect(time(texts.times.quietTo).value).toBe("06:30");
+  });
 });
 
 it("shows the failure of saving the hours", async () => {

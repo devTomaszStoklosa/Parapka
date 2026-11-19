@@ -1,6 +1,6 @@
 import type { PairKeys } from "@parapka/crypto";
 import { formatHlc } from "@parapka/sync";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeAll } from "vitest";
 
 import { createMemoryDatabase } from "../data/memory-database";
@@ -85,8 +85,17 @@ export async function receiveProfile(platform: Platform, name: string) {
 /** The name of an action button: its label, then the title and the date. */
 export const action = (label: string) => new RegExp(`^${label}: `);
 
+/**
+ * Runs the pending passive effects. Promises of the repositories settle
+ * outside `act`, so after a `findBy…` the effects may still be queued, and an
+ * event would reach handlers that are not yet configured.
+ */
+export const settle = () => act(async () => {});
+
 export const press = async (name: string | RegExp, role = "button") => {
-  fireEvent.click(await screen.findByRole(role, { name }));
+  await screen.findByRole(role, { name });
+  await settle();
+  fireEvent.click(screen.getByRole(role, { name }));
 };
 
 export const typeInto = (label: string, value: string) => {
@@ -95,8 +104,8 @@ export const typeInto = (label: string, value: string) => {
 
 /** Touches the first row of the chore with the title. */
 export const openRow = async (title: string) => {
-  const rows = await screen.findAllByRole("button", {
-    name: new RegExp(`^${title}, `),
-  });
-  fireEvent.click(rows[0] as HTMLElement);
+  const name = new RegExp(`^${title}, `);
+  await screen.findAllByRole("button", { name });
+  await settle();
+  fireEvent.click(screen.getAllByRole("button", { name })[0] as HTMLElement);
 };
