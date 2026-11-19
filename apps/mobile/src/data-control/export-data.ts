@@ -1,6 +1,7 @@
 import type { Clock } from "@parapka/domain";
 
 import type { JsonValue, LocalDatabase } from "../data/local-database";
+import { ACTIVITY_LOG } from "../research/activity-log";
 import {
   momentOf,
   personalAssignment,
@@ -185,6 +186,14 @@ const EXPORTED: Record<string, Exported> = {
     section: "notificationSettings",
     why: "the own settings of the notifications",
     build: (source) => one(source, "notification-settings", "me"),
+  },
+  [ACTIVITY_LOG]: {
+    section: "activityLog",
+    why: "the days on which the app was opened, kept for the research report",
+    build: async ({ database }) =>
+      (await database.list(ACTIVITY_LOG)).map(({ value }) =>
+        pick(value as Record<string, unknown>, ["date"]),
+      ),
   },
 };
 
