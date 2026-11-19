@@ -1,3 +1,4 @@
+import { createUuid7Generator } from "@parapka/domain";
 import { expect, it } from "vitest";
 
 import {
@@ -147,4 +148,73 @@ it("works for a private chore on a device without a pair", async () => {
   const chore = await chores.add(input(ME));
   expect(chore.shared).toBe(false);
   expect(await plan()).toHaveLength(2);
+});
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A chore saved now, with an id made at `createdMs`, planned as the runner does at `nowMs`. */
+async function planCreatedAt(
+  createdMs: number,
+  nowMs: number,
+  reminder = "18:00",
+  id?: string,
+) {
+  const { chores } = setup();
+  const stored = await chores.add(input(ME, reminder));
+  const newId = createUuid7Generator({
+    clock: { nowMs: () => createdMs },
+    random: { bytes: (length) => new Uint8Array(length) },
+  });
+  const chore = { ...stored, id: id ?? newId() };
+  const window = { fromMs: nowMs - DAY_MS, toMs: nowMs };
+  const plan = planNotifications({
+    sources: [
+      planChoreReminders({ chores: [chore], completions: [], ...window }),
+    ],
+    settings: settings(),
+    ...window,
+  });
+  return { chore, plan };
+}
+
+it("plans nothing for a day before the chore was created", async () => {
+  const early = await planCreatedAt(at(16, 17, 55), at(16, 17, 56));
+  expect(early.plan).toEqual([]);
+  const later = await planCreatedAt(at(16, 17, 55), at(16, 18, 1));
+  expect(later.plan.map((n) => [n.id, n.atMs])).toEqual([
+    [`chore-reminder:${later.chore.id}:2026-11-16`, at(16, 18)],
+  ]);
+});
+
+it("drops the moved reminder of the day before the chore was created", async () => {
+  const { chore, plan } = await planCreatedAt(
+    at(16, 22, 30),
+    at(17, 7, 1),
+    "23:00",
+  );
+  expect(plan.map((n) => [n.id, n.atMs])).toEqual([
+    [`chore-reminder:${chore.id}:2026-11-16`, at(17, 7)],
+  ]);
+});
+
+it("keeps the overdue reminder of a chore created earlier", async () => {
+  const { chore, plan } = await planCreatedAt(at(14, 12), at(16, 17, 56));
+  expect(plan.map((n) => n.id)).toContain(
+    `chore-reminder:${chore.id}:2026-11-15`,
+  );
+});
+
+it("does not filter a chore whose id is not a UUIDv7", async () => {
+  const { plan } = await planCreatedAt(0, at(16, 17, 56), "18:00", "c-1");
+  expect(plan.map((n) => n.id)).toContain("chore-reminder:c-1:2026-11-15");
+});
+
+it("compares the moments, not the days, with the creation", async () => {
+  const created = at(16, 18, 0) + 30_000;
+  const same = await planCreatedAt(created, at(16, 18, 1));
+  expect(same.plan).toEqual([]);
+  const next = await planCreatedAt(created, at(17, 18, 1));
+  expect(next.plan.map((n) => n.id)).toEqual([
+    `chore-reminder:${next.chore.id}:2026-11-17`,
+  ]);
 });

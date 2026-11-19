@@ -1,6 +1,7 @@
 import {
   listOccurrences,
   reminderRecipients,
+  uuid7Timestamp,
   type CalendarDate,
 } from "@parapka/domain";
 
@@ -46,7 +47,8 @@ export interface ChoreReminderInput {
  * Reminders of chores for the person using this phone (FR-NOT-05), from local
  * data only, so they work without a pair and without the network (FR-ONB-06).
  * Private chores and the ones without a pair are included; the checked off
- * occurrences are not. The range starts a day early, because a late reminder
+ * occurrences and the ones whose reminder is before the chore was created
+ * (from its UUIDv7 id) are not. The range starts a day early, because a late reminder
  * may be moved by the quiet hours into the window; `planNotifications` cuts
  * the window.
  */
@@ -64,10 +66,12 @@ export function planChoreReminders({
   return chores.flatMap((chore) => {
     const { reminder } = chore;
     if (reminder === null) return [];
+    const created = uuid7Timestamp(chore.id);
     return listOccurrences(chore, from, to)
       .filter(
         ({ occurrenceDate }) =>
           !done.has(`${chore.id}|${occurrenceDate}`) &&
+          (created === null || momentOf(occurrenceDate, reminder) >= created) &&
           isForMe(chore, occurrenceDate),
       )
       .map(({ occurrenceDate }) => ({
