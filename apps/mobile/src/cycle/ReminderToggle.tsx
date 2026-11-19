@@ -1,9 +1,9 @@
-import { Switch, View } from "react-native";
+import { View } from "react-native";
 
 import { t } from "../i18n";
 import { usePlatform } from "../platform/context";
 import { AlertText } from "../ui/AlertText";
-import { AppText } from "../ui/AppText";
+import { LabelledSwitch } from "../ui/LabelledSwitch";
 import { spacing } from "../ui/theme";
 import { useCycleActions } from "./use-cycle-actions";
 
@@ -12,21 +12,14 @@ export function ReminderToggle({ enabled }: { enabled: boolean }) {
   const actions = useCycleActions(usePlatform());
   return (
     <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
-      <View
-        style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}
-      >
-        <Switch
-          accessibilityLabel={t("cycle.reminder.label")}
-          value={enabled}
-          onValueChange={(value) => {
-            void actions.setReminder(value);
-          }}
-        />
-        <View style={{ flex: 1 }}>
-          <AppText>{t("cycle.reminder.label")}</AppText>
-          <AppText>{t("cycle.reminder.hint")}</AppText>
-        </View>
-      </View>
+      <LabelledSwitch
+        label={t("cycle.reminder.label")}
+        hint={t("cycle.reminder.hint")}
+        value={enabled}
+        onChange={(value) => {
+          void actions.setReminder(value);
+        }}
+      />
       {actions.error ? <AlertText>{actions.error}</AlertText> : null}
     </View>
   );

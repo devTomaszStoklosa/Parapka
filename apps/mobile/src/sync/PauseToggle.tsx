@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Switch, View } from "react-native";
+import { View } from "react-native";
 
 import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
+import { LabelledSwitch } from "../ui/LabelledSwitch";
 import { spacing } from "../ui/theme";
 import type { PauseRepository } from "./pause-repository";
 
@@ -48,19 +49,12 @@ export function PauseToggle({
 
   return (
     <View style={{ gap: spacing.sm }}>
-      <View
-        style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}
-      >
-        <Switch
-          accessibilityLabel={t("pause.label")}
-          value={paused}
-          onValueChange={change}
-        />
-        <View style={{ flex: 1 }}>
-          <AppText>{t("pause.label")}</AppText>
-          <AppText>{t("pause.hint")}</AppText>
-        </View>
-      </View>
+      <LabelledSwitch
+        label={t("pause.label")}
+        hint={t("pause.hint")}
+        value={paused}
+        onChange={change}
+      />
       {failed && (
         <AppText accessibilityRole="alert">{t("pause.failed")}</AppText>
       )}

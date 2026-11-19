@@ -296,3 +296,30 @@ it("saves the alternative answers: no children, a toggled goal, shared goals", a
       ?.periodLength,
   ).toBe(4);
 });
+
+it("switches the goal sharing by pressing its label or hint", () => {
+  setup();
+  type(o.name.label, "Ola");
+  next();
+  click("radio", o.formNeutral);
+  next();
+  click("checkbox", o.adult.confirm.neutral);
+  next();
+  click("radio", o.tenure["3-7"]);
+  next();
+  click("radio", o.children.no);
+  next();
+  const share = () =>
+    screen.getByRole<HTMLInputElement>("switch", { name: o.goals.share });
+  expect(screen.getAllByRole("switch", { name: o.goals.share })).toHaveLength(
+    1,
+  );
+  expect(screen.queryByRole("button", { name: o.goals.share })).toBeNull();
+  expect(share().checked).toBe(false);
+  fireEvent.click(screen.getByText(o.goals.share));
+  expect(share().checked).toBe(true);
+  fireEvent.click(screen.getByText(o.goals.share));
+  expect(share().checked).toBe(false);
+  fireEvent.click(screen.getByText(o.goals.shareHint));
+  expect(share().checked).toBe(true);
+});

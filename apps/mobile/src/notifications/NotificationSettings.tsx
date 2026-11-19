@@ -8,6 +8,7 @@ import { t } from "../i18n";
 import { usePlatform } from "../platform/context";
 import { AlertText } from "../ui/AlertText";
 import { AppText } from "../ui/AppText";
+import { LabelledSwitch } from "../ui/LabelledSwitch";
 import { spacing } from "../ui/theme";
 import {
   createNotificationSettingsRepository,
@@ -17,10 +18,7 @@ import {
 } from "./notification-settings";
 import { NotificationPermission } from "./NotificationPermission";
 import { NotificationTimeFields } from "./NotificationTimeFields";
-import {
-  LabelledSwitch,
-  NotificationTypeToggles,
-} from "./NotificationTypeToggles";
+import { NotificationTypeToggles } from "./NotificationTypeToggles";
 
 interface Loaded {
   readonly settings: Settings;

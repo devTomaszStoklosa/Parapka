@@ -42,3 +42,35 @@ it("shows the error when saving fails", async () => {
     pl.cycle.period.error.generic,
   );
 });
+
+it("switches by pressing the label or the hint and back", async () => {
+  const { platform } = await setup(false);
+  show(platform);
+  await screen.findByText(pl.cycle.reminder.label);
+  expect(
+    screen.getAllByRole("switch", { name: pl.cycle.reminder.label }),
+  ).toHaveLength(1);
+  expect(
+    screen.queryByRole("button", { name: pl.cycle.reminder.label }),
+  ).toBeNull();
+  const reminder = async () =>
+    (await cycleOf(platform).profile()).wellbeingReminder;
+  fireEvent.click(screen.getByText(pl.cycle.reminder.label));
+  await vi.waitFor(async () => {
+    expect(await reminder()).toBe(true);
+  });
+  await vi.waitFor(() => {
+    expect(toggle().checked).toBe(true);
+  });
+  fireEvent.click(screen.getByText(pl.cycle.reminder.label));
+  await vi.waitFor(async () => {
+    expect(await reminder()).toBe(false);
+  });
+  await vi.waitFor(() => {
+    expect(toggle().checked).toBe(false);
+  });
+  fireEvent.click(screen.getByText(pl.cycle.reminder.hint));
+  await vi.waitFor(async () => {
+    expect(await reminder()).toBe(true);
+  });
+});

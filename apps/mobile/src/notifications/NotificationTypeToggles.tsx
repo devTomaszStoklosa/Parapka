@@ -1,51 +1,12 @@
-import { Pressable, Switch, View } from "react-native";
+import { View } from "react-native";
 
 import { t } from "../i18n";
-import { AppText } from "../ui/AppText";
-import { MIN_TOUCH_TARGET, spacing } from "../ui/theme";
+import { LabelledSwitch } from "../ui/LabelledSwitch";
+import { spacing } from "../ui/theme";
 import {
   NOTIFICATION_TYPES,
   type NotificationTypeId,
 } from "./notification-types";
-
-/** A labelled switch; the label is the name for assistive technology too. */
-export function LabelledSwitch(props: {
-  label: string;
-  hint?: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: spacing.md,
-        minHeight: MIN_TOUCH_TARGET,
-      }}
-    >
-      <Switch
-        accessibilityLabel={props.label}
-        value={props.value}
-        onValueChange={props.onChange}
-      />
-      <Pressable
-        accessible={false}
-        onPress={() => {
-          props.onChange(!props.value);
-        }}
-        style={{
-          flex: 1,
-          minHeight: MIN_TOUCH_TARGET,
-          justifyContent: "center",
-        }}
-      >
-        <AppText>{props.label}</AppText>
-        {props.hint ? <AppText>{props.hint}</AppText> : null}
-      </Pressable>
-    </View>
-  );
-}
 
 /** One switch per type; the wellbeing needs the cycle panel, the hint a pair. */
 export function NotificationTypeToggles(props: {
