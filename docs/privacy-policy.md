@@ -18,7 +18,7 @@ Dane przetwarzają trzy miejsca: **Twój telefon**, **relay** (serwer, przez kt�
 
 Twoje dane leżą w lokalnej bazie na telefonie (inwentarz §1; `apps/mobile/src/data/local-database.ts`). Nie są synchronizowane z partnerem m.in.: zgody, dane cyklu, reakcje na wskazówki, własne odpowiedzi ankiety o wskazówkach, ustawienia powiadomień i blokady oraz prywatne obowiązki i rzeczy do pamiętania (inwentarz §1.1–§1.5).
 
-- **Do partnera trafiają, jako zaszyfrowane koperty przez relay**: Twój profil z onboardingu (dopiero po zgodzie, `sync-profile`; inwentarz §1.1), wspólne obowiązki, ich odhaczenia i wspólne rzeczy do pamiętania (inwentarz §1.2), wspólny harmonogram check-inu oraz Twoje odpowiedzi check-inu po zapieczętowaniu i ujawnieniu (inwentarz §1.3) i gotowa wskazówka (niżej).
+- **Do partnera trafiają, jako zaszyfrowane koperty przez relay**: Twój profil z onboardingu (dopiero po zgodzie, `sync-profile`; inwentarz §1.1), wspólne obowiązki, ich odhaczenia i wspólne rzeczy do pamiętania (inwentarz §1.2), wspólny harmonogram check-inu oraz Twoje odpowiedzi check-inu po zapieczętowaniu i ujawnieniu (inwentarz §1.3) i gotowa wskazówka (niżej). Profil, wspólne obowiązki i rzeczy do pamiętania oraz ujawnione odpowiedzi check-inu nie zostają więc tylko na telefonie.
 
 - **Dane cyklu** (`cycle-settings`, `period-logs`, `wellbeing-entries`) nie opuszczają telefonu (inwentarz §1.4). To dane o zdrowiu (RODO art. 9).
 - **Do partnera trafia tylko gotowa wskazówka**: jej tekst, kategoria, dzień i status (`apps/mobile/src/cycle/hint-codec.ts`, typ `SentHint`). Nie wysyłamy fazy cyklu, szablonu wskazówki ani dat miesiączki (inwentarz §1.4, kolekcja `cycle-hints`).
@@ -79,7 +79,7 @@ Powiadomienia są lokalne. Tryb dyskretny jest domyślnie włączony: poza aplik
   4. na końcu czyści bazę i klucze na telefonie.
 
   Gdy relay jest nieosiągalny, operacja kończy się komunikatem i nie czyści telefonu, abyś mógł/mogła spróbować ponownie. Luka: kopie bazy relaya (14 najnowszych) znikają dopiero przy rotacji (inwentarz §4).
-- **Wycofanie zgody**: zgodę można wyczyścić w aplikacji (inwentarz §1.1, `consent`).
+- **Wycofanie zgody**: zgody na poszczególne kategorie udostępniania partnerowi wyłączasz w Ustawieniach, w sekcji prywatności (`apps/mobile/src/consent/PrivacySettings.tsx`, `ConsentToggles.tsx`). Zapis zgody jest usuwany przy rozłączeniu pary (`apps/mobile/src/pairing/clear-pair.ts`, `consent.clear()`; inwentarz §1.1, `consent`).
 - **Skarga do organu nadzorczego** (UODO): `[DO UZUPEŁNIENIA]` (do weryfikacji z prawnikiem).
 
 ## 8. Kontakt
