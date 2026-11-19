@@ -42,7 +42,8 @@ export function createWebNotifier(): Notifier {
       }
       try {
         const worker = (
-          globalThis.navigator as { serviceWorker?: ServiceWorkerApi } | undefined
+          globalThis.navigator as
+            { serviceWorker?: ServiceWorkerApi } | undefined
         )?.serviceWorker;
         const registration = await worker?.getRegistration();
         if (!registration) return false;

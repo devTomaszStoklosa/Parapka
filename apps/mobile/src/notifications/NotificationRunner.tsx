@@ -59,7 +59,9 @@ async function deliver(
   if (message) {
     const { notifier } = platform;
     const shown =
-      notifier?.permission() === "granted" ? await notifier.show(message) : false;
+      notifier?.permission() === "granted"
+        ? await notifier.show(message)
+        : false;
     if (!isActive()) return;
     if (!shown) setBanner(message);
   }

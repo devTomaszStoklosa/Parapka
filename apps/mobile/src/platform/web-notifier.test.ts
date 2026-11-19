@@ -25,7 +25,10 @@ function stubThrowingNotification() {
     function Fake() {
       throw new TypeError("Illegal constructor");
     },
-    { permission: "granted", requestPermission: () => Promise.resolve("granted") },
+    {
+      permission: "granted",
+      requestPermission: () => Promise.resolve("granted"),
+    },
   );
   vi.stubGlobal("Notification", Fake);
 }
