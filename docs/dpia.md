@@ -27,7 +27,7 @@
 | Pytanie | Stan techniczny | Odnośnik |
 |---|---|---|
 | Czy relay jest potrzebny? | Dwa telefony nie mają wspólnego serwera; relay przekazuje zaszyfrowane koperty także wtedy, gdy partner jest offline (okno do 30 dni). | spec §7.1, NFR-SYNC-02; inwentarz §2 |
-| Czy dane cyklu muszą opuszczać telefon? | Nie. Wychodzi tylko wskazówka bez dat, objawów i wartości z wpisów. | FR-CYC-09; `apps/mobile/src/cycle/hint-codec.ts`; inwentarz §1.4 |
+| Czy dane cyklu muszą opuszczać telefon? | Nie. Wychodzi tylko wskazówka: tekst, kategoria, dzień i status — bez fazy, dat miesiączki, objawów i wartości z wpisów. | FR-CYC-09; `apps/mobile/src/cycle/hint-codec.ts`; inwentarz §1.4 |
 | Czy relay musi znać treść i tożsamość? | Nie. Zna losowe identyfikatory, klucze publiczne, szyfrogramy, rozmiar, czas i tokeny push. | NFR-PRV-03; inwentarz §2 |
 | Czy potrzebne są analityka i śledzenie? | Nie ma ich. Brak SDK reklamowych, analitycznych i zewnętrznego zgłaszania awarii; brak lokalizacji, statusu „online” i potwierdzeń odczytu. | NFR-PRV-04, FR-SEC-03; inwentarz §5 |
 | Czy dane są przechowywane dłużej niż trzeba? | Koperty do potwierdzenia, najwyżej 30 dni; zamknięta skrzynka najwyżej 30 dni; dane techniczne najwyżej 14 dni (z wyjątkami w §6). | NFR-SYNC-02, NFR-PRV-05; inwentarz §2 |
@@ -41,7 +41,7 @@ Skala wpływu i prawdopodobieństwa: `[DO UZUPEŁNIENIA]` przez właściciela i 
 
 | # | Ryzyko dla osoby | Skąd się bierze (fakt) | Środki (§4) |
 |---|---|---|---|
-| D-1 | Ujawnienie danych cyklu osobom trzecim | dane cyklu i samopoczucia leżą w lokalnej bazie; kopia wychodzi z aplikacji tylko w eksporcie i raporcie (inwentarz §1.4, §1.6) | S-1, S-2, S-5, S-8 |
+| D-1 | Ujawnienie danych cyklu osobom trzecim | dane cyklu i samopoczucia leżą w lokalnej bazie; kopia danych cyklu wychodzi z aplikacji tylko w pliku eksportu (FR-SEC-05, `apps/mobile/src/data-control/export-data.ts`), a raport do badań nie zawiera danych cyklu, tylko liczby (spec §10, `apps/mobile/src/research/report-text.ts`; inwentarz §1.4, §1.6) | S-1, S-2, S-5, S-8 |
 | D-2 | Presja w związku: partner żąda dostępu do danych albo wymusza ich udostępnienie | partner widzi tylko udostępnione kategorie i wskazówki; reakcje na wskazówki zostają tylko lokalnie (inwentarz §1.4) | S-2, S-7 |
 | D-3 | Odgadnięcie fazy cyklu przez partnera ze wzoru wskazówek (R-1) | wskazówki mają kategorię i dzień (inwentarz §1.4) | S-2 |
 | D-4 | Metadane relaya (R-6): relay wie, że dwa pseudonimowe urządzenia tworzą parę, kiedy wysyłają koperty i jak duże | tabele `mailboxes` i `envelopes` (inwentarz §2); adresy IP po stronie infrastruktury dostawcy (inwentarz §4) | S-1, S-3, S-4, S-9 |
