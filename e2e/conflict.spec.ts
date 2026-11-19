@@ -25,6 +25,7 @@ async function editOffline(
   [a, b]: [User, User],
   editA: { title?: string; note?: string },
   editB: { title?: string; note?: string },
+  finalTitle: string,
 ) {
   await a.context.setOffline(true);
   await b.context.setOffline(true);
@@ -35,6 +36,12 @@ async function editOffline(
   for (const user of [a, b]) {
     await user.page.reload();
   }
+  // A shows its own title at once, so wait until B has received it too (B has
+  // already sent its note) and reload A: its editor shows the state at opening.
+  await expect(b.page.getByText(finalTitle).first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await a.page.reload();
 }
 
 test("the later edit of the same fields wins in both contexts", async ({
@@ -46,6 +53,7 @@ test("the later edit of the same fields wins in both contexts", async ({
       users,
       { title: "Podlać kwiaty (A)" },
       { title: "Podlać kwiaty (B)", note: "Notatka B" },
+      "Podlać kwiaty (B)",
     );
     for (const user of users) {
       await expectChore(user.page, "Podlać kwiaty (A)", {
@@ -68,6 +76,7 @@ test("edits of different fields are both kept in both contexts", async ({
       users,
       { title: "Podlać kwiaty (A)" },
       { note: "Notatka B" },
+      "Podlać kwiaty (A)",
     );
     for (const user of users) {
       await expectChore(user.page, TITLE, {
