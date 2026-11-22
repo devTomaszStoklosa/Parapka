@@ -96,6 +96,37 @@ describe("PairRepository", () => {
     expect(await repository.current()).toBeNull();
   });
 
+  it("sets the device id of the partner and notifies", async () => {
+    const { repository } = setup();
+    await repository.savePending({ ...pair, deviceId: null }, keys);
+    const listener = vi.fn();
+    repository.subscribe(listener);
+    const updated = await repository.setPartnerDeviceId("device-a");
+    expect(updated?.deviceId).toBe("device-a");
+    expect((await repository.current())?.deviceId).toBe("device-a");
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns null from setPartnerDeviceId without a pair and writes nothing", async () => {
+    const { repository } = setup();
+    const listener = vi.fn();
+    repository.subscribe(listener);
+    expect(await repository.setPartnerDeviceId("device-a")).toBeNull();
+    expect(await repository.current()).toBeNull();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("does not overwrite a known device id of the partner", async () => {
+    const { repository } = setup();
+    await repository.savePending({ ...pair, deviceId: "known" }, keys);
+    const listener = vi.fn();
+    repository.subscribe(listener);
+    const result = await repository.setPartnerDeviceId("other");
+    expect(result?.deviceId).toBe("known");
+    expect((await repository.current())?.deviceId).toBe("known");
+    expect(listener).not.toHaveBeenCalled();
+  });
+
   it("removes the record and the keys", async () => {
     const { repository, keyStore } = setup();
     await repository.savePending(pair, keys);
