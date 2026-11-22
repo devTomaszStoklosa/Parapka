@@ -199,3 +199,15 @@ describe("unknown fields", () => {
     );
   });
 });
+
+describe("ChoreCompletion", () => {
+  it("merges a change into the state of the same entity", () => {
+    const state = applyChange(emptyEntityState("ChoreCompletion", "c1"), {
+      entity: "ChoreCompletion",
+      id: "c1",
+      op: "upsert",
+      fields: { completedBy: { value: "a", hlc: h(1, 0, "a") } },
+    });
+    expect(entityValues(state)).toEqual({ completedBy: "a" });
+  });
+});
