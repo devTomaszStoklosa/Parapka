@@ -21,9 +21,8 @@ import { createShareableRecordSync } from "./record-sync";
 
 const COLLECTION = "chore-completions";
 const ENTITY = "ChoreCompletion";
-// The merge of `@parapka/sync` knows the entities it lists; the state of a
-// check-off is merged as a "Chore" and only the envelope carries ENTITY.
-const MERGE_ENTITY = "Chore";
+// Check-offs saved before `ChoreCompletion` was a merge entity carry this one.
+const LEGACY_ENTITY = "Chore";
 const FIELDS = ["choreId", "occurrenceDate", "completedBy", "completedAt"];
 
 /** One check-off of one occurrence of a chore (FR-CHR-03). */
@@ -84,7 +83,7 @@ interface Deps {
 
 const emptyRecord = (id: string, shared: boolean): CompletionRecord => ({
   shared,
-  state: emptyEntityState(MERGE_ENTITY, id),
+  state: emptyEntityState(ENTITY, id),
   pending: { fields: null, life: null },
 });
 
@@ -109,8 +108,18 @@ const isValidField = (name: string, value: unknown) => {
   return isText(value);
 };
 
-const forMerge = (change: ContentChange) =>
-  ({ ...change, entity: MERGE_ENTITY }) as Change;
+const forMerge = (change: ContentChange): Change => ({
+  ...change,
+  entity: ENTITY,
+});
+
+/** Gives a record saved in the old format the entity of its state now. */
+const upgrade = (record: CompletionRecord): CompletionRecord => {
+  if ((record.state.entity as string) === LEGACY_ENTITY) {
+    record.state = { ...record.state, entity: ENTITY };
+  }
+  return record;
+};
 
 /** The change of the partner without the fields that are not valid. */
 function sanitize(change: ContentChange): Change | null {
@@ -174,11 +183,13 @@ function createAccess({ database, identity }: Deps) {
   const changes = changeChannel(database, COLLECTION);
   return {
     changes,
-    read: async (id: string) =>
-      (await database.get(
+    read: async (id: string) => {
+      const record = (await database.get(
         COLLECTION,
         id,
-      )) as unknown as CompletionRecord | null,
+      )) as unknown as CompletionRecord | null;
+      return record === null ? null : upgrade(record);
+    },
     write: async (id: string, record: CompletionRecord) => {
       await database.put(COLLECTION, id, record as unknown as JsonValue);
       changes.notify();
@@ -186,7 +197,7 @@ function createAccess({ database, identity }: Deps) {
     records: async () =>
       (await database.list(COLLECTION)).map(({ id, value }) => ({
         id,
-        record: value as unknown as CompletionRecord,
+        record: upgrade(value as unknown as CompletionRecord),
       })),
     /** The id holds the device, so only the own check-off can be undone. */
     ownId: async (choreId: string, occurrenceDate: string) => {

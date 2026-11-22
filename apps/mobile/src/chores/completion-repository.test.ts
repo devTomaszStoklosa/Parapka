@@ -151,4 +151,31 @@ describe("completion repository", () => {
     });
     expect(await completions.list()).toHaveLength(1);
   });
+
+  it("merges a change of the partner into a record saved as a Chore", async () => {
+    const { completions, database } = setup();
+    const id = "c|2026-11-05|device-b";
+    await database.put("chore-completions", id, {
+      shared: true,
+      state: {
+        entity: "Chore",
+        id,
+        fields: {},
+        deletedAt: null,
+        restoredAt: null,
+      },
+      pending: { fields: null, life: null },
+    });
+    await completions.sync.merge(
+      change(id, {
+        choreId: "c",
+        occurrenceDate: DAY,
+        completedBy: "device-b",
+        completedAt: "001800000000050-00000-device-b",
+      }),
+    );
+    expect(await completions.list()).toMatchObject([
+      { completedBy: "device-b" },
+    ]);
+  });
 });
