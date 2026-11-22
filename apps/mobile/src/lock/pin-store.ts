@@ -1,6 +1,7 @@
 import type { Sodium } from "@parapka/crypto";
 import type { Clock } from "@parapka/domain";
 
+import { changeChannel } from "../data/change-listeners";
 import type { LocalDatabase } from "../data/local-database";
 import {
   initialLockState,
@@ -123,6 +124,8 @@ export function createPinStore(deps: {
   clock: Clock;
 }): PinStore {
   const { database, sodium } = deps;
+  // Shared per database, so a LockGate sees a PIN or timeout set elsewhere.
+  const changes = changeChannel(database, COLLECTION);
   return {
     hasPin: async () => (await database.get(COLLECTION, PIN_ID)) !== null,
     setPin: async (pin) => {
@@ -133,6 +136,7 @@ export function createPinStore(deps: {
         salt: toHex(salt),
         hash: toHex(hash),
       });
+      changes.notify();
     },
     verifyPin: (pin) => verifyPin(database, sodium, pin),
     attempt: (pin) => attempt(deps, pin),
@@ -142,6 +146,7 @@ export function createPinStore(deps: {
         ...(await loadSettings(database)),
         timeout,
       });
+      changes.notify();
     },
   };
 }

@@ -2,6 +2,7 @@ import type { Sodium } from "@parapka/crypto";
 import type { Clock } from "@parapka/domain";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { changeChannel } from "../data/change-listeners";
 import { createMemoryDatabase } from "../data/memory-database";
 import { createWebSodium } from "../platform/web-sodium";
 import { equalConstantTime, createPinStore, isValidPin } from "./pin-store";
@@ -113,5 +114,20 @@ describe("attempts", () => {
     await store.setPin("123456");
     await store.attempt("123456");
     expect((await store.loadSettings()).timeout).toBe("fiveMinutes");
+  });
+});
+
+describe("change notification", () => {
+  it("notifies subscribers after setPin and setTimeout", async () => {
+    const { database, store } = setup();
+    let calls = 0;
+    const stop = changeChannel(database, "lock").subscribe(() => {
+      calls += 1;
+    });
+    await store.setPin("123456");
+    expect(calls).toBe(1);
+    await store.setTimeout("oneMinute");
+    expect(calls).toBe(2);
+    stop();
   });
 });

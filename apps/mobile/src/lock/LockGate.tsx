@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppState, View } from "react-native";
 import type { Sodium } from "@parapka/crypto";
 import type { Clock } from "@parapka/domain";
 
+import { changeChannel } from "../data/change-listeners";
 import type { LocalDatabase } from "../data/local-database";
 import { t } from "../i18n";
 import type { KeyStore } from "../platform/key-store";
@@ -79,6 +80,37 @@ function useLock(props: LockGateProps, store: PinStore, active: boolean) {
       },
     );
   }, [store]);
+
+  const hadPin = useRef(hasPin);
+  useEffect(() => {
+    hadPin.current = hasPin;
+  }, [hasPin]);
+
+  // A PIN or timeout set during the session applies at once. A PIN that
+  // appears now was just given by the person, so the screen stays unlocked
+  // until the next trip to the background.
+  useEffect(() => {
+    let current = true;
+    const refresh = () => {
+      void Promise.all([store.hasPin(), store.loadSettings()]).then(
+        ([pinSet, settings]) => {
+          if (!current) return;
+          const appeared = pinSet && !hadPin.current;
+          setHasPin(pinSet);
+          setLock((state) => {
+            if (state === null) return state;
+            const next = { ...state, timeout: settings.timeout };
+            return appeared ? unlock(next) : next;
+          });
+        },
+      );
+    };
+    const stop = changeChannel(props.database, "lock").subscribe(refresh);
+    return () => {
+      current = false;
+      stop();
+    };
+  }, [store, props.database]);
 
   useEffect(() => {
     setLock((current) => {

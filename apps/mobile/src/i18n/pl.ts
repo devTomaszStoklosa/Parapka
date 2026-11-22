@@ -3,6 +3,7 @@ import { plCycle } from "./pl-cycle";
 import { plData } from "./pl-data";
 import { plHead } from "./pl-head";
 import { plResearch } from "./pl-research";
+import { plLock } from "./pl-lock";
 import { plNotifications } from "./pl-notifications";
 import { plannerEdit } from "./pl-planner";
 import { plShare } from "./pl-share";
@@ -170,32 +171,7 @@ export const pl = {
       },
     },
   },
-  lock: {
-    veil: "Parapka jest zablokowana, gdy nie jest na pierwszym planie.",
-    pin: {
-      unlockTitle: "Podaj PIN",
-      currentTitle: "Podaj obecny PIN",
-      newTitle: "Ustaw nowy PIN",
-      setTitle: "Ustaw PIN",
-      confirmTitle: "Powtórz PIN",
-      digit: "Cyfra {position} z 6",
-      mismatch: "Wpisane PIN-y różnią się. Wpisz nowy PIN jeszcze raz.",
-      wrong: "To nie jest zapisany PIN. Spróbuj jeszcze raz.",
-      delay: "Kolejna próba będzie możliwa za {seconds} s.",
-      forgot: "Nie pamiętam PIN-u",
-    },
-    reset: {
-      title: "Reset aplikacji",
-      description:
-        "Bez PIN-u nie da się odblokować aplikacji. Reset usuwa z tego urządzenia wszystkie dane lokalne i klucze. Tej operacji nie można cofnąć.",
-      continue: "Rozumiem, dalej",
-      confirmTitle: "Potwierdź reset",
-      confirmDescription:
-        "Zostaną usunięte wszystkie dane i klucze na tym urządzeniu. Czy na pewno chcesz zresetować aplikację?",
-      confirm: "Tak, usuń wszystko",
-      cancel: "Anuluj",
-    },
-  },
+  lock: plLock,
   onboarding: {
     back: "Wstecz",
     next: "Dalej",

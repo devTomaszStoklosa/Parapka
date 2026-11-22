@@ -5,6 +5,7 @@ import { DeleteAllData } from "../data-control/DeleteAllData";
 import { ExportData } from "../data-control/ExportData";
 import { CyclePanelSettings } from "../cycle/CyclePanelSettings";
 import { t } from "../i18n";
+import { LockSettings } from "../lock/LockSettings";
 import { PrivacySettings } from "../consent/PrivacySettings";
 import { useConsentWiring } from "../consent/wiring";
 import { NotificationSettings } from "../notifications/NotificationSettings";
@@ -29,6 +30,7 @@ export function SettingsScreen() {
       </AppText>
       <PairingEntry />
       <CheckinScheduleEntry />
+      <LockSettings />
       <PrivacySettings consent={consent} profiles={profiles} />
       <CyclePanelSettings />
       <NotificationSettings />
