@@ -128,10 +128,67 @@ function useLock(props: LockGateProps, store: PinStore, active: boolean) {
   return { lock: effective, setLock, hasPin, setHasPin };
 }
 
+interface OverlayProps {
+  lock: LockState | null;
+  hasPin: boolean;
+  active: boolean;
+  resetting: boolean;
+  store: PinStore;
+  database: LocalDatabase;
+  keyStore: KeyStore;
+  clock: Clock;
+  setLock: (lock: LockState) => void;
+  setHasPin: (hasPin: boolean) => void;
+  setResetting: (resetting: boolean) => void;
+  onResetDone: () => void;
+}
+
+/** What covers the content: the veil, the PIN screen or the reset screen. */
+function Overlay(props: OverlayProps) {
+  const { lock, hasPin, active, store } = props;
+  if (lock === null) return <Veil />;
+  if (!hasPin) return null;
+  if (!lock.locked) return active ? null : <Veil />;
+  if (props.resetting) {
+    return (
+      <ResetScreen
+        onReset={() =>
+          resetApp({ database: props.database, keyStore: props.keyStore })
+        }
+        onCancel={() => {
+          props.setResetting(false);
+        }}
+        onDone={() => {
+          props.setResetting(false);
+          props.setHasPin(false);
+          props.onResetDone();
+        }}
+      />
+    );
+  }
+  return (
+    <>
+      <PinScreen
+        mode="unlock"
+        clock={props.clock}
+        onAttempt={(pin) => store.attempt(pin)}
+        onDone={() => {
+          props.setLock(unlock(lock));
+        }}
+        onForgot={() => {
+          props.setResetting(true);
+        }}
+      />
+      {active ? null : <Veil />}
+    </>
+  );
+}
+
 /**
  * Shows the content only after the PIN was given. When the app is not active a
  * veil covers it; after the time set for the lock the PIN screen replaces it
- * before any content is rendered (FR-SEC-01, FR-SEC-02).
+ * before any content is rendered (FR-SEC-01, FR-SEC-02). Once shown, the
+ * content stays mounted under the lock, hidden, so that it keeps its state.
  */
 export function LockGate(props: LockGateProps) {
   const { database, keyStore, sodium, clock, children } = props;
@@ -142,45 +199,34 @@ export function LockGate(props: LockGateProps) {
   const active = useAppActive();
   const { lock, setLock, hasPin, setHasPin } = useLock(props, store, active);
   const [resetting, setResetting] = useState(false);
+  // A new key after the reset mounts the content afresh, so that the state
+  // kept under the lock does not show up once the PIN is gone.
+  const [generation, setGeneration] = useState(0);
 
-  if (lock === null) return <Veil />;
-  if (!hasPin) return <>{children}</>;
-  if (!lock.locked) {
-    return (
-      <>
-        {children}
-        {active ? null : <Veil />}
-      </>
-    );
-  }
-  if (resetting) {
-    return (
-      <ResetScreen
-        onReset={() => resetApp({ database, keyStore })}
-        onCancel={() => {
-          setResetting(false);
-        }}
-        onDone={() => {
-          setResetting(false);
-          setHasPin(false);
-        }}
-      />
-    );
-  }
+  const shown = useRef(false);
+  const locked = lock !== null && hasPin && lock.locked;
+  if (lock !== null && !locked) shown.current = true;
+
   return (
     <>
-      <PinScreen
-        mode="unlock"
-        clock={clock}
-        onAttempt={(pin) => store.attempt(pin)}
-        onDone={() => {
-          setLock(unlock(lock));
-        }}
-        onForgot={() => {
-          setResetting(true);
+      {shown.current ? (
+        <View
+          key={generation}
+          testID="lock-content"
+          style={locked ? { display: "none" } : { flex: 1 }}
+          aria-hidden={locked}
+          importantForAccessibility={locked ? "no-hide-descendants" : "auto"}
+        >
+          {children}
+        </View>
+      ) : null}
+      <Overlay
+        {...{ lock, hasPin, active, resetting, store, setLock, setHasPin }}
+        {...{ database, keyStore, clock, setResetting }}
+        onResetDone={() => {
+          setGeneration((value) => value + 1);
         }}
       />
-      {active ? null : <Veil />}
     </>
   );
 }

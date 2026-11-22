@@ -7,7 +7,9 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
+import { useEffect, useState } from "react";
 import { afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 
 import { createMemoryDatabase } from "../data/memory-database";
@@ -25,6 +27,17 @@ let contentRenders = 0;
 function Content() {
   contentRenders += 1;
   return <div>secret content</div>;
+}
+
+/** Whether a person or a screen reader can reach the content (not just in the DOM). */
+function contentAccessible(text = "secret content"): boolean {
+  let node: Element | null = screen.queryByText(text);
+  if (node === null) return false;
+  for (; node !== null; node = node.parentElement) {
+    if (node.getAttribute("aria-hidden") === "true") return false;
+    if (getComputedStyle(node).display === "none") return false;
+  }
+  return true;
 }
 
 beforeAll(async () => {
@@ -83,19 +96,19 @@ async function setup(
   };
 }
 
-async function unlockWith(pin: string) {
+async function unlockWith(pin: string, text = "secret content") {
   pin.split("").forEach((digit, index) => {
     fireEvent.change(screen.getByLabelText(`Cyfra ${String(index + 1)} z 6`), {
       target: { value: digit },
     });
   });
-  await screen.findByText("secret content");
+  await screen.findByText(text);
 }
 
 it("shows the PIN screen, not the content, on start", async () => {
   await setup();
   expect(await screen.findByText(t("lock.pin.unlockTitle"))).toBeTruthy();
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
 });
 
 it("starts unlocked when asked to, and locks after the background", async () => {
@@ -105,7 +118,7 @@ it("starts unlocked when asked to, and locks after the background", async () => 
 
   setAppState("hidden");
   setAppState("visible");
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
   expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
 });
 
@@ -132,7 +145,7 @@ it("covers the content in the background and locks before it on return", async (
 
   setAppState("visible");
   expect(screen.queryByTestId("lock-veil")).toBeNull();
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
   expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
 });
 
@@ -149,7 +162,7 @@ it("locks after a 1 minute timeout only when the time has passed", async () => {
   setAppState("hidden");
   advance(60_000);
   setAppState("visible");
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
   expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
 });
 
@@ -163,7 +176,7 @@ it("does not render the content once after the time set for the lock", async () 
   contentRenders = 0;
   setAppState("visible");
   expect(contentRenders).toBe(0);
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
 });
 
 it("resets the app after the forgotten PIN is confirmed twice", async () => {
@@ -201,7 +214,7 @@ it("applies a PIN set in the session without locking at once", async () => {
 
   setAppState("hidden");
   setAppState("visible");
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
   expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
 });
 
@@ -225,7 +238,7 @@ it("applies a timeout set in the session: 2 min does not lock, 6 min does", asyn
   setAppState("hidden");
   advance(360_000);
   setAppState("visible");
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
 });
 
 it("control: with the default timeout 2 min in the background locks", async () => {
@@ -234,5 +247,98 @@ it("control: with the default timeout 2 min in the background locks", async () =
   setAppState("hidden");
   advance(120_000);
   setAppState("visible");
-  expect(screen.queryByText("secret content")).toBeNull();
+  expect(contentAccessible()).toBe(false);
+});
+
+let mounts = 0;
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    mounts += 1;
+  }, []);
+  return (
+    <button
+      onClick={() => {
+        setCount(count + 1);
+      }}
+    >
+      {`secret content ${String(count)}`}
+    </button>
+  );
+}
+
+async function renderCounter(startUnlocked: boolean) {
+  mounts = 0;
+  const database = createMemoryDatabase();
+  const clock: Clock = { nowMs: () => 1_000 };
+  await createPinStore({ database, sodium, clock }).setPin("123456");
+  render(
+    <LockGate
+      database={database}
+      keyStore={createMemoryKeyStore()}
+      sodium={sodium}
+      clock={clock}
+      startUnlocked={startUnlocked}
+    >
+      <Counter />
+    </LockGate>,
+  );
+}
+
+it("keeps the state of the content across the lock", async () => {
+  await renderCounter(true);
+  fireEvent.click(await screen.findByText("secret content 0"));
+  expect(screen.getByText("secret content 1")).toBeTruthy();
+
+  setAppState("hidden");
+  setAppState("visible");
+  expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
+  expect(contentAccessible("secret content 1")).toBe(false);
+  await unlockWith("123456", "secret content 1");
+  await waitFor(() => {
+    expect(screen.queryByText(t("lock.pin.unlockTitle"))).toBeNull();
+  });
+  expect(contentAccessible("secret content 1")).toBe(true);
+  expect(mounts).toBe(1);
+});
+
+it("hides the content under the PIN screen and under the reset screen", async () => {
+  await setup(true, undefined, true);
+  await screen.findByText("secret content");
+  setAppState("hidden");
+  setAppState("visible");
+  expect(contentAccessible()).toBe(false);
+  expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: t("lock.pin.forgot") }));
+  expect(contentAccessible()).toBe(false);
+  expect(
+    screen.getByRole("button", { name: t("lock.reset.continue") }),
+  ).toBeTruthy();
+});
+
+it("mounts the content afresh after the reset from the lock screen", async () => {
+  await renderCounter(true);
+  fireEvent.click(await screen.findByText("secret content 0"));
+  expect(screen.getByText("secret content 1")).toBeTruthy();
+
+  setAppState("hidden");
+  setAppState("visible");
+  fireEvent.click(screen.getByRole("button", { name: t("lock.pin.forgot") }));
+  fireEvent.click(
+    screen.getByRole("button", { name: t("lock.reset.continue") }),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: t("lock.reset.confirm") }),
+  );
+  expect(await screen.findByText("secret content 0")).toBeTruthy();
+  expect(screen.queryByText("secret content 1")).toBeNull();
+  expect(mounts).toBe(2);
+});
+
+it("does not mount the content before the first unlock", async () => {
+  await renderCounter(false);
+  await screen.findByText(t("lock.pin.unlockTitle"));
+  expect(mounts).toBe(0);
 });
