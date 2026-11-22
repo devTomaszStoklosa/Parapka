@@ -2,8 +2,8 @@ import { plCheckin } from "./pl-checkin";
 import { plCycle } from "./pl-cycle";
 import { plData } from "./pl-data";
 import { plHead } from "./pl-head";
+import { plLockReset, plLockSettings } from "./pl-lock";
 import { plResearch } from "./pl-research";
-import { plLock } from "./pl-lock";
 import { plNotifications } from "./pl-notifications";
 import { plannerEdit } from "./pl-planner";
 import { plShare } from "./pl-share";
@@ -171,7 +171,23 @@ export const pl = {
       },
     },
   },
-  lock: plLock,
+  lock: {
+    settings: plLockSettings,
+    veil: "Parapka jest zablokowana, gdy nie jest na pierwszym planie.",
+    pin: {
+      unlockTitle: "Podaj PIN",
+      currentTitle: "Podaj obecny PIN",
+      newTitle: "Ustaw nowy PIN",
+      setTitle: "Ustaw PIN",
+      confirmTitle: "Powtórz PIN",
+      digit: "Cyfra {position} z 6",
+      mismatch: "Wpisane PIN-y różnią się. Wpisz nowy PIN jeszcze raz.",
+      wrong: "To nie jest zapisany PIN. Spróbuj jeszcze raz.",
+      delay: "Kolejna próba będzie możliwa za {seconds} s.",
+      forgot: "Nie pamiętam PIN-u",
+    },
+    reset: plLockReset,
+  },
   onboarding: {
     back: "Wstecz",
     next: "Dalej",
