@@ -268,7 +268,7 @@ function Counter() {
   );
 }
 
-it("keeps the state of the content across the lock", async () => {
+async function renderCounter(startUnlocked: boolean) {
   mounts = 0;
   const database = createMemoryDatabase();
   const clock: Clock = { nowMs: () => 1_000 };
@@ -279,11 +279,15 @@ it("keeps the state of the content across the lock", async () => {
       keyStore={createMemoryKeyStore()}
       sodium={sodium}
       clock={clock}
-      startUnlocked
+      startUnlocked={startUnlocked}
     >
       <Counter />
     </LockGate>,
   );
+}
+
+it("keeps the state of the content across the lock", async () => {
+  await renderCounter(true);
   fireEvent.click(await screen.findByText("secret content 0"));
   expect(screen.getByText("secret content 1")).toBeTruthy();
 
@@ -314,21 +318,27 @@ it("hides the content under the PIN screen and under the reset screen", async ()
   ).toBeTruthy();
 });
 
-it("does not mount the content before the first unlock", async () => {
-  mounts = 0;
-  const database = createMemoryDatabase();
-  const clock: Clock = { nowMs: () => 1_000 };
-  await createPinStore({ database, sodium, clock }).setPin("123456");
-  render(
-    <LockGate
-      database={database}
-      keyStore={createMemoryKeyStore()}
-      sodium={sodium}
-      clock={clock}
-    >
-      <Counter />
-    </LockGate>,
+it("mounts the content afresh after the reset from the lock screen", async () => {
+  await renderCounter(true);
+  fireEvent.click(await screen.findByText("secret content 0"));
+  expect(screen.getByText("secret content 1")).toBeTruthy();
+
+  setAppState("hidden");
+  setAppState("visible");
+  fireEvent.click(screen.getByRole("button", { name: t("lock.pin.forgot") }));
+  fireEvent.click(
+    screen.getByRole("button", { name: t("lock.reset.continue") }),
   );
+  fireEvent.click(
+    screen.getByRole("button", { name: t("lock.reset.confirm") }),
+  );
+  expect(await screen.findByText("secret content 0")).toBeTruthy();
+  expect(screen.queryByText("secret content 1")).toBeNull();
+  expect(mounts).toBe(2);
+});
+
+it("does not mount the content before the first unlock", async () => {
+  await renderCounter(false);
   await screen.findByText(t("lock.pin.unlockTitle"));
   expect(mounts).toBe(0);
 });

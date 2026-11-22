@@ -140,6 +140,7 @@ interface OverlayProps {
   setLock: (lock: LockState) => void;
   setHasPin: (hasPin: boolean) => void;
   setResetting: (resetting: boolean) => void;
+  onResetDone: () => void;
 }
 
 /** What covers the content: the veil, the PIN screen or the reset screen. */
@@ -160,6 +161,7 @@ function Overlay(props: OverlayProps) {
         onDone={() => {
           props.setResetting(false);
           props.setHasPin(false);
+          props.onResetDone();
         }}
       />
     );
@@ -197,6 +199,9 @@ export function LockGate(props: LockGateProps) {
   const active = useAppActive();
   const { lock, setLock, hasPin, setHasPin } = useLock(props, store, active);
   const [resetting, setResetting] = useState(false);
+  // A new key after the reset mounts the content afresh, so that the state
+  // kept under the lock does not show up once the PIN is gone.
+  const [generation, setGeneration] = useState(0);
 
   const shown = useRef(false);
   const locked = lock !== null && hasPin && lock.locked;
@@ -206,6 +211,7 @@ export function LockGate(props: LockGateProps) {
     <>
       {shown.current ? (
         <View
+          key={generation}
           testID="lock-content"
           style={locked ? { display: "none" } : { flex: 1 }}
           aria-hidden={locked}
@@ -217,6 +223,9 @@ export function LockGate(props: LockGateProps) {
       <Overlay
         {...{ lock, hasPin, active, resetting, store, setLock, setHasPin }}
         {...{ database, keyStore, clock, setResetting }}
+        onResetDone={() => {
+          setGeneration((value) => value + 1);
+        }}
       />
     </>
   );
