@@ -98,6 +98,27 @@ it("changes the PIN only after the current one and counts a wrong one", async ()
   expect(await store.verifyPin("246810")).toBe(true);
 });
 
+it("cancels setting the PIN without saving it", async () => {
+  const store = await setup(false);
+  fireEvent.click(screen.getByText(t("lock.settings.set")));
+  await typePin("246810");
+  fireEvent.click(screen.getByText(t("lock.settings.cancel")));
+  expect(screen.getByText(t("lock.settings.set"))).toBeTruthy();
+  expect(screen.queryByText(t("lock.settings.cancel"))).toBeNull();
+  expect(await store.hasPin()).toBe(false);
+});
+
+it("cancels changing the PIN and keeps the old one", async () => {
+  const store = await setup(true);
+  fireEvent.click(screen.getByText(t("lock.settings.change")));
+  await typePin("123456");
+  await typePin("246810");
+  fireEvent.click(screen.getByText(t("lock.settings.cancel")));
+  expect(screen.getByText(t("lock.settings.change"))).toBeTruthy();
+  expect(await store.verifyPin("123456")).toBe(true);
+  expect(await store.verifyPin("246810")).toBe(false);
+});
+
 it("saves the chosen timeout", async () => {
   const store = await setup(true);
   fireEvent.click(
