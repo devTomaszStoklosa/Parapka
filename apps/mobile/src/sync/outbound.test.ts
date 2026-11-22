@@ -1,8 +1,15 @@
-import type { Envelope } from "@parapka/protocol";
+import { decryptEnvelope } from "@parapka/crypto";
+import {
+  MAX_ENVELOPE_BYTES,
+  validateEnvelope,
+  type ContentChange,
+  type Envelope,
+} from "@parapka/protocol";
 import { expect, it } from "vitest";
 
 import { RelayError } from "../net/relay-error";
 import { createHandlerRegistry } from "./handler-registry";
+import { queueChanges } from "./outbound";
 import { createPairHandler } from "./pair-handler";
 import { createPairedDevices } from "./sync-test-support";
 import type { SyncTransport } from "./transport";
@@ -86,4 +93,79 @@ it("flush with a mailbox sends only the envelopes of that mailbox", async () => 
   expect((await a.database.list("sync-outbox")).map((r) => r.id)).toEqual([
     "e1",
   ]);
+});
+
+const change = (index: number, size: number): ContentChange => ({
+  entity: "Chore",
+  id: `c${String(index)}`,
+  op: "upsert",
+  fields: {
+    text: {
+      value: "x".repeat(size),
+      hlc: `h${String(index).padStart(6, "0")}`,
+    },
+  },
+});
+
+async function queue(changes: readonly ContentChange[]) {
+  const { a, b, sodium } = await createPairedDevices();
+  let counter = 0;
+  const context = {
+    database: a.database,
+    sodium,
+    newId: () => `id-${String((counter += 1)).padStart(6, "0")}`,
+  };
+  const session = {
+    pair: { pairMailboxId: "mailbox-1" },
+    keys: a.keys,
+    deviceId: a.id,
+  };
+  await queueChanges(context, session, changes);
+  const envelopes = (await a.database.list("sync-outbox")).map(
+    (r) => r.value as unknown as Envelope,
+  );
+  const decoded = envelopes.flatMap((e) => {
+    const fields = {
+      envelopeId: e.envelopeId,
+      pairMailboxId: e.pairMailboxId,
+      senderDeviceId: e.senderDeviceId,
+      protocolVersion: e.protocolVersion,
+    };
+    const plain = decryptEnvelope(sodium, b.keys.receiveKey, fields, {
+      nonce: Uint8Array.from(Buffer.from(e.nonce, "base64")),
+      ciphertext: Uint8Array.from(Buffer.from(e.ciphertext, "base64")),
+    });
+    const content = JSON.parse(new TextDecoder().decode(plain)) as {
+      changes: ContentChange[];
+    };
+    return content.changes;
+  });
+  return { envelopes, decoded };
+}
+
+it("splits a large set into envelopes within the limit, in order", async () => {
+  const changes = Array.from({ length: 400 }, (_, i) => change(i, 300));
+  const { envelopes, decoded } = await queue(changes);
+  expect(envelopes.length).toBeGreaterThanOrEqual(2);
+  for (const envelope of envelopes) {
+    expect(validateEnvelope(envelope).ok).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(envelope))).toBeLessThanOrEqual(
+      MAX_ENVELOPE_BYTES,
+    );
+  }
+  expect(decoded).toEqual(changes);
+});
+
+it("keeps a small set in one envelope", async () => {
+  const changes = [change(1, 10), change(2, 10), change(3, 10)];
+  const { envelopes, decoded } = await queue(changes);
+  expect(envelopes).toHaveLength(1);
+  expect(decoded).toEqual(changes);
+});
+
+it("puts a change above the limit in an envelope of its own", async () => {
+  const changes = [change(1, 10), change(2, MAX_ENVELOPE_BYTES), change(3, 10)];
+  const { envelopes, decoded } = await queue(changes);
+  expect(envelopes).toHaveLength(3);
+  expect(decoded).toEqual(changes);
 });
