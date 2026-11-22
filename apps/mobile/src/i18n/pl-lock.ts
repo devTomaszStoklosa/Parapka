@@ -2,6 +2,7 @@ export const plLockSettings = {
   title: "Blokada aplikacji",
   set: "Ustaw PIN",
   change: "Zmień PIN",
+  cancel: "Anuluj",
   timeoutGroup: "Blokada po przejściu w tło",
   immediately: "Natychmiast",
   oneMinute: "Po 1 min",

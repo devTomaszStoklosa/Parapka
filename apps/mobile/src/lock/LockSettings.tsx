@@ -70,16 +70,26 @@ function PinEditor(props: {
 }) {
   const { store, clock, hasPin, onDone } = props;
   const onSetPin = (pin: string) => store.setPin(pin);
-  return hasPin ? (
-    <PinScreen
-      mode="change"
-      clock={clock}
-      onAttempt={(pin) => store.attempt(pin)}
-      onSetPin={onSetPin}
-      onDone={onDone}
-    />
-  ) : (
-    <PinScreen mode="set" clock={clock} onSetPin={onSetPin} onDone={onDone} />
+  return (
+    <View style={{ gap: spacing.sm }}>
+      {hasPin ? (
+        <PinScreen
+          mode="change"
+          clock={clock}
+          onAttempt={(pin) => store.attempt(pin)}
+          onSetPin={onSetPin}
+          onDone={onDone}
+        />
+      ) : (
+        <PinScreen
+          mode="set"
+          clock={clock}
+          onSetPin={onSetPin}
+          onDone={onDone}
+        />
+      )}
+      <Button label={t("lock.settings.cancel")} onPress={onDone} />
+    </View>
   );
 }
 
