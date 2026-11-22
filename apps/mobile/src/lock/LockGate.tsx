@@ -128,7 +128,6 @@ function useLock(props: LockGateProps, store: PinStore, active: boolean) {
   return { lock: effective, setLock, hasPin, setHasPin };
 }
 
-
 interface OverlayProps {
   lock: LockState | null;
   hasPin: boolean;
