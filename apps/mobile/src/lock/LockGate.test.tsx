@@ -191,3 +191,48 @@ it("returns from the reset screen to the PIN screen", async () => {
   fireEvent.click(screen.getByRole("button", { name: t("lock.reset.cancel") }));
   expect(await screen.findByText(t("lock.pin.unlockTitle"))).toBeTruthy();
 });
+
+it("applies a PIN set in the session without locking at once", async () => {
+  const { store } = await setup(false);
+  await screen.findByText("secret content");
+  await act(() => store.setPin("123456"));
+  expect(screen.getByText("secret content")).toBeTruthy();
+  expect(screen.queryByText(t("lock.pin.unlockTitle"))).toBeNull();
+
+  setAppState("hidden");
+  setAppState("visible");
+  expect(screen.queryByText("secret content")).toBeNull();
+  expect(screen.getByText(t("lock.pin.unlockTitle"))).toBeTruthy();
+});
+
+it("keeps the lock state when the PIN is changed in the session", async () => {
+  const { store } = await setup(true, undefined, true);
+  await screen.findByText("secret content");
+  await act(() => store.setPin("654321"));
+  expect(screen.getByText("secret content")).toBeTruthy();
+});
+
+it("applies a timeout set in the session: 2 min does not lock, 6 min does", async () => {
+  const { store, advance } = await setup(true, undefined, true);
+  await screen.findByText("secret content");
+  await act(() => store.setTimeout("fiveMinutes"));
+
+  setAppState("hidden");
+  advance(120_000);
+  setAppState("visible");
+  expect(screen.getByText("secret content")).toBeTruthy();
+
+  setAppState("hidden");
+  advance(360_000);
+  setAppState("visible");
+  expect(screen.queryByText("secret content")).toBeNull();
+});
+
+it("control: with the default timeout 2 min in the background locks", async () => {
+  const { advance } = await setup(true, undefined, true);
+  await screen.findByText("secret content");
+  setAppState("hidden");
+  advance(120_000);
+  setAppState("visible");
+  expect(screen.queryByText("secret content")).toBeNull();
+});
