@@ -55,9 +55,11 @@ Na serwerze, w kontenerze (bez instalowania Node na hoście; Ubuntu 24.04 ma w r
 cd ~/Parapka
 mkdir -p deploy/web
 docker run --rm -v "$PWD":/app -w /app -e EXPO_PUBLIC_RELAY_URL=https://<domena> node:22 \
-  sh -c "npm ci && npm run web:build -w @parapka/mobile"
+  sh -c "git config --global --add safe.directory /app && npm ci && npm run web:build -w @parapka/mobile"
 cp -r apps/mobile/dist/. deploy/web/
 ```
+
+Wpis `safe.directory` jest potrzebny, bo `npm ci` instaluje hooki gita (`lefthook install`), a git w kontenerze działa jako root w repozytorium należącym do `ubuntu`. Bez niego kończy się błędem `detected dubious ownership`.
 
 Zamiast kontenera możesz zainstalować Node 22, np. przez NodeSource.
 
