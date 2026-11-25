@@ -18,8 +18,21 @@ it.each([
   ["danger", "background"],
   ["danger", "surface"],
   ["onAccent", "accent"],
+  ["textMuted", "personBTint"],
+  ["textMuted", "personATint"],
+  ["onAccent", "personB"],
+  ["personAText", "personATint"],
+  ["personBText", "personBTint"],
+  ["personBText", "surface"],
+  ["onDark", "text"],
 ] as const)("%s on %s has contrast of at least 4.5:1", (fg, bg) => {
   expect(contrastRatio(colors[fg], colors[bg])).toBeGreaterThanOrEqual(4.5);
+});
+
+it("gives the control border at least 3:1 on the surface", () => {
+  expect(contrastRatio(colors.border, colors.surface)).toBeGreaterThanOrEqual(
+    3,
+  );
 });
 
 const sources = import.meta.glob<string>("../**/*.{ts,tsx}", {
