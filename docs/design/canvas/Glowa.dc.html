@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Parapka · Głowa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F1F8}
+a{color:#5B4BD6}a:hover{color:#4335B8}
+button,input{font-family:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #5B4BD6;outline-offset:2px}
+input::placeholder{color:#6E6782}
+</style>
+</helmet>
+<div style="width: 390px; height: 1280px; position: relative; overflow: hidden; box-sizing: border-box; background: #F4F1F8; color: #1F1A2E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+<main style="box-sizing: border-box; padding: 56px 20px 120px; display: flex; flex-direction: column; gap: 14px">
+
+<header style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Głowa</h1>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5F5873">Rzeczy do pamiętania, nie tylko do zrobienia.</p>
+</div>
+<button type="button" style="height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex: none">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"></rect><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"></path></svg>Załatwione</button>
+</header>
+
+<section aria-labelledby="split-title" style="padding: 20px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<div style="display: flex; align-items: center; gap: 18px">
+<div style="position: relative; width: 132px; height: 132px; flex: none">
+<svg role="img" aria-label="{{ splitAria }}" width="132" height="132" viewBox="0 0 132 132">
+<circle cx="66" cy="66" r="54" fill="none" stroke="#C2375E" stroke-width="16" stroke-dasharray="{{ olaDash }}" transform="rotate(-90 66 66)"></circle>
+<circle cx="66" cy="66" r="54" fill="none" stroke="#5B4BD6" stroke-width="16" stroke-dasharray="{{ meDash }}" stroke-dashoffset="{{ meOffset }}" transform="rotate(-90 66 66)"></circle>
+</svg>
+<div aria-hidden="true" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 700; line-height: 1">{{ openCount }}</span>
+<span style="font-size: 11px; font-weight: 600; color: #5F5873">otwarte</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+<h2 id="split-title" style="margin: 0; font-size: 15px; line-height: 1.35; font-weight: 700">Jak to się rozkłada między Wami</h2>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700"><span style="width: 12px; height: 12px; border-radius: 4px; background: #C2375E"></span>Ola {{ olaPct }}%</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700"><span style="width: 12px; height: 12px; border-radius: 4px; background: #5B4BD6"></span>Ty {{ mePct }}%</span>
+<span style="font-size: 11px; line-height: 1.4; color: #5F5873">Ważone wagą spraw. „Oboje” liczy się po połowie.</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding-top: 16px; border-top: 1px solid #EEE9F3">
+<div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700"><span>Trend · 12 tygodni</span><span style="color: #5F5873; font-weight: 600">udział Oli</span></div>
+<div role="img" aria-label="Udział Oli w ostatnich 12 tygodniach: od 72% do 56%" style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 5px; height: 56px; align-items: end">
+<sc-for list="{{ trend }}" as="w" hint-placeholder-count="12">
+<span style="display: flex; flex-direction: column; height: 56px; border-radius: 6px; overflow: hidden; background: #ECE9FD">
+<span style="flex: 1"></span>
+<span style="height: {{ w.h }}%; background: {{ w.bg }}"></span>
+</span>
+</sc-for>
+</div>
+<div aria-hidden="true" style="display: flex; justify-content: space-between; font-size: 11px; color: #5F5873"><span>12 tyg. temu</span><span>teraz</span></div>
+</div>
+</section>
+
+<form onSubmit="{{ addItem }}" style="display: flex; flex-direction: column; gap: 8px; margin: 0">
+<label for="dump" style="font-size: 13px; font-weight: 700">Zrzut głowy <span style="font-weight: 500; color: #5F5873">· wpisz, zatwierdź, następna</span></label>
+<div style="display: flex; gap: 8px">
+<input id="dump" type="text" value="{{ draft }}" onChange="{{ onDraft }}" placeholder="np. kupić buty zimowe dla Zosi" style="flex: 1; min-width: 0; height: 52px; box-sizing: border-box; padding: 0 18px; border-radius: 999px; border: 1.5px solid #D9D3E4; background: #FFFFFF; color: #1F1A2E; font-size: 15px">
+<button type="submit" aria-label="Dodaj rzecz do pamiętania" style="width: 52px; height: 52px; flex: none; border: 0; border-radius: 50%; background: #1F1A2E; color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+</button>
+</div>
+</form>
+
+<div role="group" aria-label="Kategoria" style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px; padding: 2px 20px">
+<sc-for list="{{ cats }}" as="c" hint-placeholder-count="6">
+<button type="button" onClick="{{ c.pick }}" aria-pressed="{{ c.pressed }}" style="flex: none; height: 38px; padding: 0 14px; border-radius: 999px; border: 1.5px solid {{ c.border }}; background: {{ c.bg }}; color: {{ c.fg }}; font-size: 13px; font-weight: 700; white-space: nowrap">{{ c.label }}</button>
+</sc-for>
+</div>
+
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+<li style="border-radius: 22px; background: #FFFFFF; overflow: hidden; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<sc-if value="{{ it.request }}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #FCE6ED; font-size: 13px; font-weight: 700; color: #7E2240">
+<span style="width: 22px; height: 22px; border-radius: 50%; background: #C2375E; color: #FFFFFF; font-size: 11px; display: flex; align-items: center; justify-content: center">O</span>Ola prosi, żebyś to przejął</div>
+</sc-if>
+<div style="padding: 14px 16px 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="height: 24px; padding: 0 10px; border-radius: 999px; background: #F4F1F8; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; letter-spacing: 0.02em">{{ it.cat }}</span>
+<span style="font-size: 12px; color: #5F5873">{{ it.due }}</span>
+</div>
+<span style="font-size: 16px; line-height: 1.35; font-weight: 700">{{ it.title }}</span>
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: #5F5873">
+<span style="width: 26px; height: 26px; border-radius: 50%; background: {{ it.avBg }}; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none">{{ it.av }}</span>{{ it.carrierLabel }}</span>
+<span title="{{ it.weightLabel }}" style="display: flex; align-items: flex-end; gap: 3px; height: 16px; flex: none">
+<span aria-hidden="true" style="width: 5px; height: 8px; border-radius: 2px; background: {{ it.w1 }}"></span>
+<span aria-hidden="true" style="width: 5px; height: 12px; border-radius: 2px; background: {{ it.w2 }}"></span>
+<span aria-hidden="true" style="width: 5px; height: 16px; border-radius: 2px; background: {{ it.w3 }}"></span>
+</span>
+<sc-if value="{{ it.canTake }}" hint-placeholder-val="{{ true }}">
+<button type="button" onClick="{{ it.take }}" style="height: 44px; padding: 0 16px; border: 1.5px solid #1F1A2E; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex: none">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3"></path><path d="M17 17H5l3 3"></path></svg>Przejmuję</button>
+</sc-if>
+<sc-if value="{{ it.isMine }}" hint-placeholder-val="{{ false }}">
+<button type="button" aria-label="{{ it.moreAria }}" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: #F4F1F8; color: #1F1A2E; display: flex; align-items: center; justify-content: center; flex: none">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg></button>
+</sc-if>
+</div>
+<sc-if value="{{ it.request }}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button type="button" onClick="{{ it.accept }}" style="height: 46px; border: 0; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-size: 14px; font-weight: 700">Przejmuję</button>
+<button type="button" onClick="{{ it.decline }}" style="height: 46px; border: 1.5px solid #D9D3E4; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; font-size: 14px; font-weight: 700">Nie teraz</button>
+</div>
+</sc-if>
+</div>
+</li>
+</sc-for>
+</ul>
+
+</main>
+
+<nav aria-label="Główna nawigacja" style="position: absolute; left: 16px; right: 16px; bottom: 24px; height: 68px; box-sizing: border-box; padding: 0 8px; border-radius: 999px; background: #1F1A2E; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 12px 32px rgba(31,26,46,0.28)">
+<a href="Main.dc.html" aria-label="Dziś" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></a>
+<a href="Cykl.dc.html" aria-label="Cykl" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></a>
+<a href="Planer.dc.html" aria-label="Planer" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"></rect><path d="M8 2v4M16 2v4M3 10h18M8.5 15l2 2 4-4"></path></svg></a>
+<a href="Glowa.dc.html" aria-current="page" style="height: 52px; padding: 0 16px; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.2 8.1 4.5 4.5 0 0 0 7 17z"></path><path d="M8 21h.01M11 20h.01"></path></svg>Głowa</a>
+<a href="Zgoda.dc.html" aria-label="Ustawienia" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1280}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = {
+      cat: 'Wszystkie',
+      draft: '',
+      items: [
+        { id: 'basen', title: 'Zapisać Antka na basen od stycznia', cat: 'Dzieci', carrier: 'ola', weight: 2, due: 'do 15 grudnia', request: true },
+        { id: 'prezent', title: 'Prezent na urodziny mamy', cat: 'Rodzina i znajomi', carrier: 'ola', weight: 2, due: '14 grudnia' },
+        { id: 'auto', title: 'Przegląd auta przed zimą', cat: 'Inne', carrier: 'me', weight: 3, due: '5 grudnia' },
+        { id: 'jaselka', title: 'Bilety na jasełka Zosi', cat: 'Dzieci', carrier: 'both', weight: 1, due: 'bez terminu' }
+      ]
+    };
+  }
+  update(id, patch) {
+    this.setState({ items: this.state.items.map((it) => (it.id === id ? Object.assign({}, it, patch) : it)) });
+  }
+  renderVals() {
+    const s = this.state || {};
+    const all = s.items || [];
+    let ola = 0;
+    let me = 0;
+    all.forEach((it) => {
+      if (it.carrier === 'both') { ola += it.weight / 2; me += it.weight / 2; }
+      else if (it.carrier === 'ola') { ola += it.weight; }
+      else { me += it.weight; }
+    });
+    const total = ola + me || 1;
+    const olaPct = Math.round((ola / total) * 100);
+    const mePct = 100 - olaPct;
+    const C = 2 * Math.PI * 54;
+    const gap = 4;
+    const a = Math.max(0, (C * olaPct) / 100 - gap);
+    const b = Math.max(0, (C * mePct) / 100 - gap);
+    const AV = { ola: ['O', '#C2375E', 'Nosi Ola'], me: ['K', '#5B4BD6', 'Nosisz Ty'], both: ['K+O', '#1F1A2E', 'Nosicie oboje'] };
+    const WL = ['mała', 'średnia', 'duża'];
+    const catNames = ['Wszystkie', 'Dzieci', 'Dom', 'Finanse', 'Zdrowie', 'Rodzina i znajomi', 'Inne'];
+    const shares = [72, 71, 70, 68, 67, 65, 63, 62, 60, 59, 57, olaPct];
+    const visible = all.filter((it) => s.cat === 'Wszystkie' || it.cat === s.cat);
+    return {
+      olaPct: olaPct, mePct: mePct, openCount: all.length,
+      splitAria: 'Ola ' + olaPct + '%, Ty ' + mePct + '%',
+      olaDash: a + ' ' + (C - a),
+      meDash: b + ' ' + (C - b),
+      meOffset: -(a + gap),
+      trend: shares.map((v, i) => ({ h: v, bg: i === shares.length - 1 ? '#C2375E' : '#EBA0B6' })),
+      draft: s.draft || '',
+      onDraft: (e) => this.setState({ draft: String(e.target.value || '') }),
+      addItem: (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        const t = (this.state.draft || '').trim();
+        if (!t) return;
+        const item = { id: 'n' + Date.now(), title: t, cat: 'Inne', carrier: 'me', weight: 2, due: 'bez terminu' };
+        this.setState({ items: [item].concat(this.state.items), draft: '' });
+      },
+      cats: catNames.map((c) => {
+        const on = s.cat === c;
+        return { label: c, pressed: on ? 'true' : 'false', bg: on ? '#1F1A2E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1F1A2E', border: on ? '#1F1A2E' : '#D9D3E4', pick: () => this.setState({ cat: c }) };
+      }),
+      items: visible.map((it) => {
+        const av = AV[it.carrier];
+        return {
+          title: it.title, cat: it.cat, due: it.due,
+          av: av[0], avBg: av[1], carrierLabel: av[2],
+          weightLabel: 'Waga: ' + WL[it.weight - 1],
+          w1: '#1F1A2E', w2: it.weight >= 2 ? '#1F1A2E' : '#E0DAE8', w3: it.weight >= 3 ? '#1F1A2E' : '#E0DAE8',
+          request: !!it.request,
+          canTake: it.carrier === 'ola' && !it.request,
+          isMine: it.carrier !== 'ola' && !it.request,
+          moreAria: 'Więcej: ' + it.title,
+          take: () => this.update(it.id, { carrier: 'me' }),
+          accept: () => this.update(it.id, { carrier: 'me', request: false }),
+          decline: () => this.update(it.id, { request: false })
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

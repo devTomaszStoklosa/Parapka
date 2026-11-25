@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Parapka · Wyniki check-inu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F1F8}
+a{color:#5B4BD6}a:hover{color:#4335B8}
+a:focus-visible{outline:3px solid #5B4BD6;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1040px; position: relative; overflow: hidden; box-sizing: border-box; background: #F4F1F8; color: #1F1A2E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+<main style="box-sizing: border-box; padding: 48px 20px 32px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; align-items: center; justify-content: space-between">
+<a href="Checkin.dc.html" style="display: inline-flex; align-items: center; gap: 4px; height: 44px; padding: 0 14px 0 8px; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; text-decoration: none; font-size: 14px; font-weight: 700">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Check-in</a>
+<span style="height: 32px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"></rect><path d="M8 11V8a4 4 0 0 1 7.5-2"></path></svg>Odsłonięte</span>
+</div>
+
+<header style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Wasz tydzień 47</h1>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5F5873">Odpowiedzi obok siebie. Bez ocen, po prostu jak było.</p>
+</header>
+
+<section aria-label="Odpowiedzi" style="padding: 8px 18px 6px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 10px 0 14px; border-bottom: 1px solid #EEE9F3">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700"><span style="width: 32px; height: 32px; border-radius: 50%; background: #5B4BD6; color: #FFFFFF; font-size: 13px; display: flex; align-items: center; justify-content: center">K</span>Ty</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700"><span style="width: 32px; height: 32px; border-radius: 50%; background: #C2375E; color: #FFFFFF; font-size: 13px; display: flex; align-items: center; justify-content: center">O</span>Ola</span>
+</div>
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 0; border-bottom: 1px solid {{ r.line }}">
+<span style="font-size: 13px; font-weight: 700; color: #5F5873">{{ r.label }}</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<span style="display: flex; align-items: center; gap: 10px">
+<span aria-hidden="true" style="display: flex; gap: 4px"><sc-for list="{{ r.kDots }}" as="d" hint-placeholder-count="5"><span style="width: 14px; height: 14px; border-radius: 50%; background: {{ d.bg }}"></span></sc-for></span>
+<span style="font-size: 14px; font-weight: 700">{{ r.k }}/5</span>
+</span>
+<span style="display: flex; align-items: center; gap: 10px">
+<span aria-hidden="true" style="display: flex; gap: 4px"><sc-for list="{{ r.oDots }}" as="d" hint-placeholder-count="5"><span style="width: 14px; height: 14px; border-radius: 50%; background: {{ d.bg }}"></span></sc-for></span>
+<span style="font-size: 14px; font-weight: 700">{{ r.o }}/5</span>
+</span>
+</div>
+</div>
+</sc-for>
+</section>
+
+<section aria-labelledby="needs-title" style="display: flex; flex-direction: column; gap: 10px">
+<h2 id="needs-title" style="margin: 4px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 700">Potrzebuję…</h2>
+<figure style="margin: 0; align-self: flex-start; max-width: 300px; padding: 14px 16px; border-radius: 20px 20px 20px 6px; background: #ECE9FD; display: flex; flex-direction: column; gap: 4px">
+<figcaption style="font-size: 12px; font-weight: 700; color: #4335B8">Ty</figcaption>
+<blockquote style="margin: 0; font-size: 15px; line-height: 1.45">Chwili dla siebie w sobotę rano.</blockquote>
+</figure>
+<figure style="margin: 0; align-self: flex-end; max-width: 300px; padding: 14px 16px; border-radius: 20px 20px 6px 20px; background: #FCE6ED; display: flex; flex-direction: column; gap: 4px">
+<figcaption style="font-size: 12px; font-weight: 700; color: #A12D4E">Ola</figcaption>
+<blockquote style="margin: 0; font-size: 15px; line-height: 1.45">Więcej rozmowy wieczorem, bez telefonów.</blockquote>
+</figure>
+</section>
+
+<section aria-labelledby="trend-title" style="padding: 18px; border-radius: 24px; background: #FFFFFF; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 id="trend-title" style="margin: 0; font-size: 15px; font-weight: 700">Twoja bliskość · 8 tygodni</h2>
+<span style="height: 24px; padding: 0 10px; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; letter-spacing: 0.04em">PREMIUM</span>
+</div>
+<svg role="img" aria-label="Twoja bliskość w tygodniach 40–47: 3, 3, 2, 3, 4, 3, 4, 4" width="310" height="76" viewBox="0 0 310 76" style="display: block; width: 100%; height: auto">
+<path d="M0 8H310M0 38H310M0 68H310" stroke="#EEE9F3" stroke-width="1"></path>
+<polyline points="4,38 47,38 90,53 133,38 176,23 219,38 262,23 306,23" fill="none" stroke="#5B4BD6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+<circle cx="306" cy="23" r="5" fill="#5B4BD6" stroke="#FFFFFF" stroke-width="2"></circle>
+</svg>
+<div aria-hidden="true" style="display: flex; justify-content: space-between; font-size: 11px; color: #5F5873"><span>tydz. 40</span><span>tydz. 47</span></div>
+</section>
+
+<a href="Main.dc.html" style="height: 56px; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center">Gotowe</a>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dots = (n, color) => [1, 2, 3, 4, 5].map((i) => ({ bg: i <= n ? color : '#E7E2EF' }));
+    const data = [
+      { label: 'Nastrój', k: 3, o: 4 },
+      { label: 'Energia', k: 2, o: 3 },
+      { label: 'Jak blisko czuję się z Tobą', k: 4, o: 4 }
+    ];
+    return {
+      rows: data.map((r, i) => ({
+        label: r.label, k: r.k, o: r.o,
+        kDots: dots(r.k, '#5B4BD6'), oDots: dots(r.o, '#C2375E'),
+        line: i === data.length - 1 ? 'transparent' : '#EEE9F3'
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

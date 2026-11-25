@@ -1,0 +1,36 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-25T12:00:00Z" },
+  "title": "Parapka — nowoczesny interfejs",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 1180, "title": "Dziś · widok Kuby", "is_interactive": true, "radius": 44 },
+    "Checkin.dc.html": { "x": 470, "y": 0, "w": 390, "h": 1180, "title": "Check-in · wypełnianie", "is_interactive": true, "radius": 44 },
+    "CheckinWyniki.dc.html": { "x": 940, "y": 0, "w": 390, "h": 1040, "title": "Check-in · wyniki", "is_interactive": true, "radius": 44 },
+    "Planer.dc.html": { "x": 0, "y": 1560, "w": 390, "h": 1240, "title": "Planer · tydzień", "is_interactive": true, "radius": 44 },
+    "Glowa.dc.html": { "x": 470, "y": 1560, "w": 390, "h": 1280, "title": "Głowa · obciążenie mentalne", "is_interactive": true, "radius": 44 },
+    "Cykl.dc.html": { "x": 0, "y": 3220, "w": 390, "h": 1360, "title": "Cykl · widok Oli", "is_interactive": true, "radius": 44 },
+    "Samopoczucie.dc.html": { "x": 470, "y": 3220, "w": 390, "h": 844, "title": "Wpis samopoczucia (15 s)", "is_interactive": true, "radius": 44 },
+    "Parowanie.dc.html": { "x": 0, "y": 4960, "w": 390, "h": 1000, "title": "Parowanie · kod QR i link", "is_interactive": true, "radius": 44 },
+    "Zgoda.dc.html": { "x": 470, "y": 4960, "w": 390, "h": 1180, "title": "Zgoda · co zobaczy partner", "is_interactive": true, "radius": 44 }
+  },
+  "order": [
+    "Main.dc.html",
+    "Checkin.dc.html",
+    "CheckinWyniki.dc.html",
+    "Planer.dc.html",
+    "Glowa.dc.html",
+    "Cykl.dc.html",
+    "Samopoczucie.dc.html",
+    "Parowanie.dc.html",
+    "Zgoda.dc.html"
+  ],
+  "notes": {
+    "row1": { "x": 0, "y": -260, "text": "Dziś i check-in tygodnia", "kind": "title1", "maxW": 1330 },
+    "row2": { "x": 0, "y": 1300, "text": "Planer i Głowa", "kind": "title1", "maxW": 860 },
+    "row3": { "x": 0, "y": 2960, "text": "Cykl (widok Oli)", "kind": "title1", "maxW": 860 },
+    "row4": { "x": 0, "y": 4700, "text": "Pierwsze kroki: parowanie i zgoda", "kind": "title1", "maxW": 860 }
+  },
+  "designSystems": []
+}

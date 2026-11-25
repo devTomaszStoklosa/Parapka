@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Parapka · Dziś</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F1F8}
+a{color:#5B4BD6}a:hover{color:#4335B8}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #5B4BD6;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1180px; position: relative; overflow: hidden; box-sizing: border-box; background: #F4F1F8; color: #1F1A2E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+<main style="box-sizing: border-box; padding: 56px 20px 120px; display: flex; flex-direction: column; gap: 20px">
+
+<header style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; color: #5F5873; letter-spacing: 0.02em">Środa, 25 listopada</p>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Dzień dobry, Kuba</h1>
+</div>
+<div title="Para: Kuba i Ola" style="display: flex; align-items: center">
+<span style="width: 44px; height: 44px; border-radius: 50%; background: #5B4BD6; color: #FFFFFF; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; border: 3px solid #F4F1F8">K</span>
+<span style="width: 44px; height: 44px; border-radius: 50%; background: #C2375E; color: #FFFFFF; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; border: 3px solid #F4F1F8; margin-left: -14px">O</span>
+</div>
+</header>
+
+<section aria-labelledby="hint-title" style="position: relative; overflow: hidden; background: #FCE6ED; border-radius: 28px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<div aria-hidden="true" style="position: absolute; right: -56px; top: -56px; width: 180px; height: 180px; border-radius: 50%; background: #F8D3DE"></div>
+<div aria-hidden="true" style="position: absolute; right: 36px; top: 64px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #F0A3B8; box-sizing: border-box"></div>
+<div style="position: relative; display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-size: 12px; font-weight: 700; letter-spacing: 0.02em">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"></path></svg>
+Wskazówka na dziś</span>
+<span style="display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #A12D4E; font-size: 12px; font-weight: 700">Odciążenie</span>
+</div>
+<p style="position: relative; margin: 6px 0 0; font-size: 13px; font-weight: 600; color: #5F5873">Co możesz dziś dla niej zrobić</p>
+<h2 id="hint-title" style="position: relative; margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 25px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em">Przejmij wieczorne usypianie dzieci i daj Oli pół godziny tylko dla siebie.</h2>
+<p style="position: relative; margin: 0; display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.45; color: #5F5873">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px"><rect x="5" y="11" width="14" height="10" rx="2.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+Wskazówka powstała na telefonie Oli. Jej dane zostają u niej.</p>
+<sc-if value="{{ showButtons }}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; display: flex; gap: 10px; margin-top: 4px">
+<button type="button" onClick="{{ markDone }}" style="flex: 1; height: 50px; border: 0; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
+Zrobione</button>
+<button type="button" onClick="{{ markSkip }}" style="flex: 1; height: 50px; border: 1.5px solid #1F1A2E; border-radius: 999px; background: transparent; color: #1F1A2E; font-size: 15px; font-weight: 700">Nie dziś</button>
+</div>
+</sc-if>
+<sc-if value="{{ showDone }}" hint-placeholder-val="{{ false }}">
+<div style="position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; height: 50px; padding: 0 6px 0 16px; border-radius: 999px; background: #FFFFFF">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700">
+<span style="width: 26px; height: 26px; border-radius: 50%; background: #1F1A2E; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></span>
+Zrobione. Zapisane tylko u Ciebie.</span>
+<button type="button" onClick="{{ undoReaction }}" style="height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: #F4F1F8; color: #1F1A2E; font-size: 13px; font-weight: 700">Cofnij</button>
+</div>
+</sc-if>
+<sc-if value="{{ showSkip }}" hint-placeholder-val="{{ false }}">
+<div style="position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; height: 50px; padding: 0 6px 0 16px; border-radius: 999px; background: #FFFFFF">
+<span style="font-size: 14px; font-weight: 700">Nie dziś. To w porządku.</span>
+<button type="button" onClick="{{ undoReaction }}" style="height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: #F4F1F8; color: #1F1A2E; font-size: 13px; font-weight: 700">Cofnij</button>
+</div>
+</sc-if>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<a href="Checkin.dc.html" style="display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 24px; background: #FFFFFF; color: #1F1A2E; text-decoration: none; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<span style="width: 40px; height: 40px; border-radius: 14px; background: #ECE9FD; color: #5B4BD6; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 16px; font-weight: 700">Check-in tygodnia</span>
+<span style="font-size: 12px; line-height: 1.4; color: #5F5873">Otwarty do niedzieli, 19:00</span>
+</span>
+<span aria-hidden="true" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 2px">
+<span style="height: 6px; border-radius: 999px; background: #E7E2EF"></span>
+<span style="height: 6px; border-radius: 999px; background: #E7E2EF"></span>
+<span style="height: 6px; border-radius: 999px; background: #E7E2EF"></span>
+<span style="height: 6px; border-radius: 999px; background: #E7E2EF"></span>
+</span>
+<span style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; color: #5B4BD6">Wypełnij · 2 min
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+</a>
+<a href="Glowa.dc.html" style="display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 24px; background: #FFFFFF; color: #1F1A2E; text-decoration: none; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<span style="width: 40px; height: 40px; border-radius: 14px; background: #FFEBDD; color: #9A4A1C; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.2 8.1 4.5 4.5 0 0 0 7 17z"></path><path d="M8 21h.01M11 20h.01"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 16px; font-weight: 700">Głowa</span>
+<span style="font-size: 12px; line-height: 1.4; color: #5F5873">Jak to się rozkłada między Wami</span>
+</span>
+<span aria-hidden="true" style="display: flex; height: 6px; gap: 3px; margin-top: 2px">
+<span style="width: 56%; border-radius: 999px; background: #C2375E"></span>
+<span style="width: 44%; border-radius: 999px; background: #5B4BD6"></span>
+</span>
+<span style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700">
+<span style="color: #A12D4E">Ola 56%</span><span style="color: #5B4BD6">Ty 44%</span></span>
+</a>
+</div>
+
+<section aria-labelledby="today-title" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 id="today-title" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 700">Na dziś <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; vertical-align: 3px">3</span></h2>
+<a href="Planer.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 700; text-decoration: none">Cały planer</a>
+</div>
+<ul style="list-style: none; margin: 0; padding: 4px 12px 4px 6px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<li style="display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 1px solid #EEE9F3">
+<button type="button" onClick="{{ toggle1 }}" aria-pressed="{{ aria1 }}" aria-label="Zrobione: Odebrać Zosię z przedszkola" style="width: 44px; height: 44px; flex: none; border: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center">
+<sc-if value="{{ open1 }}" hint-placeholder-val="{{ true }}"><span style="display: block; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #8C84A0; box-sizing: border-box"></span></sc-if>
+<sc-if value="{{ done1 }}" hint-placeholder-val="{{ false }}"><span style="width: 26px; height: 26px; border-radius: 50%; background: #1F1A2E; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></span></sc-if>
+</button>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 15px; font-weight: 700">Odebrać Zosię z przedszkola</span>
+<span style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #5F5873"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>16:00 · przypomnienie 15:30</span>
+</div>
+<span style="flex: none; height: 26px; padding: 0 10px; border-radius: 999px; background: #ECE9FD; color: #4335B8; font-size: 12px; font-weight: 700; display: flex; align-items: center">Ty</span>
+</li>
+<li style="display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 1px solid #EEE9F3">
+<button type="button" onClick="{{ toggle2 }}" aria-pressed="{{ aria2 }}" aria-label="Zrobione: Zakupy na weekend" style="width: 44px; height: 44px; flex: none; border: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center">
+<sc-if value="{{ open2 }}" hint-placeholder-val="{{ false }}"><span style="display: block; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #8C84A0; box-sizing: border-box"></span></sc-if>
+<sc-if value="{{ done2 }}" hint-placeholder-val="{{ true }}"><span style="width: 26px; height: 26px; border-radius: 50%; background: #1F1A2E; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></span></sc-if>
+</button>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 15px; font-weight: 700">Zakupy na weekend</span>
+<span style="font-size: 12px; color: #5F5873">Zrobione przez Olę, 9:12</span>
+</div>
+<span style="flex: none; height: 26px; padding: 0 10px 0 4px; border-radius: 999px; background: #F4F1F8; color: #1F1A2E; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px">
+<span aria-hidden="true" style="display: flex"><span style="width: 16px; height: 16px; border-radius: 50%; background: #5B4BD6; border: 2px solid #F4F1F8"></span><span style="width: 16px; height: 16px; border-radius: 50%; background: #C2375E; border: 2px solid #F4F1F8; margin-left: -8px"></span></span>Oboje</span>
+</li>
+<li style="display: flex; align-items: center; gap: 8px; padding: 12px 0">
+<button type="button" onClick="{{ toggle3 }}" aria-pressed="{{ aria3 }}" aria-label="Zrobione: Zapłacić za prąd" style="width: 44px; height: 44px; flex: none; border: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center">
+<sc-if value="{{ open3 }}" hint-placeholder-val="{{ true }}"><span style="display: block; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #8C84A0; box-sizing: border-box"></span></sc-if>
+<sc-if value="{{ done3 }}" hint-placeholder-val="{{ false }}"><span style="width: 26px; height: 26px; border-radius: 50%; background: #1F1A2E; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></span></sc-if>
+</button>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 15px; font-weight: 700">Zapłacić za prąd</span>
+<span style="font-size: 12px; color: #5F5873">Termin: piątek</span>
+</div>
+<span style="flex: none; height: 26px; padding: 0 10px; border-radius: 999px; background: #F4F1F8; color: #1F1A2E; font-size: 12px; font-weight: 700; display: flex; align-items: center">Ktokolwiek</span>
+</li>
+</ul>
+</section>
+
+<section aria-labelledby="pause-title" style="display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<span style="width: 44px; height: 44px; flex: none; border-radius: 14px; background: #F4F1F8; color: #1F1A2E; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6v12M15 6v12"></path></svg></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<h2 id="pause-title" style="margin: 0; font-size: 15px; font-weight: 700">Pauza udostępniania</h2>
+<sc-if value="{{ active }}" hint-placeholder-val="{{ true }}"><p style="margin: 0; font-size: 12px; line-height: 1.45; color: #5F5873">Wstrzymuje Twój check-in. Ola nie dostanie żadnego powiadomienia.</p></sc-if>
+<sc-if value="{{ paused }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 12px; line-height: 1.45; color: #5F5873">Wstrzymane. Wznowisz jednym ruchem.</p></sc-if>
+</div>
+<button type="button" role="switch" aria-checked="{{ pausedAria }}" aria-labelledby="pause-title" onClick="{{ togglePause }}" style="width: 56px; height: 44px; flex: none; border: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center">
+<sc-if value="{{ active }}" hint-placeholder-val="{{ true }}"><span style="width: 52px; height: 32px; border-radius: 999px; background: #D9D3E4; display: flex; align-items: center; padding: 3px; box-sizing: border-box"><span style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(31,26,46,0.25)"></span></span></sc-if>
+<sc-if value="{{ paused }}" hint-placeholder-val="{{ false }}"><span style="width: 52px; height: 32px; border-radius: 999px; background: #1F1A2E; display: flex; align-items: center; justify-content: flex-end; padding: 3px; box-sizing: border-box"><span style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF"></span></span></sc-if>
+</button>
+</section>
+
+</main>
+
+<nav aria-label="Główna nawigacja" style="position: absolute; left: 16px; right: 16px; bottom: 24px; height: 68px; box-sizing: border-box; padding: 0 8px; border-radius: 999px; background: #1F1A2E; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 12px 32px rgba(31,26,46,0.28)">
+<a href="Main.dc.html" aria-current="page" style="height: 52px; padding: 0 16px; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Dziś</a>
+<a href="Cykl.dc.html" aria-label="Cykl" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></a>
+<a href="Planer.dc.html" aria-label="Planer" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"></rect><path d="M8 2v4M16 2v4M3 10h18M8.5 15l2 2 4-4"></path></svg></a>
+<a href="Glowa.dc.html" aria-label="Głowa" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.2 8.1 4.5 4.5 0 0 0 7 17z"></path><path d="M8 21h.01M11 20h.01"></path></svg></a>
+<a href="Zgoda.dc.html" aria-label="Ustawienia" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = { paused: false, reaction: 'none', done1: false, done2: true, done3: false };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const flip = (key) => () => this.setState({ [key]: !this.state[key] });
+    return {
+      paused: !!s.paused,
+      active: !s.paused,
+      pausedAria: s.paused ? 'true' : 'false',
+      togglePause: flip('paused'),
+      showButtons: s.reaction === 'none',
+      showDone: s.reaction === 'done',
+      showSkip: s.reaction === 'skip',
+      markDone: () => this.setState({ reaction: 'done' }),
+      markSkip: () => this.setState({ reaction: 'skip' }),
+      undoReaction: () => this.setState({ reaction: 'none' }),
+      done1: !!s.done1, open1: !s.done1, aria1: s.done1 ? 'true' : 'false', toggle1: flip('done1'),
+      done2: !!s.done2, open2: !s.done2, aria2: s.done2 ? 'true' : 'false', toggle2: flip('done2'),
+      done3: !!s.done3, open3: !s.done3, aria3: s.done3 ? 'true' : 'false', toggle3: flip('done3')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Parapka · Wpis samopoczucia</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F1F8}
+a{color:#5B4BD6}a:hover{color:#4335B8}
+button,input{font-family:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #5B4BD6;outline-offset:2px}
+input::placeholder{color:#6E6782}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #F4F1F8; color: #1F1A2E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+
+<div aria-hidden="true" style="padding: 56px 20px 0; display: flex; flex-direction: column; gap: 16px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; font-weight: 700">Cykl</span>
+<span style="height: 200px; border-radius: 28px; background: #FFFFFF"></span>
+</div>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(31,26,46,0.5)"></div>
+
+<section role="dialog" aria-modal="true" aria-labelledby="sheet-title" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 10px 20px 28px; border-radius: 32px 32px 0 0; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 -12px 40px rgba(31,26,46,0.25)">
+<span aria-hidden="true" style="align-self: center; width: 44px; height: 5px; border-radius: 999px; background: #D9D3E4"></span>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<h1 id="sheet-title" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em">Jak się dziś czujesz?</h1>
+<a href="Cykl.dc.html" aria-label="Zamknij" style="width: 44px; height: 44px; flex: none; border-radius: 50%; background: #F4F1F8; color: #1F1A2E; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+</div>
+<p style="margin: -4px 0 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #5F5873">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+Zawsze prywatne. Nie trafia do Kuby.</p>
+
+<sc-if value="{{ editing }}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{ scales }}" as="sc" hint-placeholder-count="4">
+<div role="group" aria-label="{{ sc.label }}" style="display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700">{{ sc.label }}<span style="font-size: 12px; font-weight: 600; color: #5F5873">{{ sc.hint }}</span></span>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{ sc.opts }}" as="o" hint-placeholder-count="5">
+<button type="button" onClick="{{ o.pick }}" aria-pressed="{{ o.pressed }}" aria-label="{{ o.aria }}" style="height: 44px; border-radius: 14px; border: 1.5px solid {{ o.border }}; background: {{ o.bg }}; color: {{ o.fg }}; font-size: 15px; font-weight: 700">{{ o.n }}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div role="group" aria-label="Objawy" style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 14px; font-weight: 700">Objawy</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{ tags }}" as="t" hint-placeholder-count="8">
+<button type="button" onClick="{{ t.toggle }}" aria-pressed="{{ t.pressed }}" style="height: 36px; padding: 0 12px; border-radius: 999px; border: 1.5px solid {{ t.border }}; background: {{ t.bg }}; color: {{ t.fg }}; font-size: 13px; font-weight: 600">{{ t.label }}</button>
+</sc-for>
+</div>
+</div>
+
+<label for="note" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Notatka</label>
+<input id="note" type="text" value="{{ note }}" onChange="{{ onNote }}" placeholder="Notatka tylko dla Ciebie (opcjonalnie)" style="height: 50px; box-sizing: border-box; padding: 0 16px; border-radius: 16px; border: 1.5px solid #D9D3E4; background: #F9F8FB; color: #1F1A2E; font-size: 14px">
+
+<button type="button" onClick="{{ save }}" style="height: 56px; border: 0; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>Zapisz wpis</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 36px 8px 8px; text-align: center">
+<span aria-hidden="true" style="width: 88px; height: 88px; border-radius: 50%; background: #ECE9FD; color: #5B4BD6; display: flex; align-items: center; justify-content: center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></span>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 700">Zapisane u Ciebie</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.55; color: #5F5873">Wskazówki dla Kuby na kolejne dni przeliczą się na Twoim telefonie. Twój wpis nigdzie nie wychodzi.</p>
+<a href="Cykl.dc.html" style="width: 100%; height: 54px; margin-top: 8px; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center">Wróć do cyklu</a>
+<button type="button" onClick="{{ edit }}" style="height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #1F1A2E; font-size: 14px; font-weight: 700">Popraw wpis</button>
+</div>
+</sc-if>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = { energy: 2, mood: 3, tension: 0, desire: 0, tags: { 'Senność': true }, note: '', saved: false };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const defs = [
+      ['energy', 'Energia', 'nisko · wysoko'],
+      ['mood', 'Nastrój', 'ciężko · dobrze'],
+      ['tension', 'Napięcie', 'spokój · dużo'],
+      ['desire', 'Ochota', 'opcjonalnie']
+    ];
+    const scales = defs.map(([key, label, hint]) => ({
+      label: label, hint: hint,
+      opts: [1, 2, 3, 4, 5].map((n) => {
+        const on = s[key] === n;
+        return {
+          n: n, pressed: on ? 'true' : 'false', aria: label + ' ' + n + ' z 5',
+          bg: on ? '#5B4BD6' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1F1A2E', border: on ? '#5B4BD6' : '#D9D3E4',
+          pick: () => this.setState({ [key]: this.state[key] === n ? 0 : n })
+        };
+      })
+    }));
+    const names = ['Ból głowy', 'Skurcze', 'Senność', 'Drażliwość', 'Wzdęcia', 'Ochota na słodkie', 'Bezsenność'];
+    const sel = s.tags || {};
+    return {
+      editing: !s.saved,
+      saved: !!s.saved,
+      scales: scales,
+      tags: names.map((n) => {
+        const on = !!sel[n];
+        return {
+          label: n, pressed: on ? 'true' : 'false',
+          bg: on ? '#1F1A2E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1F1A2E', border: on ? '#1F1A2E' : '#D9D3E4',
+          toggle: () => this.setState({ tags: Object.assign({}, sel, { [n]: !on }) })
+        };
+      }),
+      note: s.note || '',
+      onNote: (e) => this.setState({ note: String(e.target.value || '') }),
+      save: () => this.setState({ saved: true }),
+      edit: () => this.setState({ saved: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

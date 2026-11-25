@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Parapka · Parowanie</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F1F8}
+a{color:#5B4BD6}a:hover{color:#4335B8}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #5B4BD6;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1000px; position: relative; overflow: hidden; box-sizing: border-box; background: #F4F1F8; color: #1F1A2E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+<main style="box-sizing: border-box; padding: 48px 20px 32px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; align-items: center; justify-content: space-between">
+<button type="button" aria-label="Wstecz" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: #FFFFFF; color: #1F1A2E; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="font-size: 12px; font-weight: 700; color: #5F5873">Krok 2 z 3</span>
+<span aria-hidden="true" style="display: flex; gap: 4px"><span style="width: 18px; height: 6px; border-radius: 999px; background: #1F1A2E"></span><span style="width: 18px; height: 6px; border-radius: 999px; background: #1F1A2E"></span><span style="width: 18px; height: 6px; border-radius: 999px; background: #D9D3E4"></span></span>
+</div>
+</div>
+
+<header style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Połączcie telefony</h1>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5F5873">Zaproszenie jest jednorazowe i ważne 24 godziny. Klucze zostają na Waszych telefonach.</p>
+</header>
+
+<div role="group" aria-label="Sposób łączenia" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: #E9E4F0">
+<sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+<button type="button" onClick="{{ t.pick }}" aria-pressed="{{ t.pressed }}" style="height: 44px; border: 0; border-radius: 999px; background: {{ t.bg }}; color: #1F1A2E; font-size: 14px; font-weight: 700; box-shadow: {{ t.shadow }}; display: flex; align-items: center; justify-content: center; gap: 6px">{{ t.label }}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{ showCode }}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<section aria-label="Kod zaproszenia" style="padding: 22px 20px 20px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<div style="padding: 14px; border-radius: 22px; background: #FFFFFF; border: 1.5px solid #E7E2EF; position: relative">
+<div role="img" aria-label="Kod QR zaproszenia" style="display: grid; grid-template-columns: repeat(21, 9px); grid-auto-rows: 9px">
+<sc-for list="{{ qr }}" as="q" hint-placeholder-count="441"><span style="background: {{ q.bg }}; border-radius: {{ q.r }}px"></span></sc-for>
+</div>
+<span aria-hidden="true" style="position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center">
+<span style="width: 34px; height: 34px; border-radius: 10px; background: #C2375E; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg></span>
+</span>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center">
+<span style="height: 30px; padding: 0 12px; border-radius: 999px; background: #F4F1F8; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Ważne jeszcze 23 h 58 min</span>
+<span style="height: 30px; padding: 0 12px; border-radius: 999px; background: #F4F1F8; font-size: 12px; font-weight: 700; display: flex; align-items: center">Jednorazowe</span>
+</div>
+<div style="width: 100%; display: flex; gap: 8px">
+<button type="button" style="flex: 1; height: 52px; border: 0; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg>Wyślij link</button>
+<button type="button" aria-label="Kopiuj link zaproszenia" style="width: 52px; height: 52px; border: 1.5px solid #D9D3E4; border-radius: 50%; background: #FFFFFF; color: #1F1A2E; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg></button>
+</div>
+</section>
+
+<sc-if value="{{ needsCompare }}" hint-placeholder-val="{{ true }}">
+<section aria-labelledby="code-title" style="padding: 20px; border-radius: 28px; background: #ECE9FD; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="code-title" style="margin: 0; font-size: 16px; font-weight: 700">Łączycie się przez link?</h2>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #3D3750">Porównajcie ten kod, np. przez telefon. Musi być taki sam u Was obojga.</p>
+</div>
+<div aria-label="Kod bezpieczeństwa 482 913" style="display: flex; align-items: center; justify-content: center; gap: 6px">
+<sc-for list="{{ digitsA }}" as="d" hint-placeholder-count="3"><span style="width: 44px; height: 56px; border-radius: 14px; background: #FFFFFF; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ d.v }}</span></sc-for>
+<span aria-hidden="true" style="width: 10px; height: 3px; border-radius: 2px; background: #8C84A0; margin: 0 4px"></span>
+<sc-for list="{{ digitsB }}" as="d" hint-placeholder-count="3"><span style="width: 44px; height: 56px; border-radius: 14px; background: #FFFFFF; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ d.v }}</span></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button type="button" onClick="{{ confirm }}" style="height: 50px; border: 0; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; font-size: 14px; font-weight: 700">Zgadza się</button>
+<button type="button" style="height: 50px; border: 1.5px solid #1F1A2E; border-radius: 999px; background: transparent; color: #1F1A2E; font-size: 14px; font-weight: 700">Nie zgadza się</button>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{ verified }}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="ok-title" style="padding: 20px; border-radius: 28px; background: #1F1A2E; color: #FFFFFF; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span aria-hidden="true" style="display: flex"><span style="width: 44px; height: 44px; border-radius: 50%; background: #C2375E; border: 3px solid #1F1A2E; display: flex; align-items: center; justify-content: center; font-weight: 700">O</span><span style="width: 44px; height: 44px; border-radius: 50%; background: #5B4BD6; border: 3px solid #1F1A2E; margin-left: -14px; display: flex; align-items: center; justify-content: center; font-weight: 700">K</span></span>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h2 id="ok-title" style="margin: 0; font-size: 17px; font-weight: 700">Połączeni bezpiecznie</h2>
+<span style="font-size: 13px; color: #C9C3DB">Ola i Kuba · kody się zgadzają</span>
+</div>
+</div>
+<a href="Zgoda.dc.html" style="height: 52px; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; text-decoration: none; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">Dalej: co udostępniasz
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+</section>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ showScan }}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div aria-hidden="true" style="position: relative; height: 380px; border-radius: 28px; background: #1F1A2E; overflow: hidden; display: flex; align-items: center; justify-content: center">
+<div style="position: relative; width: 220px; height: 220px">
+<span style="position: absolute; left: 0; top: 0; width: 44px; height: 44px; border-left: 5px solid #FFFFFF; border-top: 5px solid #FFFFFF; border-radius: 18px 0 0 0"></span>
+<span style="position: absolute; right: 0; top: 0; width: 44px; height: 44px; border-right: 5px solid #FFFFFF; border-top: 5px solid #FFFFFF; border-radius: 0 18px 0 0"></span>
+<span style="position: absolute; left: 0; bottom: 0; width: 44px; height: 44px; border-left: 5px solid #FFFFFF; border-bottom: 5px solid #FFFFFF; border-radius: 0 0 0 18px"></span>
+<span style="position: absolute; right: 0; bottom: 0; width: 44px; height: 44px; border-right: 5px solid #FFFFFF; border-bottom: 5px solid #FFFFFF; border-radius: 0 0 18px 0"></span>
+<span style="position: absolute; left: 16px; right: 16px; top: 96px; height: 3px; border-radius: 999px; background: #F0A3B8; box-shadow: 0 0 18px 4px rgba(240,163,184,0.55)"></span>
+</div>
+</div>
+<p style="margin: 0; text-align: center; font-size: 14px; line-height: 1.5; color: #5F5873">Skieruj aparat na kod z telefonu partnera. Kod na miejscu nie wymaga porównywania.</p>
+<button type="button" style="height: 52px; border: 1.5px solid #1F1A2E; border-radius: 999px; background: transparent; color: #1F1A2E; font-size: 15px; font-weight: 700">Mam link zamiast kodu</button>
+</div>
+</sc-if>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = { tab: 'code', verified: false };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const N = 21;
+    const finder = (r, c) => {
+      const corners = [[0, 0], [0, N - 7], [N - 7, 0]];
+      for (let i = 0; i < corners.length; i++) {
+        const y = r - corners[i][0];
+        const x = c - corners[i][1];
+        if (y >= 0 && y < 7 && x >= 0 && x < 7) {
+          const ring = y === 0 || y === 6 || x === 0 || x === 6;
+          const core = y >= 2 && y <= 4 && x >= 2 && x <= 4;
+          return ring || core ? 1 : 0;
+        }
+        if (y >= -1 && y <= 7 && x >= -1 && x <= 7) return 0;
+      }
+      return -1;
+    };
+    const qr = [];
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        const f = finder(r, c);
+        const dark = f === -1 ? ((r * 7 + c * 13 + r * c * 3) % 5) < 2 : f === 1;
+        qr.push({ bg: dark ? '#1F1A2E' : 'transparent', r: f === -1 ? 2 : 1 });
+      }
+    }
+    const tabs = [['code', 'Pokaż kod'], ['scan', 'Skanuj kod']].map(([id, label]) => ({
+      label: label, pressed: s.tab === id ? 'true' : 'false',
+      bg: s.tab === id ? '#FFFFFF' : 'transparent', shadow: s.tab === id ? '0 2px 8px rgba(31,26,46,0.10)' : 'none',
+      pick: () => this.setState({ tab: id })
+    }));
+    return {
+      tabs: tabs,
+      showCode: s.tab === 'code',
+      showScan: s.tab === 'scan',
+      qr: qr,
+      digitsA: [{ v: '4' }, { v: '8' }, { v: '2' }],
+      digitsB: [{ v: '9' }, { v: '1' }, { v: '3' }],
+      needsCompare: !s.verified,
+      verified: !!s.verified,
+      confirm: () => this.setState({ verified: true })
+    };
+  }
+}
+</script>
+</body>
+</html>
