@@ -1,6 +1,6 @@
 # Plan: wskazówki oparte na cyklu, wersja 2
 
-Status: propozycja do decyzji. Nic z tego planu nie jest jeszcze w kodzie ani w issues.
+Status: decyzje podjęte 2026-11-25 (sekcja 10). Śledzenie: #390. Implementacja w issues z sekcji 9.
 
 ## 0. Najważniejsze w skrócie
 
@@ -8,7 +8,8 @@ Status: propozycja do decyzji. Nic z tego planu nie jest jeszcze w kodzie ani w 
 2. **Obecna specyfikacja tego zakazuje.** FR-CYC-09 (tekst nie zdradza fazy, objawów ani wartości), FR-CYC-10 (wskazówki nie dotyczą seksu), ZP-5, R-1 i listy fraz w `content/forbidden-phrases.json` blokują dokładnie takie teksty, także w CI. Bez zmiany spec każde takie issue padnie na bramce treści.
 3. Rekomendacja: nie zmieniać obecnych wskazówek, tylko dodać **drugi, opcjonalny poziom ("szczegółowe wskazówki")**, który włącza wyłącznie osoba z cyklem, osobno dla każdego tematu, z podglądem tego, co zobaczy partner. Domyślnie wyłączony.
 4. Nauka jest tu słabsza, niż sugerują aplikacje (sekcja 1). Dlatego teksty muszą mówić "może", a silnik powinien uczyć się wzorców konkretnej osoby z jej wpisów (ma je już: energia, nastrój, napięcie, ochota, tagi), zamiast zakładać, że każda osoba jest "podręcznikowa".
-5. Podział na 11 issues w sekcji 9. Pierwsze musi być zmiana spec (decyzja Twoja), reszta zależy od niego.
+5. Decyzje właściciela: wskazówki o bliskości i seksualności są kluczową funkcją (temat `intimacy`, w dobrym stylu, z lekką klauzulą bez presji); przeglądu specjalisty nie będzie nigdy, więc treści są trwale "orientacyjne" i zawsze w języku "może się pojawić"; przełącznik hormonów w wersji pierwszej; powiadomienie uprzedzające domyślnie włączone; zmiana spec zaakceptowana.
+6. Podział na 12 issues w sekcji 9.
 
 ## 1. Research
 
@@ -85,7 +86,7 @@ Dlatego rekomenduję: temat "bliskość" jest **osobnym przełącznikiem, domyś
 | `energy_low` | "Dziś może mieć mniej sił. Weź na siebie wieczorne sprawy." | miesiączka, lutealna, wpis z niską energią |
 | `sleep` | "Może gorzej spać. Zadbaj dziś o spokojny wieczór." | lutealna |
 | `mood_sensitivity` | "Może być dziś bardziej wrażliwa. Daj więcej uwagi, mniej rad." | tylko gdy to wynika z wpisów lub wzorca osoby, **nie z samego kalendarza** (sekcja 1.2) |
-| `closeness` | "Dziś może mieć większą ochotę na bliskość. Bez oczekiwań, «nie» jest w porządku." | okno okołoowulacyjne, tylko gdy ochota nie jest niska we wpisach |
+| `intimacy` ("Bliskość i ochota") | "Dziś może pojawić się większa ochota na bliskość i seks. Zostaw jej przestrzeń, bez oczekiwań." | okno okołoowulacyjne, tylko gdy ochota nie jest niska we wpisach |
 
 Każdy temat ma teksty w trzech formach gramatycznych (jak dziś), minimum 8 szablonów na temat, żeby uniknąć powtarzania w 7 dni (`HINT_NO_REPEAT_DAYS`).
 
@@ -123,9 +124,9 @@ Obecnie jest `PhaseCard` z jednym krótkim opisem fazy (FR-CYC-04). Proponuję r
 - Listy zakazanych fraz (`forbidden.ts`, `forbidden-phrases.json`) zależne od poziomu:
   - **podstawowy:** bez zmian;
   - **szczegółowy:** nadal zakazane nazwy faz, "okres/miesiączka/owulacja/PMS/PMDD/hormony" i język medyczny, **dozwolone** słowa ciała z listy dozwolonych dla tematu (np. "piersi" tylko w `body_tenderness`);
-  - **sexual:** dozwolone tylko w temacie `closeness`, i tylko z klauzulą "bez oczekiwań"/"«nie» jest w porządku" (test wymaga jej obecności).
+  - **sexual:** dozwolone tylko w temacie `intimacy`. Styl: ciepły, nigdy wulgarny. Każdy tekst ma lekką klauzulę "bez oczekiwań" / "«nie» jest w porządku" (test wymaga jej obecności).
 - Limit 120 znaków i komplet trzech form pozostają. Test w CI sprawdza też, że żaden szablon nie obiecuje pewności ("na pewno", "będzie", "zawsze").
-- Wszystkie nowe treści mają `review: "unreviewed"`. Wypuszczenie poza testy blokuje `docs/release-checklist.md` do czasu przeglądu seksuologa, psychologa i ginekologa (spec §8, pytanie 6).
+- Przeglądu specjalisty nie będzie (decyzja właściciela). Wszystkie nowe treści zostają trwale `review: "unreviewed"`, więc ochroną są: język "może / bywa / u części osób" (test CI odrzuca twierdzenia pewne), widoczna etykieta "Treści orientacyjne, nie porada medyczna" przy wskazówkach szczegółowych i oczekiwaniach oraz uczciwe zapisy w spec §8–9, `docs/release-checklist.md` i dokumentach prawnych.
 - Limit 300 linii na plik: `hint-templates.json` jest już duży. Szczegółowe szablony idą do osobnego pliku `hint-templates-detailed.json`, a loader (`library.ts`) uczy się go jako osobnego, znanego pliku.
 
 ## 6. Zgody i prywatność
@@ -148,38 +149,37 @@ Obecnie jest `PhaseCard` z jednym krótkim opisem fazy (FR-CYC-04). Proponuję r
 ## 8. Testy
 
 - **Jednostkowe domeny:** brama pewności (nieregularny, spóźniona miesiączka, hormony), limit 1 na 2 dni, pierwszeństwo wpisów nad kalendarzem, temat bez zgody nigdy nie wchodzi do puli, determinizm przy tym samym ziarnie dnia.
-- **Treść w CI:** nowe listy zależne od poziomu, obowiązkowa klauzula w `closeness`, brak twierdzeń pewnych, długość i trzy formy.
+- **Treść w CI:** nowe listy zależne od poziomu, obowiązkowa klauzula w `intimacy`, brak twierdzeń pewnych, długość i trzy formy.
 - **Prywatność:** test synchronizacji, że po wyłączeniu tematu partner traci tylko te wskazówki, że koperta niesie wyłącznie `templateId`, `contentVersion`, `category`, `date`, `text`, i że w logach relaya nic nie przybywa.
 - **E2E (Playwright, 390 i 320 px):** włączenie tematu z podglądem, pojawienie się wskazówki u partnera, pominięcie, wyłączenie i zniknięcie.
 - Dalej obowiązują bramki: 100% pokrycia linii, duplikacja ≤ 3%, 300 linii na plik, typecheck, scope, prettier, commitlint, CodeQL.
 
 ## 9. Podział na issues (kolejność = zależności)
 
-Każde ≤ 10 plików kodu i ok. 600 linii (limit pipeline).
+Każde ≤ 10 plików kodu i ok. 600 linii (limit pipeline). Numery zakłada agent, lista jest w #390. Kolejność pracy: najpierw dokończenie przebudowy wyglądu (#376–#385), potem A–H, K i na końcu ekrany I, J, L (wymagają wyglądu).
 
-| # | Issue | Zakres | Zależy od |
-|---|---|---|---|
-| 1 | Zmiana specyfikacji | `spec.md` (FR-CYC-09/10, ZP-5, R-1, nowa FR-CYC-16..), aktualizacja DPIA i polityki prywatności (szkice) | Twoja decyzja |
-| 2 | Schemat treści i walidacja | `packages/content`: `tier`, `topic`, nowy plik, loader, listy zależne od poziomu | 1 |
-| 3 | Treść szczegółowa, szkic | `hint-templates-detailed.json` (6 tematów × ≥ 8 × 3 formy), `symptom-expectations.json`, wszystko `unreviewed` | 2 |
-| 4 | Zgoda `CYCLE_DETAIL` i tematy | `consent-model.ts`, repozytorium, wycofanie, ustawienie hormonów | 1 |
-| 5 | Silnik: poziom, tematy, bramka pewności | `hint-engine.ts` + testy | 2, 4 |
-| 6 | Wzorce osoby | `cycle-patterns.ts`, nowe tagi w `wellbeing-validation.ts` i formularzu wpisu | — |
-| 7 | UI zgody i podglądu | ustawienia cyklu, ekran tematów | 4, 5, design #384 |
-| 8 | Karta "Najbliższe dni" i "Twoje wzorce" | `PhaseCard`, ekrany Cykl i Dziś | 3, 6, design #384 |
-| 9 | Powiadomienie uprzedzające | nowy typ, źródło, ustawienia | 8 |
-| 10 | E2E i testy prywatności | Playwright, synchronizacja, relay | 7, 8 |
-| 11 | Bramka wydania | wpis w `release-checklist.md`: przegląd specjalisty obowiązkowy dla `review: "unreviewed"` | 3 |
+| Litera | Zakres | Zależy od |
+|---|---|---|
+| A | Spec i dokumenty (FR-CYC-09/10, ZP-5, R-1, FR-NOT-05, §8–9, checklist wydania, dokumenty prawne) | — |
+| B | Treść: schemat `tier`/`topic`, walidator, listy fraz zależne od poziomu, loader wielu plików | A |
+| C | Treść: szablony `body_tenderness`, `cramps`, `energy_low` | B |
+| D | Treść: szablony `sleep`, `mood_sensitivity`, `intimacy` | B |
+| E | Treść: `symptom-expectations.json` | B |
+| F | Zgoda `CYCLE_DETAIL`, tematy, przełącznik hormonów, wycofanie | A |
+| G | Silnik: poziom, tematy, bramka pewności | B, F |
+| H | `cycle-patterns.ts` i nowe tagi | — |
+| I | UI zgody i podglądu w ustawieniach cyklu | F, G, wygląd #384 |
+| J | Karta "Najbliższe dni" i "Twoje wzorce" | E, H, #384, #380 |
+| K | Powiadomienie uprzedzające (domyślnie włączone) | E, F |
+| L | E2E i testy prywatności | I, J, K |
 
-Szacunek: 11 przebiegów pipeline'u, każdy do 45 minut pracy, plus przeglądy. Najdłużej będzie issue 3 (treść) i przegląd specjalisty poza kodem.
+## 10. Decyzje (2026-11-25)
 
-## 10. Pytania do Ciebie
-
-1. **Brzmienie tematu o ochocie:** "bliskość" (rekomendowane, z klauzulą "bez oczekiwań") czy wprost "seks"? Dla którejkolwiek opcji temat będzie domyślnie wyłączony i pod kontrolą osoby z cyklem. Jeśli wprost, każdy tekst nadal musi mieć klauzulę "«nie» jest w porządku".
-2. **Czy wskazówki szczegółowe mają trafiać do partnera także bez przeglądu specjalisty** w Waszej parze testowej? Rekomenduję tak, oznaczone "niezweryfikowane" jak dziś treści podstawowe, ale nie dla nikogo poza Wami.
-3. **Hormony/ciąża/menopauza:** czy dodać ten przełącznik w pierwszej wersji (rekomenduję tak, bo bez niego prognozy bywają błędne)?
-4. **Powiadomienie uprzedzające** dla osoby z cyklem: domyślnie wyłączone (zgodnie z ZP-2) czy włączone?
-5. **Początek prac:** zmiana spec (issue 1) wymaga Twojej akceptacji, bo dotyka zasad ZP-5 i FR-CYC-10. Mogę założyć issues 1–6 od razu po Twojej decyzji, z `agent:ready` dopiero po zakończeniu przebudowy wyglądu.
+1. **Ochota:** jedna z najważniejszych funkcji, musi być. Temat `intimacy`, etykieta "Bliskość i ochota", ciepły i taktowny styl, lekka klauzula bez presji. Pozostają zabezpieczenia: temat wyłączony do świadomego włączenia, podgląd tekstów, tłumienie przy niskiej ochocie we wpisach, możliwość pominięcia wskazówki.
+2. **Przegląd specjalisty:** nigdy nie będzie. Treści trwale "orientacyjne", zawsze w języku "może się pojawić", z widoczną etykietą w aplikacji.
+3. **Hormony/ciąża/karmienie/menopauza:** przełącznik w wersji pierwszej.
+4. **Powiadomienie uprzedzające:** domyślnie włączone, tekst dyskretny.
+5. **Zmiana specyfikacji:** zaakceptowana.
 
 ## 11. Źródła
 
