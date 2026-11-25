@@ -161,3 +161,28 @@ it("shows the chores of today between the hints and the check-in card", async ()
     );
   });
 });
+
+it("shows the date of the clock above the title, not as a header", async () => {
+  const { platform } = await setupCheckin(true);
+  showToday(platform);
+  const date = screen.getByText("środa, 11 listopada");
+  expect(date.getAttribute("role")).toBeNull();
+  expect(screen.getAllByRole("heading").map((h) => h.textContent)).toContain(
+    pl.screens.today.title,
+  );
+  expect(screen.getAllByRole("heading")).not.toContain(date);
+  expect(
+    date.compareDocumentPosition(screen.getByText(pl.screens.today.title)) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  await screen.findByText(pl.checkin.form.save);
+});
+
+it("keeps the texts without a pair and without chores", async () => {
+  const { platform } = await setupCheckin(false);
+  showToday(platform);
+  expect(await screen.findByText(pl.todayChores.none)).toBeTruthy();
+  expect(await screen.findByText(pl.checkin.card.noPair)).toBeTruthy();
+  expect(screen.getAllByText(pl.screens.today.title)).toHaveLength(1);
+  expect(screen.getByText("środa, 11 listopada")).toBeTruthy();
+});

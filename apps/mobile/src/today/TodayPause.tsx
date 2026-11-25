@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { View } from "react-native";
+
 import { usePlatform } from "../platform/context";
 import type { PairRepository } from "../pairing/pair-repository";
 import { createPauseRepository } from "../sync/pause-repository";
 import { PauseToggle } from "../sync/PauseToggle";
 import { wireChores } from "../sync/wiring";
+import { Card } from "../ui/Card";
+import { Icon } from "../ui/Icon";
+import { colors, spacing } from "../ui/theme";
 
 /** Whether a confirmed pair exists; false while loading or when it cannot be read. */
 function useHasPair(pairs: Pick<PairRepository, "activePair" | "subscribe">) {
@@ -41,5 +46,17 @@ export function TodayPause() {
     }),
     [platform],
   );
-  return useHasPair(pairs) ? <PauseToggle pause={pause} /> : null;
+  if (!useHasPair(pairs)) return null;
+  return (
+    <Card>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}
+      >
+        <Icon name="pause" color={colors.textMuted} />
+        <View style={{ flex: 1 }}>
+          <PauseToggle pause={pause} />
+        </View>
+      </View>
+    </Card>
+  );
 }
