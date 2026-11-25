@@ -38,14 +38,30 @@ const names = [
   "trendDown",
 ] satisfies IconName[];
 
-it.each(names)("renders %s as an svg of the given size and colour", (name) => {
-  const { container } = render(<Icon name={name} size={30} color="#112233" />);
+const outlineNames = names.filter((name) => name !== "more");
+
+it.each(outlineNames)(
+  "renders %s as an outline svg of the given size and colour",
+  (name) => {
+    const { container } = render(
+      <Icon name={name} size={30} color="#112233" />,
+    );
+    const svg = container.querySelector("svg");
+    expect(svg?.getAttribute("width")).toBe("30");
+    expect(svg?.getAttribute("height")).toBe("30");
+    expect(svg?.getAttribute("stroke")).toBe("#112233");
+    expect(svg?.getAttribute("fill")).toBe("none");
+    expect(svg?.querySelector("path, circle, rect")).not.toBeNull();
+  },
+);
+
+it("renders more as a filled svg of the given size and colour", () => {
+  const { container } = render(<Icon name="more" size={30} color="#112233" />);
   const svg = container.querySelector("svg");
   expect(svg?.getAttribute("width")).toBe("30");
   expect(svg?.getAttribute("height")).toBe("30");
-  const coloured = svg?.getAttribute("stroke") ?? svg?.getAttribute("fill");
-  expect(coloured).toBe("#112233");
-  expect(svg?.querySelector("path, circle, rect")).not.toBeNull();
+  expect(svg?.getAttribute("fill")).toBe("#112233");
+  expect(svg?.querySelector("circle")).not.toBeNull();
 });
 
 it("defaults to size 22, the text colour and stroke width 1.9", () => {
