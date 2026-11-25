@@ -28,8 +28,8 @@ Projekt nie zmienia zachowania opisanego w `spec.md`. Gdy ekran projektu i specy
 | `surface` | `#FFFFFF` | karty, arkusze, pola |
 | `text` | `#1F1A2E` | tekst, przyciski główne, pasek kart, zaznaczenia neutralne |
 | `textMuted` | `#5F5873` | opisy, etykiety, metadane |
-| `border` | `#D9D3E4` | obramowanie pól i przycisków drugorzędnych |
-| `borderStrong` | `#8C84A0` | pusty checkbox, pusty element skali (kontrast elementu ≥ 3:1) |
+| `border` | `#8C84A0` | obramowanie pól, przycisków drugorzędnych i chipów do wyboru, pusty checkbox, pusty element skali (kontrast ≥ 3:1, WCAG 1.4.11) |
+| `borderSubtle` | `#D9D3E4` | tylko dekoracja: obramowanie elementów, które nie są kontrolkami |
 | `divider` | `#EEE9F3` | linie między wierszami |
 | `track` | `#E7E2EF` | puste paski postępu i skal |
 | `personA` | `#5B4BD6` | kolor pierwszej osoby w parze (fiolet); też wybrane wartości w formularzach i przycisk dodawania |
@@ -56,6 +56,8 @@ Kontrast (WCAG 2.1, NFR-UX-03), wszystkie pary ≥ 4,5:1 dla tekstu:
 | `#C9C3DB` | `#1F1A2E` | 9,89 |
 | `#9A4A1C` | `#FFEBDD` | 5,39 |
 | `#8C84A0` (element) | `#FFFFFF` | 3,55 |
+
+Canvas rysuje obramowanie pól i chipów jaśniejszym `#D9D3E4` (1,4:1 na białym). W aplikacji granice kontrolek muszą mieć ≥ 3:1, więc dostają `border` (`#8C84A0`).
 
 ## Typografia
 
