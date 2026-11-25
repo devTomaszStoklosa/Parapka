@@ -1,12 +1,37 @@
 export const colors = {
-  background: "#FFFFFF",
-  surface: "#F2F2F7",
-  text: "#1C1C1E",
-  textMuted: "#4A4A4F",
-  accent: "#0B57D0",
+  background: "#F4F1F8",
+  surface: "#FFFFFF",
+  text: "#1F1A2E",
+  textMuted: "#5F5873",
+  accent: "#5B4BD6",
   onAccent: "#FFFFFF",
-  border: "#767680",
+  border: "#8C84A0",
   danger: "#B00020",
+  borderSubtle: "#D9D3E4",
+  divider: "#EEE9F3",
+  track: "#E7E2EF",
+  personA: "#5B4BD6",
+  personAText: "#4335B8",
+  personATint: "#ECE9FD",
+  personB: "#C2375E",
+  personBText: "#A12D4E",
+  personBTint: "#FCE6ED",
+  warmTint: "#FFEBDD",
+  onDark: "#C9C3DB",
+} as const;
+
+export const radii = { card: 24, field: 16, pill: 999 } as const;
+
+export const shadows = {
+  card: {
+    boxShadow: "0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)",
+  },
+} as const;
+
+/** Font families registered in index.ts from the bundled font files. */
+export const fonts = {
+  heading: "BricolageGrotesque_700Bold",
+  body: "PlusJakartaSans_400Regular",
 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24 } as const;

@@ -58,9 +58,11 @@ export default defineConfig(
     rules: { "max-lines-per-function": "off" },
   },
   {
-    files: ["**/*.js"],
+    files: ["**/*.js", "**/*.mjs"],
     extends: [tseslint.configs.disableTypeChecked],
-    languageOptions: { globals: { process: "readonly" } },
+    languageOptions: {
+      globals: { process: "readonly", console: "readonly", URL: "readonly" },
+    },
   },
   {
     files: ["apps/*/metro.config.js"],
