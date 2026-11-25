@@ -96,7 +96,7 @@ Każdy temat ma teksty w trzech formach gramatycznych (jak dziś), minimum 8 sza
 2. Reguły danych (`energyMax`, `source`, itd.) nadal mają pierwszeństwo przed kalendarzem (FR-CYC-08). Dochodzi warunek `tagIncluded`, np. `breast_tenderness` w ostatnich 3 dniach.
 3. **Bramka pewności:** szczegółowa wskazówka kalendarzowa wchodzi tylko, gdy `confidence === "normal"`, cykl nie jest nieregularny, nie zaznaczono hormonów/ciąży/menopauzy, a miesiączka nie jest spóźniona. Inaczej zostają tylko wskazówki oparte na wpisach, albo wskazówka podstawowa.
 4. **Szum przeciw odgadywaniu:** szczegółowa wskazówka nie pojawia się każdego dnia fazy. Limit np. 1 szczegółowa na 2 dni, reszta podstawowe, żeby partner nie odtwarzał dokładnych dat z wzoru (R-1 pozostaje częściowo aktualne).
-5. **Kategoria w protokole bez zmian:** każdy szablon szczegółowy należy do jednej z pięciu istniejących kategorii (np. `tenderness`), więc koperty, walidacja w `packages/protocol` i relay się nie zmieniają. Partner nadal dostaje tylko `templateId`, `contentVersion`, `category`, `date`, `text` (FR-CYC-09 w rozumieniu technicznym zachowane).
+5. **Kategoria w protokole bez zmian:** każdy szablon szczegółowy należy do jednej z pięciu istniejących kategorii (np. `tenderness`), więc koperty, walidacja w `packages/protocol` i relay się nie zmieniają. Na kablu idą nadal tylko cztery pola: `forDate`, `text`, `category`, `status`. `templateId` i `contentVersion` zostają na telefonie (zgodnie z kodem i `hint-privacy.test.ts`).
 6. Osoba z cyklem nadal widzi dokładnie to samo, co partner, plus może pominąć lub wymienić wskazówkę (FR-CYC-06, FR-CYC-07). Bez tego szczegółowy poziom nie przechodzi review.
 
 ### 3.4 Personalizacja z wpisów (nowy moduł `packages/domain/src/cycle-patterns.ts`)
@@ -114,7 +114,7 @@ Obecnie jest `PhaseCard` z jednym krótkim opisem fazy (FR-CYC-04). Proponuję r
 2. **Sekcja "Twoje wzorce"** po 3 cyklach: "W dniach 24–27 cyklu najczęściej zapisujesz: tkliwość piersi, niższą energię" na podstawie `cycle-patterns.ts`. Kalendarz podręcznikowy jest punktem startu, a wzorzec osoby ma pierwszeństwo.
 3. **Co może pomóc**: krótkie, niemedyczne wskazówki (ciepło, ruch, sen, odpoczynek). Bez nazw leków i dawek (FR-CYC-03).
 4. **Kiedy porozmawiać z lekarzem**: neutralna informacja o objawach, które bardzo utrudniają życie, bardzo obfitej lub bardzo długiej miesiączce, cyklu poza zakresem 21–45 dni. Tekst do przeglądu specjalisty.
-5. **Uprzedzenie z wyprzedzeniem** (powiadomienie, domyślnie wyłączone, ZP-2): "Parapka: masz nowe przypomnienie", w treści aplikacji dopiero szczegóły. Tekst powiadomienia pozostaje dyskretny. Wymaga nowego typu w `notification-types.ts` i źródła w `sources.ts`.
+5. **Uprzedzenie z wyprzedzeniem** (powiadomienie, domyślnie włączone, decyzja 4): "Parapka: masz nowe przypomnienie", w treści aplikacji dopiero szczegóły. Tekst powiadomienia pozostaje dyskretny. Wymaga nowego typu w `notification-types.ts` i źródła w `sources.ts`.
 6. Zawsze widoczne zastrzeżenie "to szacunek, nie metoda antykoncepcji ani narzędzie medyczne" (FR-CYC-15, już jest w `CycleDisclaimer`).
 
 ## 5. Treść i bramki jakości
@@ -150,7 +150,7 @@ Obecnie jest `PhaseCard` z jednym krótkim opisem fazy (FR-CYC-04). Proponuję r
 
 - **Jednostkowe domeny:** brama pewności (nieregularny, spóźniona miesiączka, hormony), limit 1 na 2 dni, pierwszeństwo wpisów nad kalendarzem, temat bez zgody nigdy nie wchodzi do puli, determinizm przy tym samym ziarnie dnia.
 - **Treść w CI:** nowe listy zależne od poziomu, obowiązkowa klauzula w `intimacy`, brak twierdzeń pewnych, długość i trzy formy.
-- **Prywatność:** test synchronizacji, że po wyłączeniu tematu partner traci tylko te wskazówki, że koperta niesie wyłącznie `templateId`, `contentVersion`, `category`, `date`, `text`, i że w logach relaya nic nie przybywa.
+- **Prywatność:** test synchronizacji, że po wyłączeniu tematu partner traci tylko te wskazówki, że koperta niesie wyłącznie `forDate`, `text`, `category`, `status`, i że w logach relaya nic nie przybywa.
 - **E2E (Playwright, 390 i 320 px):** włączenie tematu z podglądem, pojawienie się wskazówki u partnera, pominięcie, wyłączenie i zniknięcie.
 - Dalej obowiązują bramki: 100% pokrycia linii, duplikacja ≤ 3%, 300 linii na plik, typecheck, scope, prettier, commitlint, CodeQL.
 
