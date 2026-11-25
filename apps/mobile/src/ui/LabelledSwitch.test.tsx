@@ -67,6 +67,7 @@ it("draws a 52x32 track and a white thumb in both states", () => {
   let thumb = getComputedStyle(off.getByTestId("switch-thumb"));
   expect(thumb.backgroundColor).toBe(hex(colors.surface));
   expect(thumb.left).toBe("3px");
+  expect(thumb.boxShadow).toContain("rgba(31, 26, 46, 0.25)");
   off.unmount();
   const on = render(
     <LabelledSwitch label="Notify" value onChange={() => {}} />,
@@ -76,6 +77,7 @@ it("draws a 52x32 track and a white thumb in both states", () => {
   thumb = getComputedStyle(on.getByTestId("switch-thumb"));
   expect(thumb.backgroundColor).toBe(hex(colors.surface));
   expect(thumb.left).toBe("23px");
+  expect(thumb.boxShadow).toContain("rgba(31, 26, 46, 0.25)");
 });
 
 it("shows a focus indicator only while the switch is focused", () => {

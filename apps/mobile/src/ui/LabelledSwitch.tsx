@@ -8,6 +8,7 @@ const TRACK_WIDTH = 52;
 const TRACK_HEIGHT = 32;
 const THUMB_SIZE = 26;
 const THUMB_GAP = 3;
+const THUMB_SHADOW = "0 1px 3px rgba(31,26,46,0.25)";
 
 /** A ring around the track, visible while the switch has focus. */
 function FocusRing() {
@@ -66,6 +67,7 @@ function SwitchGraphic({
           height: THUMB_SIZE,
           borderRadius: THUMB_SIZE / 2,
           backgroundColor: colors.surface,
+          boxShadow: THUMB_SHADOW,
         }}
       />
       {focused ? <FocusRing /> : null}
