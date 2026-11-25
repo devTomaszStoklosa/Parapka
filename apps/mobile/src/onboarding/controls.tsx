@@ -3,7 +3,7 @@ import { Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
-import { colors, MIN_TOUCH_TARGET, spacing } from "../ui/theme";
+import { colors, MIN_TOUCH_TARGET, radii, spacing } from "../ui/theme";
 
 export function Button(props: {
   label: string;
@@ -27,18 +27,19 @@ export function Button(props: {
       disabled={disabled}
       onPress={onPress}
       style={{
-        minHeight: MIN_TOUCH_TARGET,
+        minHeight: 48,
         minWidth: MIN_TOUCH_TARGET,
-        paddingHorizontal: spacing.md,
+        paddingHorizontal: spacing.lg,
         justifyContent: "center",
         alignItems: "center",
-        borderWidth: 1,
-        borderColor: primary ? colors.accent : colors.border,
-        backgroundColor: primary ? colors.accent : colors.surface,
+        borderRadius: radii.pill,
+        borderWidth: 1.5,
+        borderColor: colors.text,
+        backgroundColor: primary ? colors.text : "transparent",
         opacity: disabled ? 0.5 : 1,
       }}
     >
-      <AppText style={{ color: primary ? colors.onAccent : colors.text }}>
+      <AppText style={{ color: primary ? colors.surface : colors.text }}>
         {label}
       </AppText>
     </Pressable>
@@ -63,6 +64,7 @@ export function Option(props: {
         minHeight: MIN_TOUCH_TARGET,
         justifyContent: "center",
         paddingHorizontal: spacing.md,
+        borderRadius: radii.field,
         borderWidth: 1,
         borderColor: selected ? colors.accent : colors.border,
         backgroundColor: selected ? colors.surface : colors.background,
@@ -90,6 +92,7 @@ export function Field(props: {
         onChangeText={onChange}
         style={{
           minHeight: MIN_TOUCH_TARGET,
+          borderRadius: radii.field,
           borderWidth: 1,
           borderColor: colors.border,
           paddingHorizontal: spacing.sm,

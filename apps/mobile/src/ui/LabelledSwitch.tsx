@@ -1,7 +1,7 @@
 import { Pressable, Switch, View } from "react-native";
 
 import { AppText } from "./AppText";
-import { MIN_TOUCH_TARGET, spacing } from "./theme";
+import { colors, MIN_TOUCH_TARGET, spacing } from "./theme";
 
 /** A labelled switch; the label is the name for assistive technology too. */
 export function LabelledSwitch(props: {
@@ -21,6 +21,15 @@ export function LabelledSwitch(props: {
     >
       <Switch
         accessibilityLabel={props.label}
+        trackColor={{ false: colors.borderSubtle, true: colors.accent }}
+        thumbColor={colors.surface}
+        style={{
+          width: 52,
+          height: 32,
+          borderWidth: props.value ? 0 : 1.5,
+          borderColor: colors.border,
+          borderRadius: 16,
+        }}
         value={props.value}
         onValueChange={props.onChange}
       />
