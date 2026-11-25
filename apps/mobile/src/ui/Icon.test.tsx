@@ -80,6 +80,12 @@ it("is hidden from screen readers and has no role or label", () => {
   expect(svg?.hasAttribute("aria-label")).toBe(false);
 });
 
+it("takes no pointer events, so a press lands on the control around it", () => {
+  const { container } = render(<Icon name="check" />);
+  const svg = container.querySelector("svg") as SVGElement;
+  expect(getComputedStyle(svg).pointerEvents).toBe("none");
+});
+
 it("leaves the accessible name of a button to its label", () => {
   const { getByRole, queryAllByRole } = render(
     <Pressable accessibilityRole="button" accessibilityLabel="Dodaj">

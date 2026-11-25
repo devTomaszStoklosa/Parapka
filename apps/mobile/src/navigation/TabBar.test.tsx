@@ -40,6 +40,16 @@ it("selects an inactive tab on press", () => {
   expect(onSelect).toHaveBeenCalledWith("head");
 });
 
+it("selects an inactive tab when its icon is pressed", () => {
+  const onSelect = vi.fn();
+  renderBar("today", onSelect);
+  const icon = screen
+    .getByRole("tab", { name: pl.tabs.head })
+    .querySelector("svg") as SVGElement;
+  fireEvent.click(icon);
+  expect(onSelect).toHaveBeenCalledWith("head");
+});
+
 it("gives every tab a touch target of at least 44 px", () => {
   renderBar("today");
   for (const tab of screen.getAllByRole("tab")) {
