@@ -3,3 +3,6 @@
 package-lock.json
 test-results/
 playwright-report/
+
+# Design canvas source (docs/design/README.md): formatting would break its placeholders.
+docs/design/

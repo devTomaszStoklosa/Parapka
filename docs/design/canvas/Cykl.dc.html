@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Parapka · Cykl</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F1F8}
+a{color:#5B4BD6}a:hover{color:#4335B8}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #5B4BD6;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1360px; position: relative; overflow: hidden; box-sizing: border-box; background: #F4F1F8; color: #1F1A2E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+<main style="box-sizing: border-box; padding: 56px 20px 120px; display: flex; flex-direction: column; gap: 14px">
+
+<header style="display: flex; align-items: center; justify-content: space-between">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em">Cykl</h1>
+<button type="button" aria-label="To nie jest metoda antykoncepcji ani narzędzie medyczne. Pokaż informację" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: #FFFFFF; color: #1F1A2E; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+</button>
+</header>
+
+<section aria-label="Twój cykl" style="padding: 16px 18px 18px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<div role="group" aria-label="Widok cyklu" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: #F4F1F8">
+<sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+<button type="button" onClick="{{ m.pick }}" aria-pressed="{{ m.pressed }}" style="height: 40px; border: 0; border-radius: 999px; background: {{ m.bg }}; color: {{ m.fg }}; font-size: 13px; font-weight: 700">{{ m.label }}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{ showRing }}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 12px">
+<div style="position: relative; width: 210px; height: 210px">
+<svg role="img" aria-label="Dzień 9 z około 28. Faza folikularna, szacunek." width="210" height="210" viewBox="0 0 220 220">
+<circle cx="110" cy="110" r="92" fill="none" stroke="#C2375E" stroke-width="18" stroke-dasharray="100.2 477.85" transform="rotate(-90 110 110)"></circle>
+<circle cx="110" cy="110" r="92" fill="none" stroke="#B7AEF5" stroke-width="18" stroke-dasharray="162.2 415.85" stroke-dashoffset="-103.2" transform="rotate(-90 110 110)"></circle>
+<circle cx="110" cy="110" r="92" fill="none" stroke="#F6B48F" stroke-width="18" stroke-dasharray="58.9 519.15" stroke-dashoffset="-268.4" transform="rotate(-90 110 110)"></circle>
+<circle cx="110" cy="110" r="92" fill="none" stroke="#DCD6E6" stroke-width="18" stroke-dasharray="244.7 333.35" stroke-dashoffset="-330.3" transform="rotate(-90 110 110)"></circle>
+<circle cx="196.8" cy="140.4" r="12" fill="#FFFFFF" stroke="#1F1A2E" stroke-width="5"></circle>
+</svg>
+<div aria-hidden="true" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+<span style="font-size: 12px; font-weight: 700; color: #5F5873; letter-spacing: 0.04em; text-transform: uppercase">Dzień</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 56px; line-height: 0.95; font-weight: 700">9</span>
+<span style="height: 26px; padding: 0 10px; border-radius: 999px; background: #ECE9FD; color: #4335B8; font-size: 12px; font-weight: 700; display: flex; align-items: center">Folikularna</span>
+</div>
+</div>
+<div aria-hidden="true" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 11px; font-weight: 600; color: #5F5873">
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #C2375E"></span>Miesiączka</span>
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #B7AEF5"></span>Folikularna</span>
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #F6B48F"></span>Owulacyjna</span>
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #DCD6E6"></span>Lutealna</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showCal }}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<button type="button" aria-label="Poprzedni miesiąc" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: #F4F1F8; color: #1F1A2E; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<span style="font-size: 15px; font-weight: 700">Listopad 2026</span>
+<button type="button" aria-label="Następny miesiąc" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: #F4F1F8; color: #1F1A2E; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+</div>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-size: 11px; font-weight: 700; color: #5F5873">
+<span>Pn</span><span>Wt</span><span>Śr</span><span>Cz</span><span>Pt</span><span>Sb</span><span>Nd</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px 2px">
+<sc-for list="{{ calDays }}" as="d" hint-placeholder-count="35">
+<span style="height: 36px; display: flex; align-items: center; justify-content: center">
+<span style="width: 34px; height: 34px; border-radius: 50%; box-sizing: border-box; background: {{ d.bg }}; color: {{ d.fg }}; border: 2px solid {{ d.ring }}; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ d.label }}</span>
+</span>
+</sc-for>
+</div>
+<p style="margin: 0; display: flex; gap: 14px; justify-content: center; font-size: 11px; font-weight: 600; color: #5F5873">
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 50%; background: #FCE6ED; border: 1.5px solid #C2375E"></span>Zapisana miesiączka</span>
+<span style="display: flex; align-items: center; gap: 5px"><span style="width: 10px; height: 10px; border-radius: 50%; background: #1F1A2E"></span>Dziś</span>
+</p>
+</div>
+</sc-if>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 18px; background: #F4F1F8">
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #5F5873">Następna miesiączka</span><span style="font-size: 15px; font-weight: 700">ok. 14–17 grudnia</span></span>
+<span style="height: 26px; padding: 0 10px; border-radius: 999px; border: 1.5px dashed #8C84A0; font-size: 12px; font-weight: 700; display: flex; align-items: center">szacunek</span>
+</div>
+
+<a href="Samopoczucie.dc.html" style="height: 54px; border-radius: 999px; background: #1F1A2E; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>
+Wpis samopoczucia · 15 s</a>
+<p style="margin: 0; text-align: center; font-size: 11px; line-height: 1.45; color: #5F5873">To nie jest metoda antykoncepcji ani narzędzie medyczne.</p>
+</section>
+
+<section aria-labelledby="phase-title" style="padding: 18px; border-radius: 24px; background: #ECE9FD; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<h2 id="phase-title" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; font-weight: 700">Co może się teraz dziać</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div style="padding: 12px; border-radius: 16px; background: #FFFFFF; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: #5F5873">Energia<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4335B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6 4 4 6-7"></path><path d="M15 8h5v5"></path></svg></span>
+<span style="font-size: 14px; font-weight: 700">może rosnąć</span>
+</div>
+<div style="padding: 12px; border-radius: 16px; background: #FFFFFF; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: #5F5873">Nastrój<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4335B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14c3-4 5 4 8 0s5 4 8 0"></path></svg></span>
+<span style="font-size: 14px; font-weight: 700">często stabilniejszy</span>
+</div>
+<div style="padding: 12px; border-radius: 16px; background: #FFFFFF; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: #5F5873">Ochota<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4335B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6 4 4 6-7"></path><path d="M15 8h5v5"></path></svg></span>
+<span style="font-size: 14px; font-weight: 700">może rosnąć</span>
+</div>
+<div style="padding: 12px; border-radius: 16px; background: #FFFFFF; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: #5F5873">Napięcie<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4335B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l6 6 4-4 6 7"></path><path d="M15 16h5v-5"></path></svg></span>
+<span style="font-size: 14px; font-weight: 700">zwykle niższe</span>
+</div>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.5">Wiele osób ma teraz więcej chęci na plany i nowe rzeczy. Twoje wpisy mają pierwszeństwo: ostatnie 3 dni mówią o zmęczeniu, więc wskazówki dla Kuby idą w stronę odciążenia.</p>
+</section>
+
+<section aria-labelledby="partner-title" style="padding: 18px; border-radius: 24px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(31,26,46,0.04), 0 8px 24px rgba(31,26,46,0.06)">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<h2 id="partner-title" style="margin: 0; font-size: 16px; font-weight: 700">Co widzi Kuba</h2>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #5F5873"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path></svg>tylko tekst, bez Twoich danych</span>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+<li style="display: flex; gap: 12px; padding-bottom: 14px">
+<span aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; width: 14px; flex: none; padding-top: 4px"><span style="width: 12px; height: 12px; border-radius: 50%; background: #1F1A2E"></span><span style="flex: 1; width: 2px; margin-top: 4px; background: #E7E2EF"></span></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700"><span>Dziś</span><span style="height: 22px; padding: 0 8px; border-radius: 999px; background: #FCE6ED; color: #A12D4E; display: inline-flex; align-items: center">{{ todayCat }}</span></span>
+<sc-if value="{{ todayShown }}" hint-placeholder-val="{{ true }}"><span style="font-size: 15px; line-height: 1.45; font-weight: 600">{{ todayText }}</span></sc-if>
+<sc-if value="{{ todaySkipped }}" hint-placeholder-val="{{ false }}"><span style="font-size: 14px; line-height: 1.45; color: #5F5873">Pominięta. Kuba zobaczy „Dziś brak wskazówki”, tak jak w każdy zwykły dzień bez niej.</span></sc-if>
+<div style="display: flex; gap: 8px">
+<sc-if value="{{ todayShown }}" hint-placeholder-val="{{ true }}">
+<button type="button" onClick="{{ nextHint }}" style="height: 40px; padding: 0 14px; border: 1.5px solid #D9D3E4; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a7 7 0 0 1 12-4.9L18 8"></path><path d="M18 3v5h-5"></path></svg>Inna ({{ hintPos }}/3)</button>
+</sc-if>
+<button type="button" onClick="{{ toggleSkip }}" style="height: 40px; padding: 0 14px; border: 1.5px solid #D9D3E4; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; font-size: 13px; font-weight: 700">{{ skipLabel }}</button>
+</div>
+</div>
+</li>
+<li style="display: flex; gap: 12px; padding-bottom: 14px">
+<span aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; width: 14px; flex: none; padding-top: 4px"><span style="width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box; border: 2px solid #8C84A0"></span><span style="flex: 1; width: 2px; margin-top: 4px; background: #E7E2EF"></span></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #5F5873"><span>Jutro</span><span style="height: 22px; padding: 0 8px; border-radius: 999px; background: #F4F1F8; color: #1F1A2E; display: inline-flex; align-items: center">Uwaga</span></span>
+<span style="font-size: 14px; line-height: 1.45; color: #3D3750">Zapytaj, jak minął jej dzień, i posłuchaj bez dawania rad.</span>
+</div>
+</li>
+<li style="display: flex; gap: 12px">
+<span aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; width: 14px; flex: none; padding-top: 4px"><span style="width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box; border: 2px solid #8C84A0"></span></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #5F5873"><span>Pojutrze</span><span style="height: 22px; padding: 0 8px; border-radius: 999px; background: #F4F1F8; color: #1F1A2E; display: inline-flex; align-items: center">Czułość</span></span>
+<span style="font-size: 14px; line-height: 1.45; color: #3D3750">Zaproponuj spacer po kolacji, bez telefonów.</span>
+</div>
+</li>
+</ol>
+<button type="button" style="height: 44px; border: 0; border-radius: 999px; background: #F4F1F8; color: #1F1A2E; font-size: 13px; font-weight: 700">Historia 14 dni</button>
+</section>
+
+</main>
+
+<nav aria-label="Główna nawigacja" style="position: absolute; left: 16px; right: 16px; bottom: 24px; height: 68px; box-sizing: border-box; padding: 0 8px; border-radius: 999px; background: #1F1A2E; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 12px 32px rgba(31,26,46,0.28)">
+<a href="Main.dc.html" aria-label="Dziś" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></a>
+<a href="Cykl.dc.html" aria-current="page" style="height: 52px; padding: 0 16px; border-radius: 999px; background: #FFFFFF; color: #1F1A2E; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>Cykl</a>
+<a href="Planer.dc.html" aria-label="Planer" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"></rect><path d="M8 2v4M16 2v4M3 10h18M8.5 15l2 2 4-4"></path></svg></a>
+<a href="Glowa.dc.html" aria-label="Głowa" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.2 8.1 4.5 4.5 0 0 0 7 17z"></path><path d="M8 21h.01M11 20h.01"></path></svg></a>
+<a href="Zgoda.dc.html" aria-label="Ustawienia" style="width: 52px; height: 52px; border-radius: 999px; color: #C9C3DB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1360}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = { mode: 'ring', hint: 0, skipped: false };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const hints = [
+      { cat: 'Odciążenie', text: 'Przejmij wieczorne usypianie dzieci i daj Oli pół godziny tylko dla siebie.' },
+      { cat: 'Przestrzeń', text: 'Zaproponuj, że dziś zajmiesz się kolacją, a ona odpocznie bez planów.' },
+      { cat: 'Odciążenie', text: 'Zrób dziś poranne ogarnianie dzieci, żeby mogła wyjść spokojnie.' }
+    ];
+    const h = hints[s.hint % hints.length];
+    const modes = [['ring', 'Pierścień'], ['cal', 'Kalendarz']].map(([id, label]) => {
+      const on = s.mode === id;
+      return { label: label, pressed: on ? 'true' : 'false', bg: on ? '#1F1A2E' : 'transparent', fg: on ? '#FFFFFF' : '#1F1A2E', pick: () => this.setState({ mode: id }) };
+    });
+    const calDays = [];
+    for (let i = 0; i < 6; i++) calDays.push({ label: '', bg: 'transparent', fg: '#1F1A2E', ring: 'transparent' });
+    for (let d = 1; d <= 30; d++) {
+      const period = d >= 17 && d <= 21;
+      const today = d === 25;
+      calDays.push({
+        label: String(d),
+        bg: today ? '#1F1A2E' : period ? '#FCE6ED' : 'transparent',
+        fg: today ? '#FFFFFF' : period ? '#A12D4E' : '#1F1A2E',
+        ring: period ? '#C2375E' : 'transparent'
+      });
+    }
+    return {
+      modes: modes,
+      showRing: s.mode === 'ring',
+      showCal: s.mode === 'cal',
+      calDays: calDays,
+      todayCat: s.skipped ? 'Pominięta' : h.cat,
+      todayText: h.text,
+      todayShown: !s.skipped,
+      todaySkipped: !!s.skipped,
+      hintPos: (s.hint % hints.length) + 1,
+      nextHint: () => this.setState({ hint: (this.state.hint + 1) % hints.length }),
+      skipLabel: s.skipped ? 'Przywróć' : 'Pomiń dziś',
+      toggleSkip: () => this.setState({ skipped: !this.state.skipped })
+    };
+  }
+}
+</script>
+</body>
+</html>
