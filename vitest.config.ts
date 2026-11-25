@@ -1,9 +1,18 @@
+import { fileURLToPath } from "node:url";
+
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   define: { __DEV__: "false" },
   resolve: {
-    alias: { "react-native": "react-native-web" },
+    alias: {
+      "react-native": "react-native-web",
+      // Expo web resolves react-native-svg to its web build; so do the tests.
+      "react-native-svg": "react-native-svg/lib/module/ReactNativeSVG.web.js",
+      "@react-native/assets-registry/registry": fileURLToPath(
+        new URL("apps/mobile/test-stubs/assets-registry.ts", import.meta.url),
+      ),
+    },
     extensions: [
       ".web.tsx",
       ".web.ts",
