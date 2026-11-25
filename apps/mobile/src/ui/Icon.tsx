@@ -113,6 +113,7 @@ export function Icon({
       strokeLinejoin="round"
       aria-hidden
       focusable={false}
+      pointerEvents="none"
     >
       {icons[name].map(([shape, props], index) => {
         const Shape = shapes[shape];
