@@ -10,6 +10,7 @@ import { createMemoryKeyStore } from "../platform/memory-key-store";
 import { webSha256 } from "../platform/sha256";
 import { createWebSodium } from "../platform/web-sodium";
 import { initialNavState, navReducer } from "./stack-state";
+import { TAB_BAR_HEIGHT } from "./TabBar";
 import { TabNavigator } from "./TabNavigator";
 
 let sodium: Sodium;
@@ -74,6 +75,14 @@ it("shows five accessible tabs with a selected state", () => {
     expect(parseFloat(style.minWidth)).toBeGreaterThanOrEqual(44);
     expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
   }
+});
+
+it("keeps the content clear of the floating tab bar", () => {
+  renderTabs(true);
+  const style = getComputedStyle(screen.getByTestId("tab-content"));
+  expect(parseFloat(style.paddingBottom)).toBeGreaterThanOrEqual(
+    TAB_BAR_HEIGHT + 24,
+  );
 });
 
 it("hides the cycle tab when the panel is disabled", () => {

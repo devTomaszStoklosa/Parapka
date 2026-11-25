@@ -8,7 +8,7 @@ import { SettingsScreen } from "../screens/SettingsScreen";
 import { TodayScreen } from "../today/TodayScreen";
 import { colors } from "../ui/theme";
 import { initialNavState, navReducer, TAB_IDS } from "./stack-state";
-import { TabBar } from "./TabBar";
+import { TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, TabBar } from "./TabBar";
 
 export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
   const [state, dispatch] = useReducer(navReducer, initialNavState);
@@ -25,7 +25,10 @@ export function TabNavigator({ cycleEnabled }: { cycleEnabled: boolean }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1 }}>
+      <View
+        testID="tab-content"
+        style={{ flex: 1, paddingBottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM }}
+      >
         {active === "settings" ? (
           <SettingsScreen />
         ) : active === "planner" ? (
