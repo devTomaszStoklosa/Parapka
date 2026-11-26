@@ -95,7 +95,7 @@ Każdy temat ma teksty w trzech formach gramatycznych (jak dziś), minimum 8 sza
 1. Wejście silnika dostaje `allowedTopics` (z lokalnych ustawień) i `tier`. Szablony szczegółowe mają pola `tier` i `topic`. Bez zgody na temat żaden szablon tego tematu nie wchodzi do puli.
 2. Reguły danych (`energyMax`, `source`, itd.) nadal mają pierwszeństwo przed kalendarzem (FR-CYC-08). Dochodzi warunek `tagIncluded`, np. `breast_tenderness` w ostatnich 3 dniach.
 3. **Bramka pewności:** szczegółowa wskazówka kalendarzowa wchodzi tylko, gdy `confidence === "normal"`, cykl nie jest nieregularny, nie zaznaczono hormonów/ciąży/menopauzy, a miesiączka nie jest spóźniona. Inaczej zostają tylko wskazówki oparte na wpisach, albo wskazówka podstawowa.
-4. **Szum przeciw odgadywaniu:** szczegółowa wskazówka nie pojawia się każdego dnia fazy. Limit np. 1 szczegółowa na 2 dni, reszta podstawowe, żeby partner nie odtwarzał dokładnych dat z wzoru (R-1 pozostaje częściowo aktualne).
+4. **Bez limitu częstości dla poziomu szczegółowego:** osoba z cyklem świadomie włączyła tematy, więc partner ma wiedzieć jak najwięcej w ich ramach (decyzja 2026-11-26). Ochrona przed odgadywaniem fazy (R-1) dotyczy poziomu podstawowego i jest tu zastąpiona zgodą i podglądem.
 5. **Kategoria w protokole bez zmian:** każdy szablon szczegółowy należy do jednej z pięciu istniejących kategorii (np. `tenderness`), więc koperty, walidacja w `packages/protocol` i relay się nie zmieniają. Na kablu idą nadal tylko cztery pola: `forDate`, `text`, `category`, `status`. `templateId` i `contentVersion` zostają na telefonie (zgodnie z kodem i `hint-privacy.test.ts`).
 6. Osoba z cyklem nadal widzi dokładnie to samo, co partner, plus może pominąć lub wymienić wskazówkę (FR-CYC-06, FR-CYC-07). Bez tego szczegółowy poziom nie przechodzi review.
 
@@ -105,6 +105,8 @@ Każdy temat ma teksty w trzech formach gramatycznych (jak dziś), minimum 8 sza
 - Dla każdego tagu i dla pól `energy`, `mood`, `tension`, `desire` liczymy wzorzec względem **dnia cyklu** (liczony od początku miesiączki, dla późnych dni także wstecz od następnej).
 - Po ≥ 3 zapisanych cyklach: jeśli temat pojawia się w ≥ 50% cykli w oknie ±1 dzień, mówimy "to Twój wzorzec" i podnosimy pewność. Jeśli osoba przez 3 cykle nigdy nie zapisała tagu, a podręcznikowa faza go zakłada, zmniejszamy częstość tej wskazówki (tym łagodzimy sprzeczność "podręcznik kontra ona").
 - Wszystko liczone lokalnie. Nic nowego nie opuszcza telefonu.
+- **Wzorce zasilają silnik** (osobne issue): potwierdzony wzorzec podnosi pewność tematu i pozwala użyć sformułowań osobistych ("U niej zwykle w tych dniach..."), żeby partner dostawał jak najbardziej trafną informację. Surowe dane i wzorce nie opuszczają telefonu, na kablu idzie tylko gotowy tekst.
+- **Bez nowego pola na kablu** (decyzja 2026-11-26): etykieta "Treści orientacyjne" jest pod każdą odebraną wskazówką.
 
 ## 4. Strumień B: "czego się spodziewać" dla osoby z cyklem
 
