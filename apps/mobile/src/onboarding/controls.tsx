@@ -3,6 +3,7 @@ import { Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { t } from "../i18n";
 import { AppText } from "../ui/AppText";
+import { Icon, type IconName } from "../ui/Icon";
 import { colors, MIN_TOUCH_TARGET, radii, spacing } from "../ui/theme";
 
 export function Button(props: {
@@ -12,13 +13,14 @@ export function Button(props: {
   disabled?: boolean;
   accessibilityLabel?: string;
   expanded?: boolean;
+  icon?: IconName;
 }) {
-  const { label, onPress, primary, disabled, accessibilityLabel, expanded } =
-    props;
+  const { label, onPress, primary, disabled, expanded, icon } = props;
+  const ink = primary ? colors.surface : colors.text;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={props.accessibilityLabel}
       aria-expanded={expanded}
       accessibilityState={{
         disabled: disabled === true,
@@ -32,6 +34,8 @@ export function Button(props: {
         paddingHorizontal: spacing.lg,
         justifyContent: "center",
         alignItems: "center",
+        flexDirection: "row",
+        gap: spacing.sm,
         borderRadius: radii.pill,
         borderWidth: 1.5,
         borderColor: colors.text,
@@ -39,9 +43,8 @@ export function Button(props: {
         opacity: disabled ? 0.5 : 1,
       }}
     >
-      <AppText style={{ color: primary ? colors.surface : colors.text }}>
-        {label}
-      </AppText>
+      {icon ? <Icon name={icon} size={18} color={ink} /> : null}
+      <AppText style={{ color: ink }}>{label}</AppText>
     </Pressable>
   );
 }

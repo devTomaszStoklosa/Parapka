@@ -212,3 +212,22 @@ describe("the history button", () => {
     expect(screen.getByRole("button", { name: h.hide })).toBeTruthy();
   });
 });
+
+describe("the look", () => {
+  it("shows the progress bar on the open check-in", async () => {
+    const { platform } = await setupCheckin(true);
+    showCard(platform);
+    await screen.findByText(f.save);
+    expect(screen.getAllByTestId("checkin-progress-segment")).toHaveLength(4);
+  });
+
+  it("shows the sealed card with the lock after saving", async () => {
+    const { platform, checkin } = await setupCheckin(true);
+    await checkin.submit({ mood: 2, energy: 3, closeness: 4 });
+    showCard(platform);
+    const waiting = await screen.findByText(c.waiting);
+    expect(waiting.parentElement?.querySelector("svg")).not.toBeNull();
+    expect(screen.getByRole("button", { name: c.change })).toBeTruthy();
+    expect(screen.queryByTestId("checkin-progress-segment")).toBeNull();
+  });
+});
