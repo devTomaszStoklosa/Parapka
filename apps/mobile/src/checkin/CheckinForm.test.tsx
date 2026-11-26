@@ -118,3 +118,88 @@ it("makes the chosen rating clearly different from the others", () => {
   expect(contrastRatio(colors.accent, colors.background)).toBeGreaterThan(3);
   expect(contrastRatio(colors.onAccent, colors.accent)).toBeGreaterThan(4.5);
 });
+
+const options = (question: string) =>
+  [1, 2, 3, 4, 5].map((value) =>
+    screen.getByRole("radio", { name: `${question}: ${String(value)} z 5` }),
+  );
+/** The drawn part of an option: the pill itself, or the bar or circle inside. */
+const drawing = (option: HTMLElement) =>
+  option.firstElementChild?.tagName === "DIV" &&
+  option.firstElementChild.firstElementChild === null &&
+  option.textContent === ""
+    ? (option.firstElementChild as HTMLElement)
+    : option;
+
+it("gives every option a 44 px target and marks only the chosen one", () => {
+  render(<CheckinForm initial={null} onSubmit={vi.fn()} />);
+  rate(f.energy, 1);
+  rate(f.closeness, 1);
+  for (const question of [f.mood, f.energy, f.closeness]) {
+    for (const option of options(question)) {
+      expect(parseFloat(option.style.minWidth)).toBeGreaterThanOrEqual(44);
+      expect(parseFloat(option.style.minHeight)).toBeGreaterThanOrEqual(44);
+    }
+  }
+  for (const question of [f.energy, f.closeness]) {
+    const [first, second] = options(question);
+    expect(first?.getAttribute("aria-checked")).toBe("true");
+    expect(second?.getAttribute("aria-checked")).toBe("false");
+  }
+});
+
+it("draws the unchosen options with a visible border and the chosen one filled", () => {
+  render(<CheckinForm initial={null} onSubmit={vi.fn()} />);
+  rate(f.mood, 2);
+  rate(f.energy, 2);
+  rate(f.closeness, 2);
+  expect(contrastRatio(colors.border, colors.surface)).toBeGreaterThanOrEqual(
+    3,
+  );
+  for (const question of [f.mood, f.energy, f.closeness]) {
+    const [first, second] = options(question).map(drawing);
+    const hex = (value: string) => value.toLowerCase();
+    expect(first?.style.borderColor).not.toBe("");
+    expect(hex(first?.style.backgroundColor ?? "")).not.toBe(
+      hex(second?.style.backgroundColor ?? ""),
+    );
+    expect(first?.style.borderWidth).not.toBe(second?.style.borderWidth);
+  }
+  const unchosen = drawing(options(f.energy)[0] as HTMLElement);
+  expect(unchosen.style.borderColor).toBe("rgb(140, 132, 160)");
+});
+
+it("shows a heart in the chosen closeness circle only", () => {
+  render(<CheckinForm initial={null} onSubmit={vi.fn()} />);
+  expect(document.querySelectorAll("svg")).toHaveLength(1);
+  rate(f.closeness, 3);
+  expect(document.querySelectorAll("svg")).toHaveLength(2);
+});
+
+it("fills the progress bar with the answered questions", () => {
+  render(<CheckinForm initial={null} onSubmit={vi.fn()} />);
+  const filled = () =>
+    screen
+      .getAllByTestId("checkin-progress-segment")
+      .filter((segment) => segment.style.backgroundColor === "rgb(91, 75, 214)")
+      .length;
+  expect(screen.getAllByTestId("checkin-progress-segment")).toHaveLength(4);
+  expect(
+    screen
+      .getAllByTestId("checkin-progress-segment")[0]
+      ?.parentElement?.getAttribute("aria-hidden"),
+  ).toBe("true");
+  expect(filled()).toBe(0);
+  rate(f.mood, 2);
+  expect(filled()).toBe(1);
+  rate(f.energy, 2);
+  rate(f.closeness, 2);
+  expect(filled()).toBe(3);
+  fireEvent.change(need(), { target: { value: "ciszy" } });
+  expect(filled()).toBe(4);
+});
+
+it("puts the lock icon on Save", () => {
+  render(<CheckinForm initial={null} onSubmit={vi.fn()} />);
+  expect(save().querySelector("svg")).not.toBeNull();
+});

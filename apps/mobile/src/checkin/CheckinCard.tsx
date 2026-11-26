@@ -6,7 +6,9 @@ import { t, type TranslationKey } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
-import { colors, spacing } from "../ui/theme";
+import { Card } from "../ui/Card";
+import { Icon } from "../ui/Icon";
+import { colors, radii, spacing } from "../ui/theme";
 import { CheckinResults } from "./CheckinResults";
 import { CheckinForm } from "./CheckinForm";
 import { CheckinHistory } from "./CheckinHistory";
@@ -32,6 +34,30 @@ function periodOf({ end }: CheckinWindow) {
     day: t(DAYS[(weekday === 0 ? 7 : weekday) as IsoWeekday]),
     time: `${pad(end.hour)}:${pad(end.minute)}`,
   });
+}
+
+/** Concentric circles around a lock: the answers are sealed until the reveal. */
+function Waiting() {
+  const circle = (size: number, backgroundColor: string) => ({
+    height: size,
+    aspectRatio: 1,
+    borderRadius: radii.pill,
+    backgroundColor,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  });
+  return (
+    <View style={{ alignItems: "center", gap: spacing.md }}>
+      <View aria-hidden style={circle(96, colors.track)}>
+        <View style={circle(64, colors.personATint)}>
+          <Icon name="lock" size={24} color={colors.accent} />
+        </View>
+      </View>
+      <AppText style={{ fontWeight: "700" }}>
+        {t("checkin.card.waiting")}
+      </AppText>
+    </View>
+  );
 }
 
 /** What the card says. Before the reveal it never depends on the partner (ZP-2). */
@@ -67,7 +93,7 @@ function Body(props: {
           }}
         />
       ) : (
-        <AppText>{t("checkin.card.waiting")}</AppText>
+        <Waiting />
       )}
       {view.status === "filled" && !editing ? (
         <Button
@@ -87,31 +113,25 @@ export function CheckinCard() {
   const [history, setHistory] = useState(false);
   if (state === null) return null;
   return (
-    <View
-      style={{
-        gap: spacing.md,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
-      }}
-    >
-      {state === "failed" ? (
-        <AppText accessibilityRole="alert">{t("checkin.failed")}</AppText>
-      ) : (
-        <Body data={state} onSubmit={submit} />
-      )}
-      {failed ? (
-        <AppText accessibilityRole="alert">{t("checkin.failed")}</AppText>
-      ) : null}
-      <Button
-        label={t(history ? "checkin.history.hide" : "checkin.history.show")}
-        expanded={history}
-        onPress={() => {
-          setHistory(!history);
-        }}
-      />
-      {history ? <CheckinHistory /> : null}
-    </View>
+    <Card>
+      <View style={{ gap: spacing.md }}>
+        {state === "failed" ? (
+          <AppText accessibilityRole="alert">{t("checkin.failed")}</AppText>
+        ) : (
+          <Body data={state} onSubmit={submit} />
+        )}
+        {failed ? (
+          <AppText accessibilityRole="alert">{t("checkin.failed")}</AppText>
+        ) : null}
+        <Button
+          label={t(history ? "checkin.history.hide" : "checkin.history.show")}
+          expanded={history}
+          onPress={() => {
+            setHistory(!history);
+          }}
+        />
+        {history ? <CheckinHistory /> : null}
+      </View>
+    </Card>
   );
 }
