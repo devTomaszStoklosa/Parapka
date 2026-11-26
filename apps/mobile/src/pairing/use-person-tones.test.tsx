@@ -80,8 +80,9 @@ it("gives the tones of the keys with a pair", async () => {
   const { platform, pair } = await setup();
   await pair("0000");
   const { result } = renderHook(() => usePersonTones(platform));
-  await waitFor(() => { expect(result.current).toEqual(personTones(OWN_TEXT, "0000")); },
-  );
+  await waitFor(() => {
+    expect(result.current).toEqual(personTones(OWN_TEXT, "0000"));
+  });
   expect(result.current.own).toBe("personB");
 });
 
@@ -89,11 +90,15 @@ it("goes back to the defaults when the pair is removed", async () => {
   const { platform, pair, pairs } = await setup();
   await pair("0000");
   const { result } = renderHook(() => usePersonTones(platform));
-  await waitFor(() => { expect(result.current.own).toBe("personB"); });
+  await waitFor(() => {
+    expect(result.current.own).toBe("personB");
+  });
   await act(async () => {
     await pairs.remove();
   });
-  await waitFor(() => { expect(result.current).toEqual(DEFAULTS); });
+  await waitFor(() => {
+    expect(result.current).toEqual(DEFAULTS);
+  });
 });
 
 it("gives the defaults when reading fails", async () => {
