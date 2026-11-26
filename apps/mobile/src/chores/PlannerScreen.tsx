@@ -1,12 +1,14 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 import { t } from "../i18n";
 import { usePlatform } from "../platform/context";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
 import { wireChores } from "../sync/wiring";
-import { spacing } from "../ui/theme";
+import { Card } from "../ui/Card";
+import { Icon } from "../ui/Icon";
+import { colors, radii, spacing } from "../ui/theme";
 import {
   buildPlanner,
   localDate,
@@ -20,7 +22,7 @@ import { ChoreForm } from "./ChoreForm";
 import { PlannerControls } from "./PlannerControls";
 import type { RowActions } from "./PlannerActions";
 import { PlannerRow } from "./PlannerRow";
-import { UndoBar } from "./UndoBar";
+import { ADD_BUTTON_SIZE, UndoBar } from "./UndoBar";
 import { usePlanner, type PlannerData } from "./use-planner";
 import { useRowActions } from "./use-row-actions";
 
@@ -36,12 +38,24 @@ function Section(props: Open & { title: string; rows: readonly Row[] }) {
   const { title, rows, ...open } = props;
   return (
     <View style={{ marginTop: spacing.md }}>
-      <AppText style={{ fontWeight: "bold" }} accessibilityRole="header">
+      <AppText
+        style={{
+          fontSize: 13,
+          fontWeight: "700",
+          letterSpacing: 0.5,
+          textTransform: "uppercase",
+          color: colors.textMuted,
+          marginBottom: spacing.sm,
+        }}
+        accessibilityRole="header"
+      >
         {title}
       </AppText>
-      {rows.map((row) => (
-        <PlannerRow key={row.key} row={row} {...open} />
-      ))}
+      <Card>
+        {rows.map((row) => (
+          <PlannerRow key={row.key} row={row} {...open} />
+        ))}
+      </Card>
     </View>
   );
 }
@@ -60,9 +74,8 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 function Lists(props: {
   data: PlannerData;
   onOpen: (choreId: string) => void;
-  onAdd: () => void;
 }) {
-  const { data, onAdd, onOpen } = props;
+  const { data, onOpen } = props;
   const { actions, failed } = useRowActions();
   const { partnerName, deviceId, paired } = data;
   const open = { partnerName, deviceId, paired, actions, onOpen };
@@ -79,7 +92,6 @@ function Lists(props: {
   });
   return (
     <>
-      <Button label={t("planner.add")} onPress={onAdd} />
       <PlannerControls
         view={view}
         filter={filter}
@@ -142,13 +154,39 @@ function ChoreEditor(props: {
   );
 }
 
+/** Room under the list for the add button, the Undo bar and their gaps. */
+const FLOAT_ROOM = ADD_BUTTON_SIZE * 2 + spacing.md * 4;
+
+function AddButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t("planner.add")}
+      onPress={onPress}
+      style={{
+        position: "absolute",
+        right: spacing.md,
+        bottom: spacing.md,
+        width: ADD_BUTTON_SIZE,
+        height: ADD_BUTTON_SIZE,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: radii.field,
+        backgroundColor: colors.accent,
+      }}
+    >
+      <Icon name="plus" size={28} color={colors.onAccent} />
+    </Pressable>
+  );
+}
+
 /** The scrolling part with the title; the Undo bar stays below it. */
 function Screen({ children }: { children: ReactNode }) {
   return (
     <ScrollView
       testID="planner-scroll"
       style={{ flex: 1 }}
-      contentContainerStyle={{ padding: spacing.md }}
+      contentContainerStyle={{ padding: spacing.md, paddingBottom: FLOAT_ROOM }}
     >
       <AppText variant="title" accessibilityRole="header">
         {t("screens.planner.title")}
@@ -188,9 +226,12 @@ function Content({ data }: { data: PlannerData }) {
         ) : data.chores.length === 0 ? (
           <EmptyState onAdd={add} />
         ) : (
-          <Lists data={data} onOpen={onOpen} onAdd={add} />
+          <Lists data={data} onOpen={onOpen} />
         )}
       </Screen>
+      {mode === null && data.chores.length > 0 ? (
+        <AddButton onPress={add} />
+      ) : null}
       {deleted === null ? null : (
         <UndoBar
           key={deleted.id}
