@@ -5,8 +5,12 @@ import {
 } from "@parapka/domain";
 import { View } from "react-native";
 
+import { personColors } from "../checkin/person-colors";
+
 import { t } from "../i18n";
+import type { PersonTones } from "../pairing/person-tone";
 import { AppText } from "../ui/AppText";
+import { Card } from "../ui/Card";
 import { colors, spacing } from "../ui/theme";
 
 const BAR_HEIGHT = 72;
@@ -16,7 +20,8 @@ const MAX_WEEKS = MENTAL_LOAD_TREND_MAX_WEEKS;
 const weekNumber = (week: string) => String(Number(week.slice(6)));
 
 /** A bar of two parts, as high as the shares. */
-function Bar({ split }: { split: MentalLoadSplit }) {
+function Bar(props: { split: MentalLoadSplit; tones: PersonTones }) {
+  const { split, tones } = props;
   return (
     <View testID="trend-bar" style={{ height: "100%" }}>
       {split.partner === 0 ? null : (
@@ -24,24 +29,26 @@ function Bar({ split }: { split: MentalLoadSplit }) {
           testID="trend-partner"
           style={{
             height: `${String(split.partner)}%`,
-            backgroundColor: colors.textMuted,
-            borderWidth: 1,
-            borderColor: colors.border,
+            backgroundColor: personColors(tones.partner).dot,
           }}
         />
       )}
       <View
         style={{
           height: `${String(split.me)}%`,
-          backgroundColor: colors.accent,
+          backgroundColor: personColors(tones.own).dot,
         }}
       />
     </View>
   );
 }
 
-function Column(props: { snapshot: MentalLoadSnapshot; name: string }) {
-  const { snapshot, name } = props;
+function Column(props: {
+  snapshot: MentalLoadSnapshot;
+  name: string;
+  tones: PersonTones;
+}) {
+  const { snapshot, name, tones } = props;
   const { split } = snapshot;
   const number = weekNumber(snapshot.week);
   const label =
@@ -63,17 +70,17 @@ function Column(props: { snapshot: MentalLoadSnapshot; name: string }) {
         alignItems: "center",
       }}
     >
-      <AppText style={{ color: colors.accent, fontSize: 10 }}>
+      <AppText style={{ color: personColors(tones.own).text, fontSize: 10 }}>
         {split === null ? " " : t("head.trend.share", { me: split.me })}
       </AppText>
       <View
         style={{
           width: "100%",
           height: BAR_HEIGHT,
-          backgroundColor: split === null ? colors.surface : undefined,
+          backgroundColor: split === null ? colors.track : undefined,
         }}
       >
-        {split === null ? null : <Bar split={split} />}
+        {split === null ? null : <Bar split={split} tones={tones} />}
       </View>
       <AppText style={{ color: colors.textMuted, fontSize: 11 }}>
         {split === null
@@ -85,13 +92,12 @@ function Column(props: { snapshot: MentalLoadSnapshot; name: string }) {
 }
 
 /** What the two colors of a bar mean; the bar labels already say it. */
-function Legend({ name }: { name: string }) {
-  const swatch = (color: string, border: string) => ({
+function Legend(props: { name: string; tones: PersonTones }) {
+  const { name, tones } = props;
+  const swatch = (color: string) => ({
     width: 12,
     height: 12,
     backgroundColor: color,
-    borderWidth: 1,
-    borderColor: border,
   });
   return (
     <View
@@ -106,13 +112,13 @@ function Legend({ name }: { name: string }) {
       <View
         style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}
       >
-        <View style={swatch(colors.accent, colors.accent)} />
+        <View style={swatch(personColors(tones.own).dot)} />
         <AppText style={{ fontSize: 12 }}>{t("head.trend.legendMe")}</AppText>
       </View>
       <View
         style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}
       >
-        <View style={swatch(colors.textMuted, colors.border)} />
+        <View style={swatch(personColors(tones.partner).dot)} />
         <AppText style={{ fontSize: 12 }}>{name}</AppText>
       </View>
     </View>
@@ -123,21 +129,27 @@ function Legend({ name }: { name: string }) {
 export function TrendChart(props: {
   trend: readonly MentalLoadSnapshot[];
   partnerName: string | null;
+  tones: PersonTones;
 }) {
-  const { trend, partnerName } = props;
+  const { trend, partnerName, tones } = props;
   if (trend.length === 0) return null;
   const name = partnerName ?? t("head.carriers.partner");
   return (
-    <View style={{ marginTop: spacing.md }}>
+    <Card>
       <AppText accessibilityRole="header" style={{ fontWeight: "bold" }}>
         {t("head.trend.title")}
       </AppText>
       <View style={{ flexDirection: "row", marginTop: spacing.sm }}>
         {trend.slice(-MAX_WEEKS).map((snapshot) => (
-          <Column key={snapshot.week} snapshot={snapshot} name={name} />
+          <Column
+            key={snapshot.week}
+            snapshot={snapshot}
+            name={name}
+            tones={tones}
+          />
         ))}
       </View>
-      <Legend name={name} />
-    </View>
+      <Legend name={name} tones={tones} />
+    </Card>
   );
 }
