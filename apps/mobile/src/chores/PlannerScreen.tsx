@@ -52,8 +52,8 @@ function Section(props: Open & { title: string; rows: readonly Row[] }) {
         {title}
       </AppText>
       <Card>
-        {rows.map((row) => (
-          <PlannerRow key={row.key} row={row} {...open} />
+        {rows.map((row, index) => (
+          <PlannerRow key={row.key} row={row} separated={index > 0} {...open} />
         ))}
       </Card>
     </View>

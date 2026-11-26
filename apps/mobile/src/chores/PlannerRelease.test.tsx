@@ -46,7 +46,7 @@ describe("can't manage", () => {
     });
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByText(/Ktokolwiek/)).toBeTruthy();
+    expect(screen.getAllByText(/Ktokolwiek/).length).toBeGreaterThan(0);
   });
 
   it("is offered for both people", async () => {

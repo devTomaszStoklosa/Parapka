@@ -50,7 +50,15 @@ function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
     onOpen: onOpenPlanner,
   };
   const renderRows = (list: typeof rows) =>
-    list.map((row) => <PlannerRow key={row.key} row={row} {...open} />);
+    list.map((row, index) => (
+      <PlannerRow
+        key={row.key}
+        row={row}
+        shape="round"
+        separated={index > 0}
+        {...open}
+      />
+    ));
   return (
     <>
       {failed ? (

@@ -98,19 +98,22 @@ describe("ticking off an occurrence", () => {
     expect(
       screen.getByRole("button", { name: `${done}: Śmieci, 16.11.2026` }),
     ).toBeTruthy();
-    expect(screen.getAllByText(done)).toHaveLength(2);
+    expect(
+      screen.getAllByRole("button", { name: new RegExp(`^${done}: `) }),
+    ).toHaveLength(2);
   });
 
-  it("draws the action buttons with a border that sets them apart", async () => {
+  it("draws the done mark with a border that sets it apart", async () => {
     const { platform, chores } = await setup(false);
     await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
     show(platform);
     const button = await screen.findByRole("button", {
       name: action(pl.planner.actions.done),
     });
-    const style = getComputedStyle(button);
-    expect(style.borderTopWidth).toBe("1px");
-    expect(style.borderTopColor).not.toBe("");
+    const mark = button.firstElementChild as HTMLElement;
+    const style = getComputedStyle(mark);
+    expect(parseFloat(style.borderTopWidth)).toBeGreaterThanOrEqual(1);
+    expect(style.borderTopColor).toBe("rgb(140, 132, 160)");
     expect(contrastRatio(colors.border, colors.surface)).toBeGreaterThan(3);
   });
 

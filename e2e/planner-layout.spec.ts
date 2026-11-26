@@ -61,3 +61,43 @@ for (const width of [320, 390]) {
     }
   });
 }
+
+const LONG =
+  "Bardzo długi tytuł obowiązku który musi się zawinąć w kilku wierszach zamiast zasłonić znacznik osoby";
+
+const fitsWidth = (page: Page) =>
+  page.evaluate(
+    () =>
+      document.documentElement.scrollWidth <=
+      document.documentElement.clientWidth,
+  );
+
+test("the planner rows fit 320 px and a long title wraps beside the chip", async ({
+  browser,
+}) => {
+  const a = await newUser(browser, "Anna", "feminine");
+  try {
+    const page = a.page;
+    await page.setViewportSize({ width: 320, height: 640 });
+    await addChore(page, "Pierwszy");
+    await addChore(page, LONG);
+    await addChore(page, "Trzeci");
+
+    expect(await fitsWidth(page)).toBe(true);
+    const title = page.getByText(LONG, { exact: true });
+    const chip = title
+      .locator("xpath=ancestor::*[@role='button'][1]/..")
+      .getByText("Ty", {
+        exact: true,
+      });
+    const titleBox = await title.boundingBox();
+    const chipBox = await chip.boundingBox();
+    expect(titleBox).not.toBeNull();
+    expect(chipBox).not.toBeNull();
+    expect((titleBox?.x ?? 0) + (titleBox?.width ?? 0)).toBeLessThanOrEqual(
+      chipBox?.x ?? 0,
+    );
+  } finally {
+    await a.context.close();
+  }
+});

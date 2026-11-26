@@ -42,6 +42,8 @@ export interface PlannerRow {
   readonly completion: RowCompletion | null;
   /** The chore was made from a thing of the Head. */
   readonly fromHead: boolean;
+  /** The chore repeats (its rule is not a one-off). */
+  readonly recurring: boolean;
 }
 
 export interface PlannerLists {
@@ -134,6 +136,7 @@ function occurrenceRows(
         reminder: chore.reminder,
         completion: done.get(key) ?? null,
         fromHead: chore.linkedItemId !== null,
+        recurring: chore.rule.kind !== "occasional",
       });
     }
   }

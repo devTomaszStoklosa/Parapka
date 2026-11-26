@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { newUser, pair } from "./support/app";
+import { addChore, newUser, pair } from "./support/app";
 import {
   enableCheckinConsent,
   openCheckin,
@@ -79,5 +79,31 @@ test("the check-in form fits 320 px with every scale in one row", async ({
   } finally {
     await a.context.close();
     await b.context.close();
+  }
+});
+
+test("the chores of Today fit 320 px and a long title wraps", async ({
+  browser,
+}) => {
+  const a = await newUser(browser, "Anna", "feminine");
+  try {
+    const page = a.page;
+    await page.setViewportSize({ width: 320, height: 640 });
+    await addChore(page, "Pierwszy");
+    await addChore(
+      page,
+      "Bardzo długi tytuł obowiązku który musi się zawinąć w kilku wierszach",
+    );
+    await page.getByRole("tab", { name: "Dziś", exact: true }).click();
+    await expect(page.getByText("Pierwszy", { exact: true })).toBeVisible();
+
+    const fits = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    );
+    expect(fits).toBe(true);
+  } finally {
+    await a.context.close();
   }
 });
