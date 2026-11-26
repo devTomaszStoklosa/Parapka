@@ -1,9 +1,18 @@
 import { Pressable, View } from "react-native";
 
 import { t } from "../i18n";
+import type { PersonTones } from "../pairing/person-tone";
+import { personColors } from "../checkin/person-colors";
 import { AppText } from "../ui/AppText";
-import { colors, spacing } from "../ui/theme";
-import { PlannerActions, type RowActions } from "./PlannerActions";
+import { Chip, type ChipTone } from "../ui/Chip";
+import { Icon } from "../ui/Icon";
+import { colors, MIN_TOUCH_TARGET, spacing } from "../ui/theme";
+import {
+  DoneMark,
+  PlannerActions,
+  type MarkShape,
+  type RowActions,
+} from "./PlannerActions";
 import {
   formatDate,
   formatMoment,
@@ -27,7 +36,7 @@ const extraLines = (row: Row) => [
 
 function ExtraLines({ row }: { row: Row }) {
   return extraLines(row).map((line) => (
-    <AppText key={line} style={{ color: colors.textMuted }}>
+    <AppText key={line} style={{ fontSize: 13, color: colors.textMuted }}>
       {line}
     </AppText>
   ));
@@ -50,6 +59,74 @@ function doneText(
   });
 }
 
+/** The title; a ticked off one is struck through and muted, so color is not the only sign. */
+function RowTitle(props: { row: Row; struck: boolean }) {
+  return (
+    <AppText
+      style={{
+        fontSize: 15,
+        fontWeight: "bold",
+        ...(props.struck
+          ? { color: colors.textMuted, textDecorationLine: "line-through" }
+          : {}),
+      }}
+    >
+      {props.row.title}
+    </AppText>
+  );
+}
+
+/** The area that opens the chore to edit: title, who and when, the notes. */
+function RowBody(props: {
+  row: Row;
+  who: string;
+  doneBy: string | null;
+  onOpen: (choreId: string) => void;
+}) {
+  const { row, who, doneBy, onOpen } = props;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        onOpen(row.choreId);
+      }}
+      accessibilityLabel={[
+        row.title,
+        who,
+        formatDate(row.date),
+        ...extraLines(row),
+        ...(doneBy === null ? [] : [doneBy]),
+      ].join(", ")}
+      style={{ flex: 1, minWidth: 0 }}
+    >
+      <RowTitle row={row} struck={doneBy !== null} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+        {row.recurring ? (
+          <Icon name="repeat" size={13} color={colors.textMuted} />
+        ) : null}
+        <AppText
+          style={{ flexShrink: 1, fontSize: 13, color: colors.textMuted }}
+        >
+          {`${who} · ${formatDate(row.date)}`}
+        </AppText>
+      </View>
+      <ExtraLines row={row} />
+      {doneBy === null ? null : (
+        <AppText style={{ fontSize: 13, color: colors.textMuted }}>
+          {doneBy}
+        </AppText>
+      )}
+    </Pressable>
+  );
+}
+
+/** The chip of the responsible person: in the color of that person, neutral for the rest. */
+function chipTone(row: Row, tones: PersonTones): ChipTone {
+  if (row.responsible === "me") return personColors(tones.own).chip;
+  if (row.responsible === "partner") return personColors(tones.partner).chip;
+  return "neutral";
+}
+
 /**
  * One occurrence. Every row looks the same, whoever is responsible and however
  * late it is (FR-CHR-07); the buttons sit next to the area that opens the chore to edit.
@@ -59,48 +136,46 @@ export function PlannerRow(props: {
   partnerName: string | null;
   deviceId: string | null;
   paired: boolean;
+  tones: PersonTones;
   actions: RowActions;
   onOpen: (choreId: string) => void;
+  /** A divider line above the row, between the rows of a card. */
+  separated?: boolean;
+  shape?: MarkShape;
 }) {
   const { row, partnerName, deviceId, paired, actions } = props;
   const who = whoText(row, partnerName);
   const doneBy = doneText(row, deviceId, partnerName);
+  const tone = chipTone(row, props.tones);
   return (
     <View
       style={{
-        padding: spacing.md,
-        marginTop: spacing.sm,
-        backgroundColor: colors.surface,
+        paddingVertical: spacing.sm,
+        borderTopWidth: props.separated ? 1 : 0,
+        borderTopColor: colors.divider,
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          props.onOpen(row.choreId);
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.sm,
         }}
-        accessibilityLabel={[
-          row.title,
-          who,
-          formatDate(row.date),
-          ...extraLines(row),
-          ...(doneBy === null ? [] : [doneBy]),
-        ].join(", ")}
       >
-        <AppText style={{ fontWeight: "bold" }}>{row.title}</AppText>
-        <AppText style={{ color: colors.textMuted }}>
-          {`${who} · ${formatDate(row.date)}`}
-        </AppText>
-        <ExtraLines row={row} />
-        {doneBy === null ? null : (
-          <AppText style={{ color: colors.textMuted }}>{doneBy}</AppText>
-        )}
-      </Pressable>
-      <PlannerActions
-        row={row}
-        deviceId={deviceId}
-        paired={paired}
-        actions={actions}
-      />
+        <DoneMark row={row} shape={props.shape ?? "square"} actions={actions} />
+        <RowBody row={row} who={who} doneBy={doneBy} onOpen={props.onOpen} />
+        <View aria-hidden style={{ flexShrink: 0, maxWidth: "35%" }}>
+          <Chip label={who} tone={tone} />
+        </View>
+      </View>
+      <View style={{ paddingLeft: MIN_TOUCH_TARGET + spacing.sm }}>
+        <PlannerActions
+          row={row}
+          deviceId={deviceId}
+          paired={paired}
+          actions={actions}
+        />
+      </View>
     </View>
   );
 }

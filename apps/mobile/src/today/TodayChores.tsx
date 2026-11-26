@@ -7,6 +7,7 @@ import { usePlanner, type PlannerData } from "../chores/use-planner";
 import { useRowActions } from "../chores/use-row-actions";
 import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
+import { usePersonTones } from "../pairing/use-person-tones";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
 import { Card } from "../ui/Card";
@@ -31,9 +32,19 @@ function Section(props: { title: string; children: ReactNode }) {
 }
 
 /** The same rows as the planner's "Today" view with the filter "all". */
+function useRowProps(data: PlannerData, onOpen: () => void) {
+  const { actions, failed } = useRowActions();
+  const tones = usePersonTones(usePlatform());
+  const { partnerName, deviceId, paired } = data;
+  return {
+    failed,
+    open: { partnerName, deviceId, paired, tones, actions, onOpen },
+  };
+}
+
 function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
   const { data, onOpenPlanner } = props;
-  const { actions, failed } = useRowActions();
+  const { open, failed } = useRowProps(data, onOpenPlanner);
   const { clock } = usePlatform();
   const { todo, rows } = buildPlanner({
     ...data,
@@ -41,16 +52,16 @@ function Rows(props: { data: PlannerData; onOpenPlanner: () => void }) {
     view: "today",
     filter: "all",
   });
-  const { partnerName, deviceId, paired } = data;
-  const open = {
-    partnerName,
-    deviceId,
-    paired,
-    actions,
-    onOpen: onOpenPlanner,
-  };
   const renderRows = (list: typeof rows) =>
-    list.map((row) => <PlannerRow key={row.key} row={row} {...open} />);
+    list.map((row, index) => (
+      <PlannerRow
+        key={row.key}
+        row={row}
+        shape="round"
+        separated={index > 0}
+        {...open}
+      />
+    ));
   return (
     <>
       {failed ? (

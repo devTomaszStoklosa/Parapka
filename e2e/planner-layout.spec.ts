@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { addChore, newUser } from "./support/app";
+import { fitsWidth, titleLeavesChip } from "./support/layout";
 
 /** Whether the element is the one at the center of its own box. */
 const onTop = (element: Locator) =>
@@ -61,3 +62,26 @@ for (const width of [320, 390]) {
     }
   });
 }
+
+const LONG =
+  "Odkurzyć salon i przedpokój przed weekendem, a potem umyć podłogę w kuchni";
+
+test("the planner rows fit 320 px and a long title wraps beside the chip", async ({
+  browser,
+}) => {
+  const a = await newUser(browser, "Anna", "feminine");
+  try {
+    const page = a.page;
+    await page.setViewportSize({ width: 320, height: 640 });
+    await addChore(page, "Pierwszy");
+    await addChore(page, LONG);
+    await addChore(page, "Trzeci");
+
+    expect(await fitsWidth(page)).toBe(true);
+    expect(await titleLeavesChip(page.getByText(LONG, { exact: true }))).toBe(
+      true,
+    );
+  } finally {
+    await a.context.close();
+  }
+});

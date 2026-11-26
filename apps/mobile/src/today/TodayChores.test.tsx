@@ -55,6 +55,17 @@ describe("the look of the card", () => {
     expect(getComputedStyle(header).color).not.toBe(rgb);
   });
 
+  it("draws the done mark round", async () => {
+    const { platform, chores } = await setup(false);
+    await chores.add({ title: "Zmywanie", rule: DAILY, assignment: ME });
+    show(platform);
+    const button = await screen.findByRole("button", {
+      name: action(pl.planner.actions.done),
+    });
+    const mark = button.firstElementChild as HTMLElement;
+    expect(getComputedStyle(mark).borderTopLeftRadius).toBe("999px");
+  });
+
   it("keeps the button of the planner a named 44 px target", async () => {
     const { platform } = await setup(false);
     show(platform);
