@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 import { newUser, pair } from "./support/app";
+import {
+  enableCheckinConsent,
+  openCheckin,
+  setSundayEvening,
+} from "./support/checkin";
 
 test("the Today screen fits 320 px and scrolls the pause above the tab bar", async ({
   browser,
@@ -42,9 +47,14 @@ test("the check-in form fits 320 px with every scale in one row", async ({
   const b = await newUser(browser, "Bartek", "masculine");
   try {
     await pair(a, b);
+    for (const user of [a, b]) {
+      await enableCheckinConsent(user.page);
+      await setSundayEvening(user.page);
+      await user.page.reload();
+    }
+    await openCheckin(a);
     const page = a.page;
     await page.setViewportSize({ width: 320, height: 480 });
-    await page.getByRole("tab", { name: "Dziś", exact: true }).click();
     const group = page.getByRole("radiogroup", { name: "Nastrój" });
     await group.scrollIntoViewIfNeeded();
 
@@ -55,7 +65,7 @@ test("the check-in form fits 320 px with every scale in one row", async ({
     );
     expect(fits).toBe(true);
 
-    for (const name of ["Nastrój", "Energia", "Bliskość"]) {
+    for (const name of ["Nastrój", "Energia", /^Jak blisko/]) {
       const radios = page.getByRole("radiogroup", { name }).getByRole("radio");
       expect(await radios.count()).toBe(5);
       const tops = new Set<number>();
