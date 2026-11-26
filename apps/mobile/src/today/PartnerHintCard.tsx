@@ -65,7 +65,7 @@ function Hint(props: {
         <View style={{ flexDirection: "row" }}>
           <Chip label={t("todayHint.chip")} tone="dark" />
         </View>
-        <CategoryChip category={hint.category} tone="personB" />
+        <CategoryChip category={hint.category} tone="neutral" />
       </View>
       <AppText accessibilityRole="header">
         {partnerName === null
@@ -78,9 +78,7 @@ function Hint(props: {
       >
         <Icon name="lock" size={16} color={colors.personBText} />
         <AppText style={{ flex: 1, fontSize: 13, color: colors.personBText }}>
-          {t("todayHint.privacy", {
-            name: partnerName ?? t("todayHint.privacyPartner"),
-          })}
+          {t("todayHint.privacy")}
         </AppText>
       </View>
       <View

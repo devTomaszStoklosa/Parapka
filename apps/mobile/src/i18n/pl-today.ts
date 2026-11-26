@@ -20,8 +20,7 @@ export const plToday = {
     failed: "Nie udało się. Spróbuj jeszcze raz.",
     chip: "Wskazówka na dziś",
     privacy:
-      "Wskazówka powstała na telefonie {name}. Dane, z których powstała, zostają na tamtym telefonie.",
-    privacyPartner: "partnera",
+      "Ta wskazówka powstała na drugim telefonie w Waszej parze. Dane, z których powstała, zostają na tamtym telefonie.",
     categories: {
       relief: "Odciążenie",
       tenderness: "Czułość",

@@ -274,11 +274,7 @@ it("shows the chips, the privacy line and the reactions as before", async () => 
   const { view } = await rendered([hint("h1", TODAY)], "Ola");
   await screen.findByText(c.chip);
   expect(screen.getByText(c.categories.space)).toBeTruthy();
-  expect(
-    screen.getByText(
-      "Wskazówka powstała na telefonie Ola. Dane, z których powstała, zostają na tamtym telefonie.",
-    ),
-  ).toBeTruthy();
+  expect(screen.getByText(c.privacy).textContent).not.toContain("Ola");
   expect(screen.getByRole("heading").textContent).toBe(
     "Wskazówka na dziś · Ola",
   );
@@ -298,13 +294,13 @@ it("shows the chips, the privacy line and the reactions as before", async () => 
   }
 });
 
-it("names the partner in the privacy line when the name has not arrived", async () => {
-  await rendered([hint("h1", TODAY)]);
-  expect(
-    await screen.findByText(
-      `Wskazówka powstała na telefonie ${c.privacyPartner}. Dane, z których powstała, zostają na tamtym telefonie.`,
-    ),
-  ).toBeTruthy();
+it("shows the category chip on a background different from the card", async () => {
+  await rendered([hint("h1", TODAY)], "Ola");
+  const chip = (await screen.findByText(c.categories.space)).parentElement;
+  // personBTint is #FCE6ED
+  expect(getComputedStyle(chip as HTMLElement).backgroundColor).not.toBe(
+    "rgb(252, 230, 237)",
+  );
 });
 
 it("does not use the danger color: the color of the person is not a rating", async () => {
@@ -322,7 +318,7 @@ it("has the privacy line and the categories free of the forbidden words", () => 
   const stems = [...lists.revealing, ...lists.medical, ...lists.sexual];
   const texts = [
     c.chip,
-    c.privacy.replace("{name}", c.privacyPartner),
+    c.privacy,
     ...HINT_CATEGORIES.map((category) => c.categories[category]),
   ];
   for (const text of texts) {
