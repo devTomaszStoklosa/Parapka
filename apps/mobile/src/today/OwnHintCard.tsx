@@ -5,10 +5,16 @@ import { pl } from "../i18n/pl";
 import { Button } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
-import { colors, spacing } from "../ui/theme";
+import { Card } from "../ui/Card";
+import { spacing } from "../ui/theme";
 import type { StoredHint } from "../cycle/hint-repository";
 import { OwnHintActions } from "./OwnHintActions";
-import { HintDays, HintHistory, type HintEntry } from "./HintHistory";
+import {
+  CategoryChip,
+  HintDays,
+  HintHistory,
+  type HintEntry,
+} from "./HintHistory";
 import { useOwnHints, type OwnHintsData } from "./use-own-hints";
 
 const MONTHS = pl.cycle.monthsOf;
@@ -29,6 +35,7 @@ const upcoming = (label: string, hint: StoredHint | null): HintEntry[] =>
           key: hint.forDate,
           label: `${label} (${pl.cycle.ownHint.upcomingNote})`,
           text: hint.text,
+          category: hint.category,
         },
       ];
 
@@ -42,7 +49,8 @@ function Body({ data }: { data: OwnHintsData }) {
   return (
     <>
       <AppText>{c[data.sharing]}</AppText>
-      <AppText>{today === null ? c.none : today.text}</AppText>
+      {today === null ? null : <CategoryChip category={today.category} />}
+      <AppText variant="title">{today === null ? c.none : today.text}</AppText>
       <OwnHintActions hasHint={today !== null} skipped={data.todaySkipped} />
       <HintDays title={c.upcoming} entries={days} />
       <HintHistory
@@ -52,6 +60,7 @@ function Body({ data }: { data: OwnHintsData }) {
           key: hint.forDate,
           label: dayOf(hint),
           text: hint.text,
+          category: hint.category,
         }))}
       />
     </>
@@ -67,26 +76,23 @@ export function OwnHintCard({ onOpenCycle }: { onOpenCycle: () => void }) {
   const state = useOwnHints(usePlatform());
   if (state === null) return null;
   return (
-    <View
-      style={{
-        gap: spacing.md,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
-      }}
-    >
-      <AppText accessibilityRole="header">{pl.cycle.ownHint.title}</AppText>
-      {state === "failed" ? (
-        <AppText accessibilityRole="alert">{pl.cycle.ownHint.failed}</AppText>
-      ) : (
-        <>
-          <Body data={state} />
-          {state.hasPeriod ? null : (
-            <Button label={pl.cycle.ownHint.openCycle} onPress={onOpenCycle} />
-          )}
-        </>
-      )}
-    </View>
+    <Card>
+      <View style={{ gap: spacing.md }}>
+        <AppText accessibilityRole="header">{pl.cycle.ownHint.title}</AppText>
+        {state === "failed" ? (
+          <AppText accessibilityRole="alert">{pl.cycle.ownHint.failed}</AppText>
+        ) : (
+          <>
+            <Body data={state} />
+            {state.hasPeriod ? null : (
+              <Button
+                label={pl.cycle.ownHint.openCycle}
+                onPress={onOpenCycle}
+              />
+            )}
+          </>
+        )}
+      </View>
+    </Card>
   );
 }

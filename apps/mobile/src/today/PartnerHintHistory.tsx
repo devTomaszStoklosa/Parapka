@@ -5,6 +5,8 @@ import { dateText } from "../cycle/cycle-text";
 import { t, type TranslationKey } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
+import { Card } from "../ui/Card";
+import { CategoryChip } from "./HintHistory";
 import { spacing } from "../ui/theme";
 import type { PastHint } from "./use-partner-hint";
 
@@ -42,19 +44,22 @@ export function PartnerHintHistory({
       />
       {open
         ? entries.map(({ hint, reaction }) => (
-            <View key={hint.id} style={{ gap: spacing.xs }}>
-              <AppText>{dayLabel(hint.forDate)}</AppText>
-              <AppText>{hint.text}</AppText>
-              {reaction === null ? null : (
-                <AppText>
-                  {t(
-                    reaction === "done"
-                      ? "todayHint.done"
-                      : "todayHint.notToday",
-                  )}
-                </AppText>
-              )}
-            </View>
+            <Card key={hint.id}>
+              <View style={{ gap: spacing.xs, alignItems: "flex-start" }}>
+                <AppText>{dayLabel(hint.forDate)}</AppText>
+                <CategoryChip category={hint.category} tone="personB" />
+                <AppText>{hint.text}</AppText>
+                {reaction === null ? null : (
+                  <AppText>
+                    {t(
+                      reaction === "done"
+                        ? "todayHint.done"
+                        : "todayHint.notToday",
+                    )}
+                  </AppText>
+                )}
+              </View>
+            </Card>
           ))
         : null}
     </View>

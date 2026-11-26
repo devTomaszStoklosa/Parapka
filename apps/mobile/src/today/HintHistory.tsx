@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { View } from "react-native";
 
+import type { HintCategory } from "@parapka/content";
+
+import { t, type TranslationKey } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
+import { Card } from "../ui/Card";
+import { Chip, type ChipTone } from "../ui/Chip";
 import { spacing } from "../ui/theme";
 
 /** A hint of one day with the label of that day. */
@@ -10,16 +15,37 @@ export interface HintEntry {
   readonly key: string;
   readonly label: string;
   readonly text: string;
+  readonly category?: HintCategory;
+}
+
+/** The chip with the name of the category of a hint. */
+export function CategoryChip(props: {
+  category: HintCategory;
+  tone?: ChipTone;
+}) {
+  return (
+    <View style={{ alignSelf: "flex-start" }}>
+      <Chip
+        label={t(`todayHint.categories.${props.category}` as TranslationKey)}
+        tone={props.tone}
+      />
+    </View>
+  );
 }
 
 function Entries({ entries }: { entries: readonly HintEntry[] }) {
   return (
     <>
       {entries.map((entry) => (
-        <View key={entry.key} style={{ gap: spacing.xs }}>
-          <AppText>{entry.label}</AppText>
-          <AppText>{entry.text}</AppText>
-        </View>
+        <Card key={entry.key}>
+          <View style={{ gap: spacing.xs, alignItems: "flex-start" }}>
+            <AppText>{entry.label}</AppText>
+            {entry.category === undefined ? null : (
+              <CategoryChip category={entry.category} />
+            )}
+            <AppText>{entry.text}</AppText>
+          </View>
+        </Card>
       ))}
     </>
   );

@@ -37,3 +37,16 @@ it("says so when the opened history is empty", () => {
   fireEvent.click(screen.getByRole("button", { name: "Historia" }));
   expect(screen.getByText("Pusto")).toBeTruthy();
 });
+
+it("shows the chip of the category only for an entry that has one", () => {
+  render(
+    <HintDays
+      title="Kolejne"
+      entries={[
+        { key: "c", label: "Dzień C", text: "Tekst C", category: "relief" },
+        ...entries,
+      ]}
+    />,
+  );
+  expect(screen.getAllByText("Odciążenie")).toHaveLength(1);
+});

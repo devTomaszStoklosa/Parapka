@@ -226,3 +226,13 @@ it("shows a message and stays alive when a write or a choice fails", async () =>
   await press(c.send, "button");
   expect((await screen.findByRole("alert")).textContent).toBe(c.actionFailed);
 });
+
+it("shows the category of the hint of today and of the next days as chips", async () => {
+  const platform = await phone(true);
+  const { hints } = wireCycleHints(platform);
+  await hints.put(hintAt("2026-11-11"));
+  await hints.put(hintAt("2026-11-12"));
+  showCard(platform);
+  expect(await screen.findByText("Tekst 2026-11-11")).toBeTruthy();
+  expect(screen.getAllByText(pl.todayHint.categories.space)).toHaveLength(2);
+});

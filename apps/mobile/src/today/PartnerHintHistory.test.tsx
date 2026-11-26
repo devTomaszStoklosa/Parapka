@@ -58,3 +58,9 @@ it("shows the date, the order and the reaction of each entry", () => {
   const text = document.body.textContent;
   expect(text.indexOf("Tekst a")).toBeLessThan(text.indexOf("Tekst b"));
 });
+
+it("shows the chip of the category of every opened entry", () => {
+  render(<PartnerHintHistory entries={[past("a", "2026-11-10")]} />);
+  fireEvent.click(screen.getByRole("button", { name: c.history }));
+  expect(screen.getByText(c.categories.space)).toBeTruthy();
+});
