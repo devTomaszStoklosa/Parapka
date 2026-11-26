@@ -44,6 +44,25 @@ function Shape(props: { question: Question; value: number; checked: boolean }) {
   );
 }
 
+/** The box of an option: the check-in pill, a bare shape, or (no question) the plain button. */
+function optionStyle(question: Question | undefined, checked: boolean) {
+  if (question === undefined) {
+    return {
+      borderWidth: checked ? 3 : 1,
+      borderColor: checked ? colors.accent : colors.border,
+      backgroundColor: checked ? colors.accent : colors.background,
+    };
+  }
+  if (question !== "mood") return { flex: 1 };
+  return {
+    flex: 1,
+    borderRadius: radii.pill,
+    borderWidth: checked ? 3 : 1.5,
+    borderColor: checked ? colors.text : colors.border,
+    backgroundColor: checked ? colors.text : colors.surface,
+  };
+}
+
 /** One rating: the chosen one differs by fill, border and weight, not by colour alone. */
 export function RatingButton(props: {
   label: string;
@@ -52,8 +71,7 @@ export function RatingButton(props: {
   onPick: (value: number) => void;
   question?: Question;
 }) {
-  const { label, value, checked, onPick, question = "mood" } = props;
-  const pill = question === "mood";
+  const { label, value, checked, onPick, question } = props;
   return (
     <Pressable
       role="radio"
@@ -63,22 +81,16 @@ export function RatingButton(props: {
         onPick(value);
       }}
       style={{
-        flex: 1,
         minHeight: MIN_TOUCH_TARGET,
         minWidth: MIN_TOUCH_TARGET,
         alignItems: "center",
         justifyContent: "center",
-        ...(pill
-          ? {
-              borderRadius: radii.pill,
-              borderWidth: checked ? 3 : 1.5,
-              borderColor: checked ? colors.text : colors.border,
-              backgroundColor: checked ? colors.text : colors.surface,
-            }
-          : {}),
+        ...optionStyle(question, checked),
       }}
     >
-      {pill ? (
+      {question === "energy" || question === "closeness" ? (
+        <Shape question={question} value={value} checked={checked} />
+      ) : (
         <AppText
           style={
             checked ? { color: colors.onAccent, fontWeight: "bold" } : undefined
@@ -86,8 +98,6 @@ export function RatingButton(props: {
         >
           {String(value)}
         </AppText>
-      ) : (
-        <Shape question={question} value={value} checked={checked} />
       )}
     </Pressable>
   );
