@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { t } from "../i18n";
+import type { PersonTones } from "../pairing/person-tone";
+import { usePersonTones } from "../pairing/use-person-tones";
 import { usePlatform } from "../platform/context";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
@@ -30,6 +32,7 @@ interface Open {
   readonly partnerName: string | null;
   readonly deviceId: string | null;
   readonly paired: boolean;
+  readonly tones: PersonTones;
   readonly actions: RowActions;
   readonly onOpen: (choreId: string) => void;
 }
@@ -78,8 +81,10 @@ function Lists(props: {
   const { data, onOpen } = props;
   const { actions, failed } = useRowActions();
   const { partnerName, deviceId, paired } = data;
-  const open = { partnerName, deviceId, paired, actions, onOpen };
-  const { clock } = usePlatform();
+  const platform = usePlatform();
+  const { clock } = platform;
+  const tones = usePersonTones(platform);
+  const open = { partnerName, deviceId, paired, tones, actions, onOpen };
   const [view, setView] = useState<PlannerView>("today");
   const [chosen, setChosen] = useState<PlannerFilter>("all");
   // Without a pair there is nobody to filter by.

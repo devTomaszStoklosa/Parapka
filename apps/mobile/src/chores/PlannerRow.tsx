@@ -1,13 +1,12 @@
 import { Pressable, View } from "react-native";
 
 import { t } from "../i18n";
-import { usePersonTones } from "../pairing/use-person-tones";
-import { usePlatform } from "../platform/context";
+import type { PersonTones } from "../pairing/person-tone";
 import { personColors } from "../checkin/person-colors";
 import { AppText } from "../ui/AppText";
 import { Chip, type ChipTone } from "../ui/Chip";
 import { Icon } from "../ui/Icon";
-import { colors, spacing } from "../ui/theme";
+import { colors, MIN_TOUCH_TARGET, spacing } from "../ui/theme";
 import {
   DoneMark,
   PlannerActions,
@@ -122,8 +121,7 @@ function RowBody(props: {
 }
 
 /** The chip of the responsible person: in the color of that person, neutral for the rest. */
-function useChipTone(row: Row): ChipTone {
-  const tones = usePersonTones(usePlatform());
+function chipTone(row: Row, tones: PersonTones): ChipTone {
   if (row.responsible === "me") return personColors(tones.own).chip;
   if (row.responsible === "partner") return personColors(tones.partner).chip;
   return "neutral";
@@ -138,6 +136,7 @@ export function PlannerRow(props: {
   partnerName: string | null;
   deviceId: string | null;
   paired: boolean;
+  tones: PersonTones;
   actions: RowActions;
   onOpen: (choreId: string) => void;
   /** A divider line above the row, between the rows of a card. */
@@ -147,7 +146,7 @@ export function PlannerRow(props: {
   const { row, partnerName, deviceId, paired, actions } = props;
   const who = whoText(row, partnerName);
   const doneBy = doneText(row, deviceId, partnerName);
-  const tone = useChipTone(row);
+  const tone = chipTone(row, props.tones);
   return (
     <View
       style={{
@@ -169,7 +168,7 @@ export function PlannerRow(props: {
           <Chip label={who} tone={tone} />
         </View>
       </View>
-      <View style={{ paddingLeft: 44 + spacing.sm }}>
+      <View style={{ paddingLeft: MIN_TOUCH_TARGET + spacing.sm }}>
         <PlannerActions
           row={row}
           deviceId={deviceId}

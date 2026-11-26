@@ -21,6 +21,10 @@ afterEach(cleanup);
 const ME = { kind: "person", person: "me" } as const;
 const DAILY = { kind: "daily" } as const;
 const DAY = 24 * 3_600_000;
+const rgb = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgb(${String((n >> 16) & 255)}, ${String((n >> 8) & 255)}, ${String(n & 255)})`;
+};
 const FAILED = pl.planner.actions.failed;
 
 const partnerCompletion = (choreId: string) => ({
@@ -113,7 +117,7 @@ describe("ticking off an occurrence", () => {
     const mark = button.firstElementChild as HTMLElement;
     const style = getComputedStyle(mark);
     expect(parseFloat(style.borderTopWidth)).toBeGreaterThanOrEqual(1);
-    expect(style.borderTopColor).toBe("rgb(140, 132, 160)");
+    expect(style.borderTopColor).toBe(rgb(colors.border));
     expect(contrastRatio(colors.border, colors.surface)).toBeGreaterThan(3);
   });
 

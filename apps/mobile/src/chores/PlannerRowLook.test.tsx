@@ -74,7 +74,7 @@ describe("the look of a row", () => {
     time.now = NOW;
     const { container } = show(platform);
     await screen.findByText("Stare");
-    expect(container.innerHTML).not.toContain("rgb(176, 0, 32)");
+    expect(container.innerHTML).not.toContain(rgb(colors.danger));
     expect(container.innerHTML.toLowerCase()).not.toContain(
       colors.danger.toLowerCase(),
     );
