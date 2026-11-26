@@ -10,6 +10,14 @@ import {
 import type { ContentChange } from "@parapka/protocol";
 import { afterEach, expect, it, vi } from "vitest";
 
+import forbidden from "../../../../content/forbidden-phrases.json";
+import {
+  findPhrases,
+  parseForbiddenLists,
+} from "../../../../packages/content/src/forbidden";
+import { HINT_CATEGORIES } from "../../../../packages/content/src/types";
+import { colors, MIN_TOUCH_TARGET } from "../ui/theme";
+
 import { wireCycleHints } from "../cycle/wiring";
 import { pl } from "../i18n/pl";
 import { PlatformProvider, type Platform } from "../platform/context";
@@ -260,4 +268,64 @@ it("says so when the history did not load and does not crash", async () => {
   showCard(platform);
   expect((await screen.findByRole("alert")).textContent).toBe(c.failed);
   expect(screen.queryByRole("button", { name: c.history })).toBeNull();
+});
+
+it("shows the chips, the privacy line and the reactions as before", async () => {
+  const { view } = await rendered([hint("h1", TODAY)], "Ola");
+  await screen.findByText(c.chip);
+  expect(screen.getByText(c.categories.space)).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Wskazówka powstała na telefonie Ola. Dane, z których powstała, zostają na tamtym telefonie.",
+    ),
+  ).toBeTruthy();
+  expect(screen.getByRole("heading").textContent).toBe(
+    "Wskazówka na dziś · Ola",
+  );
+  const radios = screen.getAllByRole("radio");
+  expect(radios.map((radio) => radio.getAttribute("aria-label"))).toEqual([
+    c.done,
+    c.notToday,
+  ]);
+  for (const radio of radios) {
+    expect(
+      Number.parseInt(getComputedStyle(radio).minHeight, 10),
+    ).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+  }
+  // The icons are decorative: hidden from the accessibility tree.
+  for (const icon of view.container.querySelectorAll("svg")) {
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+  }
+});
+
+it("names the partner in the privacy line when the name has not arrived", async () => {
+  await rendered([hint("h1", TODAY)]);
+  expect(
+    await screen.findByText(
+      `Wskazówka powstała na telefonie ${c.privacyPartner}. Dane, z których powstała, zostają na tamtym telefonie.`,
+    ),
+  ).toBeTruthy();
+});
+
+it("does not use the danger color: the color of the person is not a rating", async () => {
+  const { view } = await rendered([hint("h1", TODAY)], "Ola");
+  await screen.findByText(c.chip);
+  const hex = colors.danger.replace("#", "");
+  const rgb = [0, 2, 4]
+    .map((at) => Number.parseInt(hex.slice(at, at + 2), 16))
+    .join(", ");
+  expect(view.container.innerHTML).not.toContain(`rgb(${rgb})`);
+});
+
+it("has the privacy line and the categories free of the forbidden words", () => {
+  const lists = parseForbiddenLists(forbidden);
+  const stems = [...lists.revealing, ...lists.medical, ...lists.sexual];
+  const texts = [
+    c.chip,
+    c.privacy.replace("{name}", c.privacyPartner),
+    ...HINT_CATEGORIES.map((category) => c.categories[category]),
+  ];
+  for (const text of texts) {
+    expect(findPhrases(text, stems)).toEqual([]);
+  }
 });

@@ -18,6 +18,17 @@ export const plToday = {
       "6": "sob.",
     },
     failed: "Nie udało się. Spróbuj jeszcze raz.",
+    chip: "Wskazówka na dziś",
+    privacy:
+      "Wskazówka powstała na telefonie {name}. Dane, z których powstała, zostają na tamtym telefonie.",
+    privacyPartner: "partnera",
+    categories: {
+      relief: "Odciążenie",
+      tenderness: "Czułość",
+      attention: "Uwaga",
+      space: "Przestrzeń",
+      appreciation: "Docenienie",
+    },
   },
   chores: {
     title: "Obowiązki na dziś",
