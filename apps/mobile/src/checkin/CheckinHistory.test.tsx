@@ -119,11 +119,11 @@ it("names the partner from the profile and colors by person only", async () => {
   ]);
   showCard(setup.platform);
   await press(h.show);
-  await screen.findByText("Ola");
+  await screen.findAllByText("Ola");
   const own = screen.getAllByLabelText(/Ty: 5 z 5/)[0];
   const partner = screen.getAllByLabelText(/Ola: 1 z 5/)[0];
-  expect(own?.getAttribute("style")).toContain(hexToRgb(colors.accent));
-  expect(partner?.getAttribute("style")).toContain(hexToRgb(colors.textMuted));
+  expect(own?.getAttribute("style")).toContain(hexToRgb(colors.personA));
+  expect(partner?.getAttribute("style")).toContain(hexToRgb(colors.personB));
 });
 
 it("has no sums, comparisons or fixed wide widths", async () => {
@@ -138,6 +138,13 @@ it("has no sums, comparisons or fixed wide widths", async () => {
     );
     expect(Number(width?.[1] ?? 0)).toBeLessThanOrEqual(12);
   }
+});
+
+it("shows the weeks in cards with chips of the people and a line per person", async () => {
+  await open([entry("2026-W45", a(4, 3, 5), a(1, 2, 3))]);
+  await screen.findByText(h.title);
+  expect(screen.getAllByText(pl.checkin.results.you).length).toBeGreaterThan(1);
+  expect(document.querySelectorAll("polyline")).toHaveLength(6);
 });
 
 it("says that the check-ins will appear when there are none", async () => {
