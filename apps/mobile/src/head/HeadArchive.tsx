@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { AppText } from "../ui/AppText";
+import { Card } from "../ui/Card";
 import { colors, spacing } from "../ui/theme";
 import { archiveLines } from "./head-model";
 import type { HeadItem } from "./head-service";
@@ -12,7 +13,7 @@ import type { HeadItem } from "./head-service";
 export function HeadArchive({ items }: { items: readonly HeadItem[] }) {
   const [open, setOpen] = useState(false);
   return (
-    <View style={{ marginTop: spacing.md }}>
+    <Card>
       <Button
         label={t("head.archive.title", { count: items.length })}
         expanded={open}
@@ -29,9 +30,10 @@ export function HeadArchive({ items }: { items: readonly HeadItem[] }) {
                 accessible
                 accessibilityLabel={[item.title, ...lines].join(", ")}
                 style={{
-                  padding: spacing.md,
-                  marginTop: spacing.sm,
-                  backgroundColor: colors.surface,
+                  paddingVertical: spacing.sm,
+                  marginTop: spacing.xs,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.divider,
                 }}
               >
                 <AppText style={{ fontWeight: "bold" }}>{item.title}</AppText>
@@ -42,6 +44,6 @@ export function HeadArchive({ items }: { items: readonly HeadItem[] }) {
             );
           })
         : null}
-    </View>
+    </Card>
   );
 }

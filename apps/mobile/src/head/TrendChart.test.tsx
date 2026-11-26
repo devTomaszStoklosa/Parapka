@@ -2,7 +2,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { colors } from "../ui/theme";
 import { TrendChart } from "./TrendChart";
+
+const TONES = { own: "personA", partner: "personB" } as const;
 
 afterEach(cleanup);
 
@@ -12,6 +15,7 @@ describe("the trend chart", () => {
   it("shows a bar per week with the number and a label", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName="Ola"
         trend={[
           { week: week(45), split: null },
@@ -29,6 +33,7 @@ describe("the trend chart", () => {
   it("calls the partner Partner without a name", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName={null}
         trend={[{ week: week(3), split: { me: 10, partner: 90 } }]}
       />,
@@ -39,7 +44,9 @@ describe("the trend chart", () => {
   });
 
   it("shows nothing for an empty trend", () => {
-    const { container } = render(<TrendChart trend={[]} partnerName={null} />);
+    const { container } = render(
+      <TrendChart trend={[]} tones={TONES} partnerName={null} />,
+    );
     expect(container.textContent).toBe("");
   });
 
@@ -48,7 +55,7 @@ describe("the trend chart", () => {
       week: week(i + 1),
       split: { me: 50, partner: 50 },
     }));
-    render(<TrendChart trend={trend} partnerName={null} />);
+    render(<TrendChart trend={trend} tones={TONES} partnerName={null} />);
     expect(screen.getAllByTestId("trend-bar")).toHaveLength(12);
     expect(screen.queryByText("t. 2")).toBeNull();
     expect(screen.getByText("t. 3")).toBeTruthy();
@@ -57,6 +64,7 @@ describe("the trend chart", () => {
   it("gives a column a fixed share of the chart and the share of me", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName="Ola"
         trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
       />,
@@ -69,6 +77,7 @@ describe("the trend chart", () => {
   it("keeps a gap between columns", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName="Ola"
         trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
       />,
@@ -80,6 +89,7 @@ describe("the trend chart", () => {
   it("draws no partner part, nor its border, at 0%", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName="Ola"
         trend={[{ week: week(46), split: { me: 100, partner: 0 } }]}
       />,
@@ -90,6 +100,7 @@ describe("the trend chart", () => {
   it("explains the colors in a legend hidden from readers", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName="Ola"
         trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
       />,
@@ -102,6 +113,7 @@ describe("the trend chart", () => {
   it("centers each legend swatch against its text", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName="Ola"
         trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
       />,
@@ -117,10 +129,25 @@ describe("the trend chart", () => {
   it("names the partner Partner in the legend without a name", () => {
     render(
       <TrendChart
+        tones={TONES}
         partnerName={null}
         trend={[{ week: week(46), split: null }]}
       />,
     );
     expect(screen.getByText("Partner")).toBeTruthy();
+  });
+
+  it("colors the bars with the tones of the people", () => {
+    render(
+      <TrendChart
+        tones={{ own: "personB", partner: "personA" }}
+        partnerName="Ola"
+        trend={[{ week: week(46), split: { me: 56, partner: 44 } }]}
+      />,
+    );
+    expect(screen.getByTestId("trend-partner").style.backgroundColor).toBe(
+      "rgb(91, 75, 214)",
+    );
+    expect(colors.personA).toBe("#5B4BD6");
   });
 });
