@@ -1,13 +1,30 @@
-import { ScrollView } from "react-native";
+import { ScrollView, View } from "react-native";
 
 import { CheckinCard } from "../checkin/CheckinCard";
 import { t } from "../i18n";
+import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
-import { spacing } from "../ui/theme";
+import { colors, spacing } from "../ui/theme";
 import { OwnHintCard } from "./OwnHintCard";
 import { PartnerHintCard } from "./PartnerHintCard";
 import { TodayChores } from "./TodayChores";
 import { TodayPause } from "./TodayPause";
+
+const dateFormat = new Intl.DateTimeFormat("pl-PL", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+/** Today's date above the title; plain text, so the title stays the only header. */
+function TodayDate() {
+  const { clock } = usePlatform();
+  return (
+    <AppText style={{ fontSize: 13, color: colors.textMuted }}>
+      {dateFormat.format(clock.nowMs())}
+    </AppText>
+  );
+}
 
 /**
  * The "Today" tab: the hint of the partner, the preview of the own hint, the chores of
@@ -22,12 +39,15 @@ export function TodayScreen(props: {
   const { onOpenCycle, onOpenPlanner } = props;
   return (
     <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: 20, gap: 12 }}
     >
-      <AppText variant="title" accessibilityRole="header">
-        {t("screens.today.title")}
-      </AppText>
+      <View style={{ gap: spacing.xs }}>
+        <TodayDate />
+        <AppText variant="title" accessibilityRole="header">
+          {t("screens.today.title")}
+        </AppText>
+      </View>
       <PartnerHintCard />
       {onOpenCycle ? <OwnHintCard onOpenCycle={onOpenCycle} /> : null}
       <TodayChores onOpenPlanner={onOpenPlanner} />

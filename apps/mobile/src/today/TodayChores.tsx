@@ -9,12 +9,20 @@ import { t } from "../i18n";
 import { Button } from "../onboarding/controls";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
+import { Card } from "../ui/Card";
 import { colors, spacing } from "../ui/theme";
 
 function Section(props: { title: string; children: ReactNode }) {
   return (
     <View>
-      <AppText style={{ fontWeight: "bold" }} accessibilityRole="header">
+      <AppText
+        style={{
+          fontSize: 13,
+          fontWeight: "bold",
+          color: colors.textMuted,
+        }}
+        accessibilityRole="header"
+      >
         {props.title}
       </AppText>
       {props.children}
@@ -70,22 +78,16 @@ export function TodayChores({ onOpenPlanner }: { onOpenPlanner: () => void }) {
   const state = usePlanner(usePlatform());
   if (state === null) return null;
   return (
-    <View
-      style={{
-        gap: spacing.md,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surface,
-      }}
-    >
-      <AppText accessibilityRole="header">{t("todayChores.title")}</AppText>
-      {state === "failed" ? (
-        <AppText accessibilityRole="alert">{t("planner.failed")}</AppText>
-      ) : (
-        <Rows data={state} onOpenPlanner={onOpenPlanner} />
-      )}
-      <Button label={t("todayChores.openPlanner")} onPress={onOpenPlanner} />
-    </View>
+    <Card>
+      <View style={{ gap: spacing.md }}>
+        <AppText accessibilityRole="header">{t("todayChores.title")}</AppText>
+        {state === "failed" ? (
+          <AppText accessibilityRole="alert">{t("planner.failed")}</AppText>
+        ) : (
+          <Rows data={state} onOpenPlanner={onOpenPlanner} />
+        )}
+        <Button label={t("todayChores.openPlanner")} onPress={onOpenPlanner} />
+      </View>
+    </Card>
   );
 }

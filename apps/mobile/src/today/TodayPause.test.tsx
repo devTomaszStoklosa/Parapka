@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { press, setup, useSodium } from "../chores/planner-test-support";
+import { MIN_TOUCH_TARGET } from "../ui/theme";
 import { pl } from "../i18n/pl";
 import { PlatformProvider, type Platform } from "../platform/context";
 import { createPauseRepository } from "../sync/pause-repository";
@@ -104,4 +105,16 @@ it("says the pause failed when it cannot be saved", async () => {
   vi.spyOn(platform.database, "put").mockRejectedValue(new Error("x"));
   await press(pl.pause.label, "switch");
   expect(await screen.findByText(pl.pause.failed)).toBeTruthy();
+});
+
+it("keeps a 44 px touch target, the role and the name inside a card with the icon", async () => {
+  const { platform } = await setup(true);
+  const { container } = show(platform);
+  const el = await toggle();
+  expect(el.getAttribute("role")).toBe("switch");
+  const row = screen.getByText(pl.pause.label).parentElement;
+  expect(parseFloat(getComputedStyle(row as HTMLElement).minHeight)).toBe(
+    MIN_TOUCH_TARGET,
+  );
+  expect(container.querySelector("svg")).not.toBeNull();
 });

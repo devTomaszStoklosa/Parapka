@@ -11,6 +11,7 @@ import {
   setup,
   useSodium,
 } from "../chores/planner-test-support";
+import { colors, MIN_TOUCH_TARGET } from "../ui/theme";
 import { pl } from "../i18n/pl";
 import { PlatformProvider, type Platform } from "../platform/context";
 import { TodayChores } from "./TodayChores";
@@ -24,13 +25,45 @@ const DAY = 24 * 3_600_000;
 const OPEN = pl.todayChores.openPlanner;
 
 const show = (platform: Platform, onOpenPlanner = vi.fn()) => {
-  render(
+  const view = render(
     <PlatformProvider platform={platform}>
       <TodayChores onOpenPlanner={onOpenPlanner} />
     </PlatformProvider>,
   );
-  return onOpenPlanner;
+  return Object.assign(onOpenPlanner, { view });
 };
+
+describe("the look of the card", () => {
+  it("does not use the danger color for an overdue chore of the partner", async () => {
+    const { platform, chores, time } = await setup(true);
+    time.now = NOW - 40 * DAY;
+    await chores.add({
+      title: "Stare",
+      rule: { kind: "occasional", dueDate: "2026-11-05" },
+      assignment: { kind: "person", person: "partner" },
+    });
+    time.now = NOW;
+    const { view } = show(platform);
+    const header = await screen.findByText(pl.planner.todo);
+    expect(screen.getByText("Stare")).toBeTruthy();
+    const danger = colors.danger.toLowerCase();
+    const rgb = "rgb(176, 0, 32)";
+    for (const html of [view.container.innerHTML, header.outerHTML]) {
+      expect(html.toLowerCase()).not.toContain(danger);
+      expect(html).not.toContain(rgb);
+    }
+    expect(getComputedStyle(header).color).not.toBe(rgb);
+  });
+
+  it("keeps the button of the planner a named 44 px target", async () => {
+    const { platform } = await setup(false);
+    show(platform);
+    const button = await screen.findByRole("button", { name: OPEN });
+    expect(
+      parseFloat(getComputedStyle(button).minHeight),
+    ).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+  });
+});
 
 describe("the chores of today", () => {
   it("lists the overdue and today's occurrences with the partner's name", async () => {
