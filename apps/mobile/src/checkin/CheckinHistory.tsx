@@ -1,39 +1,61 @@
 import { View } from "react-native";
 
 import { t } from "../i18n";
+import { usePersonTones } from "../pairing/use-person-tones";
 import { usePlatform } from "../platform/context";
 import { AppText } from "../ui/AppText";
+import { Card } from "../ui/Card";
+import { Chip } from "../ui/Chip";
 import { spacing } from "../ui/theme";
+import type { PersonTones } from "../pairing/person-tone";
+import { personColors } from "./person-colors";
 import { QUESTIONS, valueText } from "./checkin-questions";
 import { rangeText, type HistoryEntry } from "./checkin-history-model";
 import { CheckinTrend } from "./CheckinTrend";
 import { useCheckinHistory } from "./use-checkin-history";
 
 /** The answers of one week; the partner column is "—" for any missing answers. */
-function Week(props: { entry: HistoryEntry; name: string | null }) {
-  const { entry, name } = props;
+function Week(props: {
+  entry: HistoryEntry;
+  name: string | null;
+  tones: PersonTones;
+}) {
+  const { entry, name, tones } = props;
   const none = t("checkin.results.none");
   return (
-    <View style={{ gap: spacing.xs }}>
-      <AppText accessibilityRole="header" style={{ fontWeight: "bold" }}>
-        {rangeText(entry.window)}
-      </AppText>
-      {QUESTIONS.map(({ key, label }) => {
-        const question = t(label);
-        const own = valueText(entry.own[key]);
-        const text =
-          name === null
-            ? t("checkin.history.own", { question, value: own })
-            : t("checkin.results.row", {
-                question,
-                own,
-                name,
-                other:
-                  entry.partner === null ? none : valueText(entry.partner[key]),
-              });
-        return <AppText key={key}>{text}</AppText>;
-      })}
-    </View>
+    <Card>
+      <View style={{ gap: spacing.xs }}>
+        <AppText accessibilityRole="header" style={{ fontWeight: "bold" }}>
+          {rangeText(entry.window)}
+        </AppText>
+        <View style={{ flexDirection: "row", gap: spacing.xs }}>
+          <Chip
+            label={t("checkin.results.you")}
+            tone={personColors(tones.own).chip}
+          />
+          {name === null ? null : (
+            <Chip label={name} tone={personColors(tones.partner).chip} />
+          )}
+        </View>
+        {QUESTIONS.map(({ key, label }) => {
+          const question = t(label);
+          const own = valueText(entry.own[key]);
+          const text =
+            name === null
+              ? t("checkin.history.own", { question, value: own })
+              : t("checkin.results.row", {
+                  question,
+                  own,
+                  name,
+                  other:
+                    entry.partner === null
+                      ? none
+                      : valueText(entry.partner[key]),
+                });
+          return <AppText key={key}>{text}</AppText>;
+        })}
+      </View>
+    </Card>
   );
 }
 
@@ -43,7 +65,9 @@ function Week(props: { entry: HistoryEntry; name: string | null }) {
  * comparisons.
  */
 export function CheckinHistory() {
-  const state = useCheckinHistory(usePlatform());
+  const platform = usePlatform();
+  const state = useCheckinHistory(platform);
+  const tones = usePersonTones(platform);
   if (state === null) return null;
   if (state === "failed") {
     return (
@@ -61,9 +85,9 @@ export function CheckinHistory() {
   return (
     <View style={{ gap: spacing.md }}>
       <AppText variant="title">{t("checkin.history.title")}</AppText>
-      <CheckinTrend entries={entries} partnerName={name} />
+      <CheckinTrend entries={entries} partnerName={name} tones={tones} />
       {entries.map((entry) => (
-        <Week key={entry.week} entry={entry} name={name} />
+        <Week key={entry.week} entry={entry} name={name} tones={tones} />
       ))}
     </View>
   );
